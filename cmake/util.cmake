@@ -25,6 +25,21 @@
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
 
+SET(THREE_PART_VERSION_REGEX "[0-9]+\\.[0-9]+\\.[0-9]+")
+
+# Breaks up a string in the form n1.n2.n3 into three parts and stores
+# them in major, minor, and patch.  version should be a value, not a
+# variable, while major, minor and patch should be variables.
+MACRO(THREE_PART_VERSION_TO_VARS version major minor patch)
+  IF(${version} MATCHES ${THREE_PART_VERSION_REGEX})
+    STRING(REGEX REPLACE "^([0-9]+)\\.[0-9]+\\.[0-9]+" "\\1" ${major} "${version}")
+    STRING(REGEX REPLACE "^[0-9]+\\.([0-9])+\\.[0-9]+" "\\1" ${minor} "${version}")
+    STRING(REGEX REPLACE "^[0-9]+\\.[0-9]+\\.([0-9]+)" "\\1" ${patch} "${version}")
+  ELSE(${version} MATCHES ${THREE_PART_VERSION_REGEX})
+    MESSAGE("MACRO(THREE_PART_VERSION_TO_VARS ${version} ${major} ${minor} ${patch}")
+    MESSAGE(FATAL_ERROR "Problem parsing version string, I can't parse it properly.")
+  ENDIF(${version} MATCHES ${THREE_PART_VERSION_REGEX})
+ENDMACRO(THREE_PART_VERSION_TO_VARS)
 
 function(check_version major minor rev)
 
@@ -41,7 +56,24 @@ function(check_version major minor rev)
     set(${major} ${POSTGIS_MAJOR_VERSION} PARENT_SCOPE)
     set(${minor} ${POSTGIS_MINOR_VERSION} PARENT_SCOPE)
     set(${rev} ${POSTGIS_MICRO_VERSION} PARENT_SCOPE)
-endfunction(check_version)
+endfunction()
+
+function(check_raster_version major minor rev)
+
+    file(READ "${CMAKE_SOURCE_DIR}/raster/Version.config" _POSTGIS_VERSION_CONFIG)
+    string(STRIP ${_POSTGIS_VERSION_CONFIG} _POSTGIS_VERSION_CONFIG)
+
+    string(REGEX REPLACE ".*POSTGIS_MAJOR_VERSION=([0-9]+)[\r\n\t\ ].*" "\\1"
+        POSTGIS_MAJOR_VERSION ${_POSTGIS_VERSION_CONFIG})
+    string(REGEX REPLACE ".*POSTGIS_MINOR_VERSION=([0-9]+)[\r\n\t\ ].*" "\\1"
+        POSTGIS_MINOR_VERSION "${_POSTGIS_VERSION_CONFIG}")
+    string(REGEX REPLACE ".*POSTGIS_MICRO_VERSION=([0-9]+)[\r\n\t\ ].*" "\\1"
+        POSTGIS_MICRO_VERSION "${_POSTGIS_VERSION_CONFIG}")
+  
+    set(${major} ${POSTGIS_MAJOR_VERSION} PARENT_SCOPE)
+    set(${minor} ${POSTGIS_MINOR_VERSION} PARENT_SCOPE)
+    set(${rev} ${POSTGIS_MICRO_VERSION} PARENT_SCOPE)
+endfunction()
 
 function(report_version name ver)
 

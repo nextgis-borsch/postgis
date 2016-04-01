@@ -37,33 +37,13 @@ if(NOT POSTGIS_ENABLE_STATS)
     set(POSTGIS_USE_STATS 0)
 endif()
 
-option(POSTGIS_ENABLE_AUTOCACHE_BBOX
-    "Set ON|OFF (default=ON) to control BBOX caching within geometries" ON)
-set(POSTGIS_AUTOCACHE_BBOX 1)
-if(NOT POSTGIS_ENABLE_AUTOCACHE_BBOX)
-    set(POSTGIS_AUTOCACHE_BBOX 0)
-endif()
-
-option(POSTGIS_ENABLE_PROFILE
-  "Set ON|OFF (default=OFF) to control use GEOS profiling" OFF)
-set(POSTGIS_PROFILE 0)
-if(POSTGIS_ENABLE_PROFILE)
-    set(POSTGIS_PROFILE 1)
-endif()
-
-option(POSTGIS_ENABLE_DEBUG
-  "Set ON|OFF (default=OFF) to control verbose debugging messages" OFF)
-set(POSTGIS_DEBUG_LEVEL 0)
-if(POSTGIS_ENABLE_DEBUG)
-    set(POSTGIS_DEBUG_LEVEL 4)
-endif()
-
 
 ################################################################################
 # Version and build date information
 
 include(util)
 check_version(POSTGIS_MAJOR_VERSION POSTGIS_MINOR_VERSION POSTGIS_MICRO_VERSION)
+check_version(POSTGIS_RASTER_MAJOR_VERSION POSTGIS_RASTER_MINOR_VERSION POSTGIS_RASTER_MICRO_VERSION)
   
 set(POSTGIS_USE_PROJ 1) # Proj.4 is required
 set(POSTGIS_USE_GEOS 1) # GEOS is required
@@ -71,6 +51,10 @@ set(POSTGIS_USE_GEOS 1) # GEOS is required
 set(POSTGIS_VERSION "${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION} USE_GEOS=${POSTGIS_USE_GEOS} USE_PROJ=${POSTGIS_USE_PROJ} USE_STATS=${POSTGIS_USE_STATS}")
 set(POSTGIS_LIB_VERSION "${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}.${POSTGIS_MICRO_VERSION}")
 set(POSTGIS_SCRIPTS_VERSION "${POSTGIS_LIB_VERSION}")
+
+set(POSTGIS_RASTER_VERSION "${POSTGIS_RASTER_MAJOR_VERSION}.${POSTGIS_RASTER_MINOR_VERSION}")
+set(POSTGIS_RASTER_LIB_VERSION "${POSTGIS_RASTER_MAJOR_VERSION}.${POSTGIS_RASTER_MINOR_VERSION}.${POSTGIS_RASTER_MICRO_VERSION}")
+set(POSTGIS_RASTER_SCRIPTS_VERSION "${POSTGIS_RASTER_LIB_VERSION}")
 
 report_version(${PROJECT_NAME} ${POSTGIS_VERSION})  
 
@@ -87,15 +71,12 @@ endif()
 
 ################################################################################
 # Dependency (required): PostgreSQL
-#OLD: find_program(PG_CONFIG pg_config)
-#if(NOT PG_CONFIG)
-#    message(FATAL ERROR " Please check your PostgreSQL installation    ") 
-#endif(NOT PG_CONFIG)
-find_package(PostgreSQL) # TODO: req version?
+find_package(PostgreSQL 9.0) # TODO: req version?
 if(NOT PG_CONFIG)
     message(FATAL ERROR " Please check your PostgreSQL installation")
 endif(NOT PG_CONFIG)
 
+set(HAVE_LIBPQ 1)
 exec_program(${PG_CONFIG} ARGS --version OUTPUT_VARIABLE _PGSQL_VERSION_OUTPUT)
 
 string(REGEX REPLACE 
@@ -118,6 +99,12 @@ exec_program(${PG_CONFIG} ARGS --includedir
     OUTPUT_VARIABLE PGSQL_INCLUDEDIR)
 exec_program(${PG_CONFIG} ARGS --includedir-server
     OUTPUT_VARIABLE PGSQL_INCLUDEDIR_SERVER)
+exec_program(${PG_CONFIG} ARGS --pgxs
+    OUTPUT_VARIABLE PGSQL_PGXS)
+
+if(NOT EXISTS ${PGSQL_PGXS})
+    message(FATAL_ERROR "The PGXS Makefile '${PGSQL_PGXS}' cannot be found. Please install the PostgreSQL server development packages")
+endif()    
 
 include_directories(${PGSQL_INCLUDEDIR})
 include_directories(${PGSQL_INCLUDEDIR_SERVER})
@@ -131,12 +118,27 @@ endif()
 exec_program(${PG_CONFIG} ARGS --pkglibdir OUTPUT_VARIABLE PGSQL_PKGLIBDIR)
 exec_program(${PG_CONFIG} ARGS --sharedir OUTPUT_VARIABLE PGSQL_SHAREDIR)
 
+find_anyproject(ICONV DEFAULT ON) #default OFF, to set ON add DEFAULT ON
+if(ICONV_FOUND)
+    set(HAVE_ICONV TRUE)
+endif()
+
 ################################################################################
 # Dependency (required): PROJ.4
 find_anyproject(PROJ4 VERSION 4.6 REQUIRED)
+if(PROJ4_FOUND)
+    set(HAVE_LIBPROJ TRUE)
+    THREE_PART_VERSION_TO_VARS(${PROJ4_VERSION_STRING} PROJ4_MAJOR PROJ4_MINOR PROG4_PATCH)
+    set(POSTGIS_PROJ_VERSION ${PROJ4_MAJOR}${PROJ4_MINOR})
+endif()
 ################################################################################
 # Dependency (required): GEOS
 find_anyproject(GEOS VERSION 3.4 REQUIRED)
+if(GEOS_FOUND)
+    set(HAVE_LIBGEOS_C TRUE)
+    THREE_PART_VERSION_TO_VARS(${GEOS_VERSION_STRING} GEOS_MAJOR GEOS_MINOR GEOS_PATCH)
+    set(POSTGIS_GEOS_VERSION ${GEOS_MAJOR}${GEOS_MINOR})
+endif()
 
 ################################################################################
 # Dependency (optional): GDAL
@@ -147,24 +149,33 @@ if(POSTGIS_WITH_RASTER)
     endif()
 endif()
 
+find_anyproject(LibXml2 REQUIRED)
+if(LIBXML2_FOUND)
+    set(POSTGIS_LIBXML2_VERSION ${LIBXML2_VERSION_STRING})
+endif()
+
+find_package(Perl)
+
 # Determine build date and time
 string(TIMESTAMP POSTGIS_BUILD_DATE "%Y-%m-%d %H:%M:%S" UTC)
+string(TIMESTAMP POSTGIS_RASTER_BUILD_DATE "%Y-%m-%d %H:%M:%S" UTC)
 
-################################################################################
-# Predefined constants
-set(SRID_MAX 999999)
-set(SRID_USR_MAX 998999)
+include(configure)
 
-################################################################################
-# Generate config header
-configure_file(${CMAKE_SOURCE_DIR}/cmake/postgis_config.h.cmake
-    ${CMAKE_BINARY_DIR}/postgis_config.h @ONLY)
-configure_file(${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in 
-    ${CMAKE_BINARY_DIR}/cmake_uninstall.cmake IMMEDIATE @ONLY)
-    
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
+if(WIN32)
+    add_definitions(-DDLL_EXPORT)
+else()
+  # Warnings specification
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wmissing-prototypes")
+  
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffloat-store")
 
+  # Turn on Position Independent Code generation for GEOS C shared library
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+endif()  
 ################################################################################
 # Configure all subdirectories with any build targets
 ### Object libraries
@@ -178,13 +189,16 @@ add_subdirectory(libpgcommon)
 get_property(LIBPGCOMMON_INCLUDE_DIRS GLOBAL PROPERTY LIBPGCOMMON_INCLUDE_DIRS)
 include_directories(${LIBPGCOMMON_INCLUDE_DIRS})
 
+if(POSTGIS_WITH_RASTER)
+#TODO:    add_subdirectory(raster)
+endif()
+
+if(POSTGIS_WITH_TOPOLOGY)
+#TODO:    add_subdirectory(topology)
+endif()
+
 ### Shared libraries
 add_subdirectory(postgis)
-
-################################################################################
-# Install
-
-# TODO
 
 ################################################################################
 # Configuration summary
@@ -194,7 +208,6 @@ if(NOT SUPRESS_VERBOSE_OUTPUT)
     postgis_report_value(POSTGIS_LIB_VERSION)
     postgis_report_value(POSTGIS_SCRIPTS_VERSION)
     postgis_report_value(POSTGIS_BUILD_DATE)
-    postgis_report_value(POSTGIS_WITH_TOPOLOGY)
     postgis_report_value(POSTGIS_WITH_RASTER)
     postgis_report_value(POSTGIS_WITH_TOPOLOGY)
     postgis_report_value(POSTGIS_PGSQL_VERSION)

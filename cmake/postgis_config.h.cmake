@@ -1,9 +1,50 @@
+#ifndef POSTGIS_CONFIG_H
+#define POSTGIS_CONFIG_H 1
+
+#include "postgis_svn_revision.h"
+
+/* checking whether NLS is requested */
+#cmakedefine ENABLE_NLS 1
+
+/* Define to 1 if GDALFPolygonize function is available */
+#cmakedefine GDALFPOLYGONIZE
+
+/* Define to 1 if you have the MacOS X function CFLocaleCopyCurrent in the
+   CoreFoundation framework. */
+#cmakedefine HAVE_CFLOCALECOPYCURRENT
+
+/* Define to 1 if you have the MacOS X function CFPreferencesCopyAppValue in
+   the CoreFoundation framework. */
+#cmakedefine HAVE_CFPREFERENCESCOPYAPPVALUE
+
+/* Define if the GNU dcgettext() function is already present or preinstalled.
+   */
+#cmakedefine HAVE_DCGETTEXT
+
+#cmakedefine HAVE_VASPRINTF
+#cmakedefine HAVE_ASPRINTF
+#cmakedefine HAVE_ISFINITE
+#cmakedefine HAVE_GNU_ISFINITE
+#cmakedefine HAVE_FSEEKO
+#cmakedefine HAVE_STRCASESTR
 
 /* cmakedefine to 1 if you have the <dlfcn.h> header file. */
 #cmakedefine HAVE_DLFCN_H
 
+/* Define if the GNU gettext() function is already present or preinstalled. */
+#cmakedefine HAVE_GETTEXT
+
 /* cmakedefined if libiconv headers and library are present */
 #cmakedefine HAVE_ICONV
+
+/* Define to 1 if you have the `iconvctl' function. */
+#cmakedefine HAVE_ICONVCTL
+
+/* Define to 1 if you have the `libiconvctl' function. */
+#cmakedefine HAVE_LIBICONVCTL
+
+/* ieeefp.h header */
+#cmakedefine HAVE_IEEEFP_H
 
 /* cmakedefine to 1 if you have the <inttypes.h> header file. */
 #cmakedefine HAVE_INTTYPES_H
@@ -16,6 +57,21 @@
 
 /* cmakedefine to 1 if you have the `proj' library (-lproj). */
 #cmakedefine HAVE_LIBPROJ
+
+/* Define to 1 if you have the `xml2' library (-lxml2). */
+#cmakedefine HAVE_LIBXML2
+
+/* Define to 1 if you have the <libxml/parser.h> header file. */
+#cmakedefine HAVE_LIBXML_PARSER_H
+
+/* Define to 1 if you have the <libxml/tree.h> header file. */
+#cmakedefine HAVE_LIBXML_TREE_H
+
+/* Define to 1 if you have the <libxml/xpathInternals.h> header file. */
+#cmakedefine HAVE_LIBXML_XPATHINTERNALS_H
+
+/* Define to 1 if you have the <libxml/xpath.h> header file. */
+#cmakedefine HAVE_LIBXML_XPATH_H
 
 /* cmakedefine to 1 if you have the <memory.h> header file. */
 #cmakedefine HAVE_MEMORY_H
@@ -44,6 +100,12 @@
 /* cmakedefine to 1 if you don't have the <unistd.h> header file. */
 #cmakedefine YY_NO_UNISTD_H 1
 
+/* Location of PostgreSQL locale directory */
+#cmakedefine PGSQL_LOCALEDIR "@PGSQL_LOCALEDIR@"
+
+/* SFCGAL library version at buil time */
+#cmakedefine POSTGIS_SFCGAL_VERSION @POSTGIS_SFCGAL_VERSION@
+
 /* PostGIS major version */
 #cmakedefine POSTGIS_MAJOR_VERSION @POSTGIS_MAJOR_VERSION@
 
@@ -63,22 +125,25 @@
 #cmakedefine POSTGIS_BUILD_DATE "@POSTGIS_BUILD_DATE@"
 
 /* PostGIS library debug level (0=disabled) */
-#cmakedefine POSTGIS_DEBUG_LEVEL @POSTGIS_DEBUG_LEVEL@
+#define POSTGIS_DEBUG_LEVEL @POSTGIS_DEBUG_LEVEL@
 
 /* GEOS library version */
 #cmakedefine POSTGIS_GEOS_VERSION @POSTGIS_GEOS_VERSION@
+
+/* PostGIS libxml2 version */
+#cmakedefine POSTGIS_LIBXML2_VERSION "@POSTGIS_LIBXML2_VERSION@"
 
 /* PostGIS library version */
 #cmakedefine POSTGIS_LIB_VERSION "@POSTGIS_LIB_VERSION@"
 
 /* Enable GEOS profiling (0=disabled) */
-#cmakedefine POSTGIS_PROFILE @POSTGIS_PROFILE@
+#define POSTGIS_PROFILE @POSTGIS_PROFILE@
 
 /* PROJ library version */
 #cmakedefine POSTGIS_PROJ_VERSION @POSTGIS_PROJ_VERSION@
 
 /* PostGIS scripts version */
-#cmakedefine POSTGIS_SCRIPTS_VERSION @POSTGIS_SCRIPTS_VERSION@
+#cmakedefine POSTGIS_SCRIPTS_VERSION "@POSTGIS_SCRIPTS_VERSION@"
 
 /* Enable use of ANALYZE statistics */
 #cmakedefine POSTGIS_USE_STATS @POSTGIS_USE_STATS@
@@ -86,15 +151,35 @@
 /* PostGIS version */
 #cmakedefine POSTGIS_VERSION "@POSTGIS_VERSION@"
 
+/* PostGIS Raster build date */
+#cmakedefine POSTGIS_RASTER_BUILD_DATE "@POSTGIS_RASTER_BUILD_DATE@"
+
+/* PostGIS Raster library version */
+#cmakedefine POSTGIS_RASTER_LIB_VERSION "@POSTGIS_RASTER_LIB_VERSION@"
+
+/* PostGIS Raster major version */
+#cmakedefine POSTGIS_RASTER_MAJOR_VERSION @POSTGIS_RASTER_MAJOR_VERSION@
+
+/* PostGIS Raster micro version */
+#cmakedefine POSTGIS_RASTER_MICRO_VERSION @POSTGIS_RASTER_MICRO_VERSION@
+
+/* PostGIS Raster minor version */
+#cmakedefine POSTGIS_RASTER_MINOR_VERSION @POSTGIS_RASTER_MINOR_VERSION@
+
+/* PostGIS Raster scripts version */
+#cmakedefine POSTGIS_RASTER_SCRIPTS_VERSION "@POSTGIS_RASTER_SCRIPTS_VERSION@"
+
+/* PostGIS Raster version */
+#cmakedefine POSTGIS_RASTER_VERSION "@POSTGIS_RASTER_VERSION@"
+
+/* Define to 1 if a warning is outputted every time a double is truncated */
+#cmakedefine POSTGIS_RASTER_WARN_ON_TRUNCATION 1
+
 /* cmakedefine to 1 if you have the ANSI C header files. */
 #cmakedefine STDC_HEADERS
 
 /* cmakedefine to 1 if `lex' declares `yytext' as a `char *' by default, not a
    `char[]'. */
-/* #cmakedefine YYTEXT_POINTER */
+#cmakedefine YYTEXT_POINTER
 
-/* cmakedefine to 1 if you have the C99 function finite */
-#cmakedefine HAVE_FINITE
-#define finite _finite
-
-#cmakedefine __func__ @POSTGIS_MSVC_FUNC@
+#endif /* POSTGIS_CONFIG_H */
