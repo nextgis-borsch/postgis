@@ -11,15 +11,15 @@ project(postgis C)
 set(CMAKE_COLOR_MAKEFILE ON)
 # set path to additional CMake modules
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} 
-     ${CMAKE_SOURCE_DIR}/cmake 
-     ${CMAKE_SOURCE_DIR}/cmake/modules
+     ${CMAKE_SOURCE_DIR}/cmake
     )
     
 include(GNUInstallDirs)
 
 set(INSTALL_BIN_DIR ${CMAKE_INSTALL_BINDIR} CACHE INTERNAL "Installation directory for executables" FORCE)
 set(INSTALL_LIB_DIR ${CMAKE_INSTALL_LIBDIR} CACHE INTERNAL "Installation directory for libraries" FORCE)
-set(INSTALL_INC_DIR "${CMAKE_INSTALL_INCLUDEDIR}/${PROJECT_NAME}" CACHE INTERNAL "Installation directory for headers" FORCE)
+set(INSTALL_INC_DIR ${CMAKE_INSTALL_INCLUDEDIR} CACHE INTERNAL "Installation directory for headers" FORCE)
+set(INSTALL_MAN_DIR ${CMAKE_INSTALL_MANDIR} CACHE INTERNAL "Installation directory for headers" FORCE)
 
 ################################################################################
 # User options to control PostGIS features
@@ -71,26 +71,22 @@ endif()
 
 ################################################################################
 # Dependency (required): PostgreSQL
+
 find_package(PostgreSQL 9.0) # TODO: req version?
+
 if(NOT PG_CONFIG)
     message(FATAL ERROR " Please check your PostgreSQL installation")
 endif(NOT PG_CONFIG)
 
 set(HAVE_LIBPQ 1)
-exec_program(${PG_CONFIG} ARGS --version OUTPUT_VARIABLE _PGSQL_VERSION_OUTPUT)
 
-string(REGEX REPLACE 
-    "^PostgreSQL[\t ]+([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1.\\2.\\3"
-    PGSQL_VERSION "${_PGSQL_VERSION_OUTPUT}")
-unset(_PGSQL_VERSION_OUTPUT)
-
-if(PGSQL_VERSION)
+if(POSTGRESQL_VERSION)
     string(REGEX REPLACE
         "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1"
-        PGSQL_VERSION_MAJOR "${PGSQL_VERSION}")
+        PGSQL_VERSION_MAJOR "${POSTGRESQL_VERSION}")
     string(REGEX REPLACE
         "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\2"
-        PGSQL_VERSION_MINOR "${PGSQL_VERSION}")
+        PGSQL_VERSION_MINOR "${POSTGRESQL_VERSION}")
 
     set(POSTGIS_PGSQL_VERSION ${PGSQL_VERSION_MAJOR}${PGSQL_VERSION_MINOR})
 endif()
@@ -101,7 +97,7 @@ exec_program(${PG_CONFIG} ARGS --includedir-server
     OUTPUT_VARIABLE PGSQL_INCLUDEDIR_SERVER)
 exec_program(${PG_CONFIG} ARGS --pgxs
     OUTPUT_VARIABLE PGSQL_PGXS)
-
+    
 if(NOT EXISTS ${PGSQL_PGXS})
     message(FATAL_ERROR "The PGXS Makefile '${PGSQL_PGXS}' cannot be found. Please install the PostgreSQL server development packages")
 endif()    
@@ -117,6 +113,10 @@ endif()
 
 exec_program(${PG_CONFIG} ARGS --pkglibdir OUTPUT_VARIABLE PGSQL_PKGLIBDIR)
 exec_program(${PG_CONFIG} ARGS --sharedir OUTPUT_VARIABLE PGSQL_SHAREDIR)
+exec_program(${PG_CONFIG} ARGS --bindir OUTPUT_VARIABLE PGSQL_PKGBINDIR)
+exec_program(${PG_CONFIG} ARGS --localedir OUTPUT_VARIABLE PGSQL_LOCALEDIR)
+
+set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${POSTGRESQL_LIBRARIES})
 
 find_anyproject(ICONV DEFAULT ON) #default OFF, to set ON add DEFAULT ON
 if(ICONV_FOUND)
@@ -176,6 +176,7 @@ else()
   # Turn on Position Independent Code generation for GEOS C shared library
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 endif()  
+
 ################################################################################
 # Configure all subdirectories with any build targets
 ### Object libraries
@@ -199,6 +200,9 @@ endif()
 
 ### Shared libraries
 add_subdirectory(postgis)
+
+set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${PostgreSQL_LIBRARIES})
+add_subdirectory(loader)
 
 ################################################################################
 # Configuration summary

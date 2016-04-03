@@ -1,3 +1,31 @@
+################################################################################
+# Project:  CMake4PostGIS
+# Purpose:  CMake build scripts
+# Author:   Dmitry Baryshnikov, polimax@mail.ru
+################################################################################
+# Copyright (C) 2016, NextGIS <info@nextgis.com>
+# Copyright (C) 2012 Mateusz Loskot <mateusz@loskot.net>
+#
+# Permission is hereby granted, free of charge, to any person obtaining a
+# copy of this software and associated documentation files (the "Software"),
+# to deal in the Software without restriction, including without limitation
+# the rights to use, copy, modify, merge, publish, distribute, sublicense,
+# and/or sell copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included
+# in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+# OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+# THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+# DEALINGS IN THE SOFTWARE.
+################################################################################
+project(lwgeom)
+
 configure_file(liblwgeom.h.in ${CMAKE_CURRENT_BINARY_DIR}/liblwgeom.h)
 
 set_property(GLOBAL PROPERTY LIBLWGEOM_INCLUDE_DIRS
@@ -75,6 +103,7 @@ set(CSOURCES
 	g_box.c
 	g_serialized.c
 	g_util.c
+	lwspheroid.c
 	lwgeodetic.c
 	lwgeodetic_tree.c
 	lwtree.c
@@ -97,7 +126,34 @@ set(CSOURCES
 	varint.c
 )  
 
-add_library(liblwgeom OBJECT ${CSOURCES} ${HEADERS})
+set(LIB_NAME_LWGEOM ${PROJECT_NAME})
+set_property(GLOBAL PROPERTY LIB_NAME_LWGEOM ${LIB_NAME_LWGEOM})
+
+add_library(${LIB_NAME_LWGEOM} ${CSOURCES} ${HEADERS})
+
+if(UNIX)
+    set(LIB_OUTPUT_NAME "${LIB_NAME_LWGEOM}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}.${POSTGIS_MICRO_VERSION}")
+    set_target_properties(${LIB_NAME_LWGEOM} PROPERTIES OUTPUT_NAME ${LIB_OUTPUT_NAME})
+elseif(BUILD_SHARED_LIBS AND WIN32)
+    set_target_properties(${LIB_NAME_LWGEOM} PROPERTIES SUFFIX "${POSTGIS_MAJOR_VERSION}${POSTGIS_MINOR_VERSION}.dll")
+endif()
+target_link_extlibraries(${LIB_NAME_LWGEOM})
+set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIB_NAME_LWGEOM} PARENT_SCOPE)
+
+if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
+    install(TARGETS ${LIB_NAME_LWGEOM}
+        EXPORT ${LIB_NAME_LWGEOM}
+        RUNTIME DESTINATION ${INSTALL_BIN_DIR} COMPONENT libraries
+        ARCHIVE DESTINATION ${INSTALL_LIB_DIR} COMPONENT libraries
+        LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT libraries
+    )
+    if(UNIX)            
+        install(CODE "execute_process (
+            COMMAND ln -sf ${CMAKE_SHARED_LIBRARY_PREFIX}${LIB_OUTPUT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX} ${CMAKE_SHARED_LIBRARY_PREFIX}${PROJECT_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX}        
+            WORKING_DIRECTORY \"${CMAKE_INSTALL_PREFIX}/${INSTALL_LIB_DIR}\")" COMPONENT libraries)
+    endif()
+endif()
+
   
 if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL )
     install(FILES ${HHEADERS_PUB} DESTINATION "${INSTALL_INC_DIR}" COMPONENT headers)

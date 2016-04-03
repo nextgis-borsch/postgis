@@ -71,13 +71,17 @@ else()
   set(POSTGRESQL_FOUND FALSE)
 endif()
 
+set(POSTGRESQL_VERSION_STRING "${POSTGRESQL_VERSION}")   
+
 # Handle the QUIETLY and REQUIRED arguments and set POSTGRESQL_FOUND to TRUE
 # if all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(PostgreSQL
-  DEFAULT_MSG
-  POSTGRESQL_INCLUDE_DIR
-  POSTGRESQL_LIBRARIES
-  POSTGRESQL_VERSION)
+find_package_handle_standard_args(PostgreSQL 
+                                  REQUIRED_VARS POSTGRESQL_LIBRARIES POSTGRESQL_INCLUDE_DIR 
+                                  VERSION_VAR POSTGRESQL_VERSION)
 
-mark_as_advanced(POSTGRESQL_INCLUDE_DIR POSTGRESQL_LIBRARIES)
+IF(POSTGRESQL_FOUND)
+  set(POSTGRESQL_INCLUDE_DIRS ${POSTGRESQL_INCLUDE_DIR})
+ENDIF()  
+
+mark_as_advanced(POSTGRESQL_INCLUDE_DIRS POSTGRESQL_LIBRARIES)

@@ -7,95 +7,95 @@
 #cmakedefine ENABLE_NLS 1
 
 /* Define to 1 if GDALFPolygonize function is available */
-#cmakedefine GDALFPOLYGONIZE
+#cmakedefine GDALFPOLYGONIZE 1
 
 /* Define to 1 if you have the MacOS X function CFLocaleCopyCurrent in the
    CoreFoundation framework. */
-#cmakedefine HAVE_CFLOCALECOPYCURRENT
+#cmakedefine HAVE_CFLOCALECOPYCURRENT 1
 
 /* Define to 1 if you have the MacOS X function CFPreferencesCopyAppValue in
    the CoreFoundation framework. */
-#cmakedefine HAVE_CFPREFERENCESCOPYAPPVALUE
+#cmakedefine HAVE_CFPREFERENCESCOPYAPPVALUE 1
 
 /* Define if the GNU dcgettext() function is already present or preinstalled.
    */
-#cmakedefine HAVE_DCGETTEXT
-
-#cmakedefine HAVE_VASPRINTF
-#cmakedefine HAVE_ASPRINTF
-#cmakedefine HAVE_ISFINITE
-#cmakedefine HAVE_GNU_ISFINITE
-#cmakedefine HAVE_FSEEKO
-#cmakedefine HAVE_STRCASESTR
+#cmakedefine HAVE_DCGETTEXT 1
+#cmakedefine HAVE_VASPRINTF 1
+#cmakedefine HAVE_ASPRINTF 1
+#cmakedefine HAVE_GNU_ISFINITE 1
+#cmakedefine HAVE_FSEEKO 1
+#cmakedefine HAVE_STRCASESTR 1
 
 /* cmakedefine to 1 if you have the <dlfcn.h> header file. */
-#cmakedefine HAVE_DLFCN_H
+#cmakedefine HAVE_DLFCN_H 1
 
 /* Define if the GNU gettext() function is already present or preinstalled. */
-#cmakedefine HAVE_GETTEXT
+#cmakedefine HAVE_GETTEXT 1
 
 /* cmakedefined if libiconv headers and library are present */
-#cmakedefine HAVE_ICONV
+#cmakedefine HAVE_ICONV 1
 
 /* Define to 1 if you have the `iconvctl' function. */
-#cmakedefine HAVE_ICONVCTL
+#cmakedefine HAVE_ICONVCTL 1
 
 /* Define to 1 if you have the `libiconvctl' function. */
-#cmakedefine HAVE_LIBICONVCTL
+#cmakedefine HAVE_LIBICONVCTL 1
 
 /* ieeefp.h header */
-#cmakedefine HAVE_IEEEFP_H
+#cmakedefine HAVE_IEEEFP_H 1
 
 /* cmakedefine to 1 if you have the <inttypes.h> header file. */
-#cmakedefine HAVE_INTTYPES_H
+#cmakedefine HAVE_INTTYPES_H 1
 
 /* cmakedefine to 1 if you have the `geos_c' library (-lgeos_c). */
-#cmakedefine HAVE_LIBGEOS_C
+#cmakedefine HAVE_LIBGEOS_C 1
 
 /* cmakedefine to 1 if you have the `pq' library (-lpq). */
-#cmakedefine HAVE_LIBPQ
+#cmakedefine HAVE_LIBPQ 1
 
 /* cmakedefine to 1 if you have the `proj' library (-lproj). */
-#cmakedefine HAVE_LIBPROJ
+#cmakedefine HAVE_LIBPROJ 1
 
 /* Define to 1 if you have the `xml2' library (-lxml2). */
-#cmakedefine HAVE_LIBXML2
+#cmakedefine HAVE_LIBXML2 1
 
 /* Define to 1 if you have the <libxml/parser.h> header file. */
-#cmakedefine HAVE_LIBXML_PARSER_H
+#cmakedefine HAVE_LIBXML_PARSER_H 1
 
 /* Define to 1 if you have the <libxml/tree.h> header file. */
-#cmakedefine HAVE_LIBXML_TREE_H
+#cmakedefine HAVE_LIBXML_TREE_H 1
 
 /* Define to 1 if you have the <libxml/xpathInternals.h> header file. */
-#cmakedefine HAVE_LIBXML_XPATHINTERNALS_H
+#cmakedefine HAVE_LIBXML_XPATHINTERNALS_H 1
 
 /* Define to 1 if you have the <libxml/xpath.h> header file. */
-#cmakedefine HAVE_LIBXML_XPATH_H
+#cmakedefine HAVE_LIBXML_XPATH_H 1
 
 /* cmakedefine to 1 if you have the <memory.h> header file. */
-#cmakedefine HAVE_MEMORY_H
+#cmakedefine HAVE_MEMORY_H 1
 
 /* cmakedefine to 1 if you have the <stdint.h> header file. */
-#cmakedefine HAVE_STDINT_H
+#cmakedefine HAVE_STDINT_H 1
 
 /* cmakedefine to 1 if you have the <stdlib.h> header file. */
-#cmakedefine HAVE_STDLIB_H
+#ifndef HAVE_STDLIB_H
+#cmakedefine HAVE_STDLIB_H 1
+#endif // HAVE_STDLIB_H
 
 /* cmakedefine to 1 if you have the <strings.h> header file. */
-#cmakedefine HAVE_STRINGS_H
+#cmakedefine HAVE_STRINGS_H 1
 
 /* cmakedefine to 1 if you have the <string.h> header file. */
-#cmakedefine HAVE_STRING_H
+#cmakedefine HAVE_STRING_H 1
 
 /* cmakedefine to 1 if you have the <sys/stat.h> header file. */
-#cmakedefine HAVE_SYS_STAT_H
+#cmakedefine HAVE_SYS_STAT_H 1
 
 /* cmakedefine to 1 if you have the <sys/types.h> header file. */
-#cmakedefine HAVE_SYS_TYPES_H
+#cmakedefine HAVE_SYS_TYPES_H 1
 
 /* cmakedefine to 1 if you have the <unistd.h> header file. */
-#cmakedefine HAVE_UNISTD_H
+#cmakedefine HAVE_UNISTD_H 1
 
 /* cmakedefine to 1 if you don't have the <unistd.h> header file. */
 #cmakedefine YY_NO_UNISTD_H 1
@@ -104,16 +104,16 @@
 #cmakedefine PGSQL_LOCALEDIR "@PGSQL_LOCALEDIR@"
 
 /* SFCGAL library version at buil time */
-#cmakedefine POSTGIS_SFCGAL_VERSION @POSTGIS_SFCGAL_VERSION@
+#cmakedefine POSTGIS_SFCGAL_VERSION "@POSTGIS_SFCGAL_VERSION@"
 
 /* PostGIS major version */
-#cmakedefine POSTGIS_MAJOR_VERSION @POSTGIS_MAJOR_VERSION@
+#cmakedefine POSTGIS_MAJOR_VERSION "@POSTGIS_MAJOR_VERSION@"
 
 /* PostGIS micro version */
-#cmakedefine POSTGIS_MICRO_VERSION @POSTGIS_MICRO_VERSION@
+#cmakedefine POSTGIS_MICRO_VERSION "@POSTGIS_MICRO_VERSION@"
 
 /* PostGIS minor version */
-#cmakedefine POSTGIS_MINOR_VERSION @POSTGIS_MINOR_VERSION@
+#cmakedefine POSTGIS_MINOR_VERSION "@POSTGIS_MINOR_VERSION@"
 
 /* PostgreSQL server version */
 #cmakedefine POSTGIS_PGSQL_VERSION @POSTGIS_PGSQL_VERSION@
@@ -158,13 +158,13 @@
 #cmakedefine POSTGIS_RASTER_LIB_VERSION "@POSTGIS_RASTER_LIB_VERSION@"
 
 /* PostGIS Raster major version */
-#cmakedefine POSTGIS_RASTER_MAJOR_VERSION @POSTGIS_RASTER_MAJOR_VERSION@
+#cmakedefine POSTGIS_RASTER_MAJOR_VERSION "@POSTGIS_RASTER_MAJOR_VERSION@"
 
 /* PostGIS Raster micro version */
-#cmakedefine POSTGIS_RASTER_MICRO_VERSION @POSTGIS_RASTER_MICRO_VERSION@
+#cmakedefine POSTGIS_RASTER_MICRO_VERSION "@POSTGIS_RASTER_MICRO_VERSION@"
 
 /* PostGIS Raster minor version */
-#cmakedefine POSTGIS_RASTER_MINOR_VERSION @POSTGIS_RASTER_MINOR_VERSION@
+#cmakedefine POSTGIS_RASTER_MINOR_VERSION "@POSTGIS_RASTER_MINOR_VERSION@"
 
 /* PostGIS Raster scripts version */
 #cmakedefine POSTGIS_RASTER_SCRIPTS_VERSION "@POSTGIS_RASTER_SCRIPTS_VERSION@"
@@ -176,10 +176,10 @@
 #cmakedefine POSTGIS_RASTER_WARN_ON_TRUNCATION 1
 
 /* cmakedefine to 1 if you have the ANSI C header files. */
-#cmakedefine STDC_HEADERS
+#cmakedefine STDC_HEADERS 1
 
 /* cmakedefine to 1 if `lex' declares `yytext' as a `char *' by default, not a
    `char[]'. */
-#cmakedefine YYTEXT_POINTER
+#cmakedefine YYTEXT_POINTER 1
 
 #endif /* POSTGIS_CONFIG_H */
