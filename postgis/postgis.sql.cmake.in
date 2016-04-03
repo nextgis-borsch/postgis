@@ -18,11 +18,9 @@
 --
 -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-#include "sqldefines.h"
-
 SET client_min_messages TO warning;
 
--- INSTALL VERSION: POSTGIS_LIB_VERSION
+-- INSTALL VERSION: '@POSTGIS_LIB_VERSION@'
 
 BEGIN;
 
@@ -53,7 +51,7 @@ BEGIN
   -- Raises a NOTICE if it was deprecated in this version,
   -- a WARNING if in a previous version (only up to minor version checked)
   --
-    curver_text := POSTGIS_LIB_VERSION;
+    curver_text := '@POSTGIS_LIB_VERSION@';
     IF split_part(curver_text,'.',1)::int > split_part(version,'.',1)::int OR
        ( split_part(curver_text,'.',1) = split_part(version,'.',1) AND
          split_part(curver_text,'.',2) != split_part(version,'.',2) )
@@ -70,12 +68,12 @@ $$ LANGUAGE 'plpgsql' IMMUTABLE STRICT;
 -------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION spheroid_in(cstring)
 	RETURNS spheroid
-	AS 'MODULE_PATHNAME','ellipsoid_in'
+	AS '@MODULE_PATHNAME@','ellipsoid_in'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION spheroid_out(spheroid)
 	RETURNS cstring
-	AS 'MODULE_PATHNAME','ellipsoid_out'
+	AS '@MODULE_PATHNAME@','ellipsoid_out'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.5.0
@@ -91,39 +89,39 @@ CREATE TYPE spheroid (
 -------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION geometry_in(cstring)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_in'
+	AS '@MODULE_PATHNAME@','LWGEOM_in'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry_out(geometry)
 	RETURNS cstring
-	AS 'MODULE_PATHNAME','LWGEOM_out'
+	AS '@MODULE_PATHNAME@','LWGEOM_out'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_typmod_in(cstring[])
 	RETURNS integer
-	AS 'MODULE_PATHNAME','geometry_typmod_in'
+	AS '@MODULE_PATHNAME@','geometry_typmod_in'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_typmod_out(integer)
 	RETURNS cstring
-	AS 'MODULE_PATHNAME','postgis_typmod_out'
+	AS '@MODULE_PATHNAME@','postgis_typmod_out'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 CREATE OR REPLACE FUNCTION geometry_analyze(internal)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_analyze_nd'
+	AS '@MODULE_PATHNAME@', 'gserialized_analyze_nd'
 	LANGUAGE 'c' VOLATILE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry_recv(internal)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_recv'
+	AS '@MODULE_PATHNAME@','LWGEOM_recv'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry_send(geometry)
 	RETURNS bytea
-	AS 'MODULE_PATHNAME','LWGEOM_send'
+	AS '@MODULE_PATHNAME@','LWGEOM_send'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -146,7 +144,7 @@ CREATE TYPE geometry (
 -- Special cast for enforcing the typmod restrictions
 CREATE OR REPLACE FUNCTION geometry(geometry, integer, boolean)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','geometry_enforce_typmod'
+	AS '@MODULE_PATHNAME@','geometry_enforce_typmod'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 2.0.0
@@ -156,37 +154,37 @@ CREATE CAST (geometry AS geometry) WITH FUNCTION geometry(geometry, integer, boo
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION geometry(point)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','point_to_geometry'
+	AS '@MODULE_PATHNAME@','point_to_geometry'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION point(geometry)
 	RETURNS point
-	AS 'MODULE_PATHNAME','geometry_to_point'
+	AS '@MODULE_PATHNAME@','geometry_to_point'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION geometry(path)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','path_to_geometry'
+	AS '@MODULE_PATHNAME@','path_to_geometry'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION path(geometry)
 	RETURNS path
-	AS 'MODULE_PATHNAME','geometry_to_path'
+	AS '@MODULE_PATHNAME@','geometry_to_path'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION geometry(polygon)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','polygon_to_geometry'
+	AS '@MODULE_PATHNAME@','polygon_to_geometry'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION polygon(geometry)
 	RETURNS polygon
-	AS 'MODULE_PATHNAME','geometry_to_polygon'
+	AS '@MODULE_PATHNAME@','geometry_to_polygon'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 CREATE CAST (geometry AS point) WITH FUNCTION point(geometry);
@@ -203,25 +201,25 @@ CREATE CAST (polygon AS geometry) WITH FUNCTION geometry(polygon);
 -- PostGIS equivalent function: X(geometry)
 CREATE OR REPLACE FUNCTION ST_X(geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME','LWGEOM_x_point'
+	AS '@MODULE_PATHNAME@','LWGEOM_x_point'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: Y(geometry)
 CREATE OR REPLACE FUNCTION ST_Y(geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME','LWGEOM_y_point'
+	AS '@MODULE_PATHNAME@','LWGEOM_y_point'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Z(geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME','LWGEOM_z_point'
+	AS '@MODULE_PATHNAME@','LWGEOM_z_point'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_M(geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME','LWGEOM_m_point'
+	AS '@MODULE_PATHNAME@','LWGEOM_m_point'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -------------------------------------------
@@ -229,12 +227,12 @@ CREATE OR REPLACE FUNCTION ST_M(geometry)
 
 CREATE OR REPLACE FUNCTION box3d_in(cstring)
 	RETURNS box3d
-	AS 'MODULE_PATHNAME', 'BOX3D_in'
+	AS '@MODULE_PATHNAME@', 'BOX3D_in'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION box3d_out(box3d)
 	RETURNS cstring
-	AS 'MODULE_PATHNAME', 'BOX3D_out'
+	AS '@MODULE_PATHNAME@', 'BOX3D_out'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -251,12 +249,12 @@ CREATE TYPE box3d (
 
 CREATE OR REPLACE FUNCTION box2d_in(cstring)
 	RETURNS box2d
-	AS 'MODULE_PATHNAME','BOX2D_in'
+	AS '@MODULE_PATHNAME@','BOX2D_in'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION box2d_out(box2d)
 	RETURNS cstring
-	AS 'MODULE_PATHNAME','BOX2D_out'
+	AS '@MODULE_PATHNAME@','BOX2D_out'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.8.2
@@ -277,13 +275,13 @@ CREATE TYPE box2d (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION box2df_in(cstring)
 	RETURNS box2df
-	AS 'MODULE_PATHNAME','box2df_in'
+	AS '@MODULE_PATHNAME@','box2df_in'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION box2df_out(box2df)
 	RETURNS cstring
-	AS 'MODULE_PATHNAME','box2df_out'
+	AS '@MODULE_PATHNAME@','box2df_out'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 2.0.0
@@ -307,13 +305,13 @@ CREATE TYPE box2df (
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION gidx_in(cstring)
 	RETURNS gidx
-	AS 'MODULE_PATHNAME','gidx_in'
+	AS '@MODULE_PATHNAME@','gidx_in'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION gidx_out(gidx)
 	RETURNS cstring
-	AS 'MODULE_PATHNAME','gidx_out'
+	AS '@MODULE_PATHNAME@','gidx_out'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 1.5.0
@@ -330,32 +328,32 @@ CREATE TYPE gidx (
 -------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION geometry_lt(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'lwgeom_lt'
+	AS '@MODULE_PATHNAME@', 'lwgeom_lt'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry_le(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'lwgeom_le'
+	AS '@MODULE_PATHNAME@', 'lwgeom_le'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry_gt(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'lwgeom_gt'
+	AS '@MODULE_PATHNAME@', 'lwgeom_gt'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry_ge(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'lwgeom_ge'
+	AS '@MODULE_PATHNAME@', 'lwgeom_ge'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry_eq(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'lwgeom_eq'
+	AS '@MODULE_PATHNAME@', 'lwgeom_eq'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry_cmp(geom1 geometry, geom2 geometry)
 	RETURNS integer
-	AS 'MODULE_PATHNAME', 'lwgeom_cmp'
+	AS '@MODULE_PATHNAME@', 'lwgeom_cmp'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 --
@@ -419,49 +417,49 @@ CREATE OPERATOR CLASS btree_geometry_ops
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_distance_2d(internal,geometry,int4) 
 	RETURNS float8 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_distance_2d'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_distance_2d'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_consistent_2d(internal,geometry,int4) 
 	RETURNS bool 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_consistent_2d'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_consistent_2d'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_compress_2d(internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME','gserialized_gist_compress_2d'
+	AS '@MODULE_PATHNAME@','gserialized_gist_compress_2d'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_penalty_2d(internal,internal,internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_penalty_2d'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_penalty_2d'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_picksplit_2d(internal, internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_picksplit_2d'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_picksplit_2d'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_union_2d(bytea, internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_union_2d'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_union_2d'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_same_2d(geom1 geometry, geom2 geometry, internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_same_2d'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_same_2d'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_decompress_2d(internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_decompress_2d'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_decompress_2d'
 	LANGUAGE 'c';
 
 
@@ -473,7 +471,7 @@ CREATE OR REPLACE FUNCTION geometry_gist_decompress_2d(internal)
 -- changes whether the estimate is in x/y only or in all available dimensions.
 CREATE OR REPLACE FUNCTION _postgis_selectivity(tbl regclass, att_name text, geom geometry, mode text default '2')
 	RETURNS float8
-	AS 'MODULE_PATHNAME', '_postgis_gserialized_sel'
+	AS '@MODULE_PATHNAME@', '_postgis_gserialized_sel'
 	LANGUAGE 'c' STRICT;
 
 -- Availability: 2.1.0
@@ -483,7 +481,7 @@ CREATE OR REPLACE FUNCTION _postgis_selectivity(tbl regclass, att_name text, geo
 -- and evaluation in all available dimensions.
 CREATE OR REPLACE FUNCTION _postgis_join_selectivity(regclass, text, regclass, text, text default '2')
 	RETURNS float8
-	AS 'MODULE_PATHNAME', '_postgis_gserialized_joinsel'
+	AS '@MODULE_PATHNAME@', '_postgis_gserialized_joinsel'
 	LANGUAGE 'c' STRICT;
 
 -- Availability: 2.1.0
@@ -492,31 +490,31 @@ CREATE OR REPLACE FUNCTION _postgis_join_selectivity(regclass, text, regclass, t
 -- or the ND statistics are returned.
 CREATE OR REPLACE FUNCTION _postgis_stats(tbl regclass, att_name text, text default '2')
 	RETURNS text
-	AS 'MODULE_PATHNAME', '_postgis_gserialized_stats'
+	AS '@MODULE_PATHNAME@', '_postgis_gserialized_stats'
 	LANGUAGE 'c' STRICT;
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION gserialized_gist_sel_2d (internal, oid, internal, int4)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'gserialized_gist_sel_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_gist_sel_2d'
 	LANGUAGE 'c';
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION gserialized_gist_sel_nd (internal, oid, internal, int4)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'gserialized_gist_sel_nd'
+	AS '@MODULE_PATHNAME@', 'gserialized_gist_sel_nd'
 	LANGUAGE 'c';
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION gserialized_gist_joinsel_2d (internal, oid, internal, smallint)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'gserialized_gist_joinsel_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_gist_joinsel_2d'
 	LANGUAGE 'c';
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION gserialized_gist_joinsel_nd (internal, oid, internal, smallint)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'gserialized_gist_joinsel_nd'
+	AS '@MODULE_PATHNAME@', 'gserialized_gist_joinsel_nd'
 	LANGUAGE 'c';
 
 
@@ -531,7 +529,7 @@ CREATE OR REPLACE FUNCTION gserialized_gist_joinsel_nd (internal, oid, internal,
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_overlaps(geom1 geometry, geom2 geometry) 
 	RETURNS boolean 
-	AS 'MODULE_PATHNAME' ,'gserialized_overlaps_2d'
+	AS '@MODULE_PATHNAME@' ,'gserialized_overlaps_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -546,7 +544,7 @@ CREATE OPERATOR && (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_same(geom1 geometry, geom2 geometry) 
 	RETURNS boolean 
-	AS 'MODULE_PATHNAME' ,'gserialized_same_2d'
+	AS '@MODULE_PATHNAME@' ,'gserialized_same_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -561,17 +559,13 @@ CREATE OPERATOR ~= (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_distance_centroid(geom1 geometry, geom2 geometry) 
 	RETURNS float8 
-#if POSTGIS_PGSQL_VERSION >= 95
-  AS 'MODULE_PATHNAME' ,'distance'
-#else
-  AS 'MODULE_PATHNAME' ,'gserialized_distance_centroid_2d'
-#endif
+	AS '@MODULE_PATHNAME@' ,'@GEOMETRY_DISTANCE_CENTROID@'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_distance_box(geom1 geometry, geom2 geometry) 
 	RETURNS float8 
-  AS 'MODULE_PATHNAME' ,'gserialized_distance_box_2d'
+  AS '@MODULE_PATHNAME@' ,'gserialized_distance_box_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
@@ -589,13 +583,13 @@ CREATE OPERATOR <#> (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_contains(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_contains_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_contains_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_within(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_within_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_within_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -615,7 +609,7 @@ CREATE OPERATOR ~ (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_left(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_left_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_left_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -628,7 +622,7 @@ CREATE OPERATOR << (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_overleft(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_overleft_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_overleft_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -641,7 +635,7 @@ CREATE OPERATOR &< (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_below(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_below_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_below_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -654,7 +648,7 @@ CREATE OPERATOR <<| (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_overbelow(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_overbelow_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_overbelow_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -667,7 +661,7 @@ CREATE OPERATOR &<| (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_overright(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_overright_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_overright_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -680,7 +674,7 @@ CREATE OPERATOR &> (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_right(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_right_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_right_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -693,7 +687,7 @@ CREATE OPERATOR >> (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_overabove(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_overabove_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_overabove_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -706,7 +700,7 @@ CREATE OPERATOR |&> (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_above(geom1 geometry, geom2 geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'gserialized_above_2d'
+	AS '@MODULE_PATHNAME@', 'gserialized_above_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 0.1.0
@@ -731,12 +725,7 @@ CREATE OPERATOR CLASS gist_geometry_ops_2d
 	OPERATOR        9        &<| ,
 	OPERATOR        10       <<| ,
 	OPERATOR        11       |>> ,
-	OPERATOR        12       |&> ,
-#if POSTGIS_PGSQL_VERSION >= 91
-	OPERATOR        13       <-> FOR ORDER BY pg_catalog.float_ops,
-	OPERATOR        14       <#> FOR ORDER BY pg_catalog.float_ops,
-	FUNCTION        8        geometry_gist_distance_2d (internal, geometry, int4),
-#endif
+	OPERATOR        12       |&> ,@GIST_GEOMETRY_OPS_2D_ADDS@
 	FUNCTION        1        geometry_gist_consistent_2d (internal, geometry, int4),
 	FUNCTION        2        geometry_gist_union_2d (bytea, internal),
 	FUNCTION        3        geometry_gist_compress_2d (internal),
@@ -757,43 +746,43 @@ CREATE OPERATOR CLASS gist_geometry_ops_2d
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_consistent_nd(internal,geometry,int4) 
 	RETURNS bool 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_consistent'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_consistent'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_compress_nd(internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME','gserialized_gist_compress'
+	AS '@MODULE_PATHNAME@','gserialized_gist_compress'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_penalty_nd(internal,internal,internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_penalty'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_penalty'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_picksplit_nd(internal, internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_picksplit'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_picksplit'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_union_nd(bytea, internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_union'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_union'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_same_nd(geometry, geometry, internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_same'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_same'
 	LANGUAGE 'c';
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_gist_decompress_nd(internal) 
 	RETURNS internal 
-	AS 'MODULE_PATHNAME' ,'gserialized_gist_decompress'
+	AS '@MODULE_PATHNAME@' ,'gserialized_gist_decompress'
 	LANGUAGE 'c';
 
 
@@ -804,7 +793,7 @@ CREATE OR REPLACE FUNCTION geometry_gist_decompress_nd(internal)
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION geometry_overlaps_nd(geometry, geometry) 
 	RETURNS boolean 
-	AS 'MODULE_PATHNAME' ,'gserialized_overlaps'
+	AS '@MODULE_PATHNAME@' ,'gserialized_overlaps'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
@@ -818,7 +807,7 @@ CREATE OPERATOR &&& (
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION geometry_distance_centroid_nd(geometry,geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'gserialized_distance_nd'
+	AS '@MODULE_PATHNAME@', 'gserialized_distance_nd'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2.0
@@ -836,7 +825,7 @@ CREATE OPERATOR <<->> (
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION geometry_distance_cpa(geometry, geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'ST_DistanceCPA'
+	AS '@MODULE_PATHNAME@', 'ST_DistanceCPA'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2.0
@@ -849,7 +838,7 @@ CREATE OPERATOR |=| (
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION geometry_gist_distance_nd(internal,geometry,int4)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'gserialized_gist_distance'
+	AS '@MODULE_PATHNAME@', 'gserialized_gist_distance'
 	LANGUAGE 'c';
 
 
@@ -860,17 +849,7 @@ CREATE OPERATOR CLASS gist_geometry_ops_nd
 	OPERATOR        3        &&&	,
 --	OPERATOR        6        ~=	,
 --	OPERATOR        7        ~	,
---	OPERATOR        8        @	,
-#if POSTGIS_PGSQL_VERSION >= 91
-	-- Availability: 2.2.0
-	OPERATOR        13       <<->> FOR ORDER BY pg_catalog.float_ops,
-#if POSTGIS_PGSQL_VERSION >= 95
-	-- Availability: 2.2.0
-	OPERATOR        20       |=| FOR ORDER BY pg_catalog.float_ops,
-#endif
-	-- Availability: 2.2.0
-	FUNCTION        8        geometry_gist_distance_nd (internal, geometry, int4),
-#endif
+--	OPERATOR        8        @	,@GIST_GEOMETRY_OPS_ND_ADDS@
 	FUNCTION        1        geometry_gist_consistent_nd (internal, geometry, int4),
 	FUNCTION        2        geometry_gist_union_nd (bytea, internal),
 	FUNCTION        3        geometry_gist_compress_nd (internal),
@@ -883,7 +862,7 @@ CREATE OPERATOR CLASS gist_geometry_ops_nd
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_ShiftLongitude(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_longitude_shift'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_longitude_shift'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -902,37 +881,37 @@ CREATE OR REPLACE FUNCTION ST_Shift_Longitude(geometry)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_XMin(box3d)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','BOX3D_xmin'
+	AS '@MODULE_PATHNAME@','BOX3D_xmin'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_YMin(box3d)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','BOX3D_ymin'
+	AS '@MODULE_PATHNAME@','BOX3D_ymin'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_ZMin(box3d)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','BOX3D_zmin'
+	AS '@MODULE_PATHNAME@','BOX3D_zmin'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_XMax(box3d)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','BOX3D_xmax'
+	AS '@MODULE_PATHNAME@','BOX3D_xmax'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_YMax(box3d)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','BOX3D_ymax'
+	AS '@MODULE_PATHNAME@','BOX3D_ymax'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_ZMax(box3d)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','BOX3D_zmax'
+	AS '@MODULE_PATHNAME@','BOX3D_zmax'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -----------------------------------------------------------------------------
@@ -942,19 +921,19 @@ CREATE OR REPLACE FUNCTION ST_ZMax(box3d)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_expand(box2d,float8)
 	RETURNS box2d
-	AS 'MODULE_PATHNAME', 'BOX2D_expand'
+	AS '@MODULE_PATHNAME@', 'BOX2D_expand'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION postgis_getbbox(geometry)
 	RETURNS box2d
-	AS 'MODULE_PATHNAME','LWGEOM_to_BOX2DF'
+	AS '@MODULE_PATHNAME@','LWGEOM_to_BOX2DF'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_MakeBox2d(geom1 geometry, geom2 geometry)
 	RETURNS box2d
-	AS 'MODULE_PATHNAME', 'BOX2D_construct'
+	AS '@MODULE_PATHNAME@', 'BOX2D_construct'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -----------------------------------------------------------------------
@@ -963,7 +942,7 @@ CREATE OR REPLACE FUNCTION ST_MakeBox2d(geom1 geometry, geom2 geometry)
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_EstimatedExtent(text,text,text) RETURNS box2d AS
-	'MODULE_PATHNAME', 'gserialized_estimated_extent'
+	'@MODULE_PATHNAME@', 'gserialized_estimated_extent'
 	LANGUAGE 'c' IMMUTABLE STRICT SECURITY DEFINER;
 
 -- Availability: 1.2.2
@@ -982,7 +961,7 @@ CREATE OR REPLACE FUNCTION ST_estimated_extent(text,text,text) RETURNS box2d AS
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_EstimatedExtent(text,text) RETURNS box2d AS
-	'MODULE_PATHNAME', 'gserialized_estimated_extent'
+	'@MODULE_PATHNAME@', 'gserialized_estimated_extent'
 	LANGUAGE 'c' IMMUTABLE STRICT SECURITY DEFINER;
 
 -- Availability: 1.2.2
@@ -1058,19 +1037,19 @@ CREATE OR REPLACE FUNCTION ST_find_extent(text,text) RETURNS box2d AS
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION postgis_addbbox(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_addBBOX'
+	AS '@MODULE_PATHNAME@','LWGEOM_addBBOX'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION postgis_dropbbox(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_dropBBOX'
+	AS '@MODULE_PATHNAME@','LWGEOM_dropBBOX'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION postgis_hasbbox(geometry)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'LWGEOM_hasBBOX'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_hasBBOX'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 
@@ -1081,7 +1060,7 @@ CREATE OR REPLACE FUNCTION postgis_hasbbox(geometry)
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_MemSize(geometry)
 	RETURNS int4
-	AS 'MODULE_PATHNAME', 'LWGEOM_mem_size'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_mem_size'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1096,19 +1075,19 @@ CREATE OR REPLACE FUNCTION ST_mem_size(geometry)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_summary(geometry)
 	RETURNS text
-	AS 'MODULE_PATHNAME', 'LWGEOM_summary'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_summary'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Npoints(geometry)
 	RETURNS int4
-	AS 'MODULE_PATHNAME', 'LWGEOM_npoints'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_npoints'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_nrings(geometry)
 	RETURNS int4
-	AS 'MODULE_PATHNAME', 'LWGEOM_nrings'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_nrings'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 ------------------------------------------------------------------------
@@ -1117,25 +1096,25 @@ CREATE OR REPLACE FUNCTION ST_nrings(geometry)
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_3DLength(geometry)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME', 'LWGEOM_length_linestring'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_length_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Length2d(geometry)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME', 'LWGEOM_length2d_linestring'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_length2d_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: length2d(geometry)
 CREATE OR REPLACE FUNCTION ST_Length(geometry)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME', 'LWGEOM_length2d_linestring'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_length2d_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability in 2.2.0
 CREATE OR REPLACE FUNCTION ST_LengthSpheroid(geometry, spheroid)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','LWGEOM_length_ellipsoid_linestring'
+	AS '@MODULE_PATHNAME@','LWGEOM_length_ellipsoid_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -1164,7 +1143,7 @@ CREATE OR REPLACE FUNCTION ST_length_spheroid(geometry, spheroid)
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_Length2DSpheroid(geometry, spheroid)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','LWGEOM_length2d_ellipsoid'
+	AS '@MODULE_PATHNAME@','LWGEOM_length2d_ellipsoid'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -1180,38 +1159,38 @@ CREATE OR REPLACE FUNCTION ST_length2d_spheroid(geometry, spheroid)
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_3DPerimeter(geometry)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME', 'LWGEOM_perimeter_poly'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_perimeter_poly'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_perimeter2d(geometry)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME', 'LWGEOM_perimeter2d_poly'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_perimeter2d_poly'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: perimeter2d(geometry)
 CREATE OR REPLACE FUNCTION ST_Perimeter(geometry)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME', 'LWGEOM_perimeter2d_poly'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_perimeter2d_poly'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 -- Deprecation in 1.3.4
 CREATE OR REPLACE FUNCTION ST_area2d(geometry)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME', 'LWGEOM_area_polygon'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_area_polygon'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: area(geometry)
 CREATE OR REPLACE FUNCTION ST_Area(geometry)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','area'
+	AS '@MODULE_PATHNAME@','area'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_DistanceSpheroid(geom1 geometry, geom2 geometry,spheroid)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME','LWGEOM_distance_ellipsoid'
+	AS '@MODULE_PATHNAME@','LWGEOM_distance_ellipsoid'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -1229,14 +1208,14 @@ CREATE OR REPLACE FUNCTION ST_distance_spheroid(geom1 geometry, geom2 geometry,s
 -- PostGIS equivalent function: distance(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION ST_Distance(geom1 geometry, geom2 geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'distance'
+	AS '@MODULE_PATHNAME@', 'distance'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_PointInsideCircle(geometry,float8,float8,float8)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'LWGEOM_inside_circle_point'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_inside_circle_point'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1251,7 +1230,7 @@ CREATE OR REPLACE FUNCTION ST_point_inside_circle(geometry,float8,float8,float8)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_azimuth(geom1 geometry, geom2 geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'LWGEOM_azimuth'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_azimuth'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 ------------------------------------------------------------------------
@@ -1261,7 +1240,7 @@ CREATE OR REPLACE FUNCTION ST_azimuth(geom1 geometry, geom2 geometry)
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_Force2D(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_2d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1276,7 +1255,7 @@ CREATE OR REPLACE FUNCTION ST_force_2d(geometry)
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_Force3DZ(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_3dz'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_3dz'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1291,7 +1270,7 @@ CREATE OR REPLACE FUNCTION ST_force_3dz(geometry)
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_Force3D(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_3dz'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_3dz'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1306,7 +1285,7 @@ CREATE OR REPLACE FUNCTION ST_force_3d(geometry)
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_Force3DM(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_3dm'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_3dm'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1321,7 +1300,7 @@ CREATE OR REPLACE FUNCTION ST_force_3dm(geometry)
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_Force4D(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_4d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_4d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1336,7 +1315,7 @@ CREATE OR REPLACE FUNCTION ST_force_4d(geometry)
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_ForceCollection(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_collection'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_collection'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1351,175 +1330,175 @@ CREATE OR REPLACE FUNCTION ST_force_collection(geometry)
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION ST_CollectionExtract(geometry, integer)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_CollectionExtract'
+	AS '@MODULE_PATHNAME@', 'ST_CollectionExtract'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_CollectionHomogenize(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_CollectionHomogenize'
+	AS '@MODULE_PATHNAME@', 'ST_CollectionHomogenize'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Multi(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_multi'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_multi'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_ForceCurve(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_curve'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_curve'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_ForceSFS(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_sfs'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_sfs'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_ForceSFS(geometry, version text)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_sfs'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_sfs'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Expand(box3d,float8)
 	RETURNS box3d
-	AS 'MODULE_PATHNAME', 'BOX3D_expand'
+	AS '@MODULE_PATHNAME@', 'BOX3D_expand'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Expand(geometry,float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_expand'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_expand'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: envelope(geometry)
 CREATE OR REPLACE FUNCTION ST_Envelope(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_envelope'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_envelope'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_BoundingDiagonal(geom geometry, fits boolean DEFAULT false)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_BoundingDiagonal'
+	AS '@MODULE_PATHNAME@', 'ST_BoundingDiagonal'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Reverse(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_reverse'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_reverse'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_ForceRHR(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_force_clockwise_poly'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_force_clockwise_poly'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION postgis_noop(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_noop'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_noop'
 	LANGUAGE 'c' VOLATILE STRICT;
 	
 -- Deprecation in 1.5.0
 CREATE OR REPLACE FUNCTION ST_zmflag(geometry)
 	RETURNS smallint
-	AS 'MODULE_PATHNAME', 'LWGEOM_zmflag'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_zmflag'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_NDims(geometry)
 	RETURNS smallint
-	AS 'MODULE_PATHNAME', 'LWGEOM_ndims'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_ndims'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_AsEWKT(geometry)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asEWKT'
+	AS '@MODULE_PATHNAME@','LWGEOM_asEWKT'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_AsTWKB(geom geometry, prec int4 default NULL, prec_z int4 default NULL, prec_m int4 default NULL, with_sizes boolean default NULL, with_boxes boolean default NULL)
 	RETURNS bytea
-	AS 'MODULE_PATHNAME','TWKBFromLWGEOM'
+	AS '@MODULE_PATHNAME@','TWKBFromLWGEOM'
 	LANGUAGE 'c' IMMUTABLE;
 
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_AsTWKB(geom geometry[], ids bigint[], prec int4 default NULL, prec_z int4 default NULL, prec_m int4 default NULL, with_sizes boolean default NULL, with_boxes boolean default NULL)
 	RETURNS bytea
-	AS 'MODULE_PATHNAME','TWKBFromLWGEOMArray'
+	AS '@MODULE_PATHNAME@','TWKBFromLWGEOMArray'
 	LANGUAGE 'c' IMMUTABLE;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_AsEWKB(geometry)
 	RETURNS BYTEA
-	AS 'MODULE_PATHNAME','WKBFromLWGEOM'
+	AS '@MODULE_PATHNAME@','WKBFromLWGEOM'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_AsHEXEWKB(geometry)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asHEXEWKB'
+	AS '@MODULE_PATHNAME@','LWGEOM_asHEXEWKB'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_AsHEXEWKB(geometry, text)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asHEXEWKB'
+	AS '@MODULE_PATHNAME@','LWGEOM_asHEXEWKB'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_AsEWKB(geometry,text)
 	RETURNS bytea
-	AS 'MODULE_PATHNAME','WKBFromLWGEOM'
+	AS '@MODULE_PATHNAME@','WKBFromLWGEOM'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_AsLatLonText(geom geometry, tmpl text DEFAULT '')
 	RETURNS text
-	AS 'MODULE_PATHNAME','LWGEOM_to_latlon'
+	AS '@MODULE_PATHNAME@','LWGEOM_to_latlon'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Deprecation in 1.2.3
 CREATE OR REPLACE FUNCTION GeomFromEWKB(bytea)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOMFromEWKB'
+	AS '@MODULE_PATHNAME@','LWGEOMFromEWKB'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_GeomFromEWKB(bytea)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOMFromEWKB'
+	AS '@MODULE_PATHNAME@','LWGEOMFromEWKB'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2
 CREATE OR REPLACE FUNCTION ST_GeomFromTWKB(bytea)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOMFromTWKB'
+	AS '@MODULE_PATHNAME@','LWGEOMFromTWKB'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Deprecation in 1.2.3
 CREATE OR REPLACE FUNCTION GeomFromEWKT(text)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','parse_WKT_lwgeom'
+	AS '@MODULE_PATHNAME@','parse_WKT_lwgeom'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_GeomFromEWKT(text)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','parse_WKT_lwgeom'
+	AS '@MODULE_PATHNAME@','parse_WKT_lwgeom'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION postgis_cache_bbox()
 	RETURNS trigger
-	AS 'MODULE_PATHNAME', 'cache_bbox'
+	AS '@MODULE_PATHNAME@', 'cache_bbox'
 	LANGUAGE 'c';
 
 ------------------------------------------------------------------------
@@ -1529,124 +1508,124 @@ CREATE OR REPLACE FUNCTION postgis_cache_bbox()
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_MakePoint(float8, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_makepoint'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_makepoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_MakePoint(float8, float8, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_makepoint'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_makepoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_MakePoint(float8, float8, float8, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_makepoint'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_makepoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.3.4
 CREATE OR REPLACE FUNCTION ST_MakePointM(float8, float8, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_makepoint3dm'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_makepoint3dm'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_3DMakeBox(geom1 geometry, geom2 geometry)
 	RETURNS box3d
-	AS 'MODULE_PATHNAME', 'BOX3D_construct'
+	AS '@MODULE_PATHNAME@', 'BOX3D_construct'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION ST_MakeLine (geometry[])
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_makeline_garray'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_makeline_garray'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_LineFromMultiPoint(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_line_from_mpoint'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_line_from_mpoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_MakeLine(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_makeline'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_makeline'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_AddPoint(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_addpoint'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_addpoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_AddPoint(geom1 geometry, geom2 geometry, integer)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_addpoint'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_addpoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_RemovePoint(geometry, integer)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_removepoint'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_removepoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_SetPoint(geometry, integer, geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_setpoint_linestring'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_setpoint_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.5.0
 -- Availability: 2.0.0 - made srid optional
 CREATE OR REPLACE FUNCTION ST_MakeEnvelope(float8, float8, float8, float8, integer DEFAULT 0)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_MakeEnvelope'
+	AS '@MODULE_PATHNAME@', 'ST_MakeEnvelope'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_MakePolygon(geometry, geometry[])
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_makepoly'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_makepoly'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_MakePolygon(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_makepoly'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_makepoly'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_BuildArea(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_BuildArea'
+	AS '@MODULE_PATHNAME@', 'ST_BuildArea'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION ST_Polygonize (geometry[])
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'polygonize_garray'
+	AS '@MODULE_PATHNAME@', 'polygonize_garray'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 -- Availability: 2.2
 CREATE OR REPLACE FUNCTION ST_ClusterIntersecting(geometry[])
     RETURNS geometry[]
-    AS 'MODULE_PATHNAME',  'clusterintersecting_garray'
+    AS '@MODULE_PATHNAME@',  'clusterintersecting_garray'
     LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2
 CREATE OR REPLACE FUNCTION ST_ClusterWithin(geometry[], float8)
     RETURNS geometry[]
-    AS 'MODULE_PATHNAME',  'cluster_within_distance_garray'
+    AS '@MODULE_PATHNAME@',  'cluster_within_distance_garray'
     LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_LineMerge(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'linemerge'
+	AS '@MODULE_PATHNAME@', 'linemerge'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -1657,7 +1636,7 @@ CREATE OR REPLACE FUNCTION ST_LineMerge(geometry)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Affine(geometry,float8,float8,float8,float8,float8,float8,float8,float8,float8,float8,float8,float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_affine'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_affine'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1717,7 +1696,7 @@ CREATE OR REPLACE FUNCTION ST_Translate(geometry,float8,float8)
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_Scale(geometry,geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_Scale'
+	AS '@MODULE_PATHNAME@', 'ST_Scale'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -1753,13 +1732,13 @@ CREATE TYPE geometry_dump AS (
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Dump(geometry)
 	RETURNS SETOF geometry_dump
-	AS 'MODULE_PATHNAME', 'LWGEOM_dump'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_dump'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_DumpRings(geometry)
 	RETURNS SETOF geometry_dump
-	AS 'MODULE_PATHNAME', 'LWGEOM_dump_rings'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_dump_rings'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -----------------------------------------------------------------------
@@ -1864,7 +1843,7 @@ $$ LANGUAGE plpgsql;
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION ST_DumpPoints(geometry)
        	RETURNS SETOF geometry_dump
-	AS 'MODULE_PATHNAME', 'LWGEOM_dumppoints'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_dumppoints'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 
@@ -1873,7 +1852,7 @@ CREATE OR REPLACE FUNCTION ST_DumpPoints(geometry)
 -------------------------------------------------------------------
 CREATE TABLE spatial_ref_sys (
 	 srid integer not null primary key
-		check (srid > 0 and srid <= SRID_USR_MAX),
+		check (srid > 0 and srid <= @SRID_USR_MAX@),
 	 auth_name varchar(256),
 	 auth_srid integer,
 	 srtext varchar(2048),
@@ -2176,8 +2155,8 @@ BEGIN
 
 	-- Verify SRID
 	IF ( new_srid_in > 0 ) THEN
-		IF new_srid_in > SRID_USR_MAX THEN
-			RAISE EXCEPTION 'AddGeometryColumn() - SRID must be <= %', SRID_USR_MAX;
+		IF new_srid_in > @SRID_USR_MAX@ THEN
+			RAISE EXCEPTION 'AddGeometryColumn() - SRID must be <= %', @SRID_USR_MAX@;
 		END IF;
 		new_srid := new_srid_in;
 		SELECT SRID INTO sr FROM spatial_ref_sys WHERE SRID = new_srid;
@@ -2665,13 +2644,13 @@ LANGUAGE 'plpgsql' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION postgis_transform_geometry(geometry,text,text,int)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','transform_geom'
+	AS '@MODULE_PATHNAME@','transform_geom'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent of old function: transform(geometry,integer)
 CREATE OR REPLACE FUNCTION ST_Transform(geometry,integer)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','transform'
+	AS '@MODULE_PATHNAME@','transform'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 
@@ -2680,15 +2659,15 @@ CREATE OR REPLACE FUNCTION ST_Transform(geometry,integer)
 -----------------------------------------------------------------------
 
 CREATE OR REPLACE FUNCTION postgis_version() RETURNS text
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION postgis_liblwgeom_version() RETURNS text
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION postgis_proj_version() RETURNS text
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE;
 
 --
@@ -2698,37 +2677,37 @@ CREATE OR REPLACE FUNCTION postgis_proj_version() RETURNS text
 -- Do not modify this w/out also changing postgis_proc_upgrade.pl
 --
 CREATE OR REPLACE FUNCTION postgis_scripts_installed() RETURNS text
-	AS _POSTGIS_SQL_SELECT_POSTGIS_SCRIPTS_VERSION
+	AS $$ SELECT '@POSTGIS_LIB_VERSION@'::text || ' r' || @POSTGIS_SVN_REVISION@::text AS version $$
 	LANGUAGE 'sql' IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION postgis_lib_version() RETURNS text
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE; -- a new lib will require a new session
 
 -- NOTE: from 1.1.0 to 1.5.x this was the same of postgis_lib_version()
 -- NOTE: from 2.0.0 up it includes postgis_svn_revision()
 CREATE OR REPLACE FUNCTION postgis_scripts_released() RETURNS text
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION postgis_geos_version() RETURNS text
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION postgis_svn_version() RETURNS text
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION postgis_libxml_version() RETURNS text
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION postgis_scripts_build_date() RETURNS text
-	AS _POSTGIS_SQL_SELECT_POSTGIS_BUILD_DATE
+	AS 'SELECT ''@POSTGIS_BUILD_DATE@''::text AS version'
 	LANGUAGE 'sql' IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION postgis_lib_build_date() RETURNS text
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION postgis_full_version() RETURNS text
@@ -2886,69 +2865,69 @@ LANGUAGE 'plpgsql' IMMUTABLE;
 		
 CREATE OR REPLACE FUNCTION box2d(geometry)
 	RETURNS box2d
-	AS 'MODULE_PATHNAME','LWGEOM_to_BOX2D'
+	AS '@MODULE_PATHNAME@','LWGEOM_to_BOX2D'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION box3d(geometry)
 	RETURNS box3d
-	AS 'MODULE_PATHNAME','LWGEOM_to_BOX3D'
+	AS '@MODULE_PATHNAME@','LWGEOM_to_BOX3D'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION box(geometry)
 	RETURNS box
-	AS 'MODULE_PATHNAME','LWGEOM_to_BOX'
+	AS '@MODULE_PATHNAME@','LWGEOM_to_BOX'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION box2d(box3d)
 	RETURNS box2d
-	AS 'MODULE_PATHNAME','BOX3D_to_BOX2D'
+	AS '@MODULE_PATHNAME@','BOX3D_to_BOX2D'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION box3d(box2d)
 	RETURNS box3d
-	AS 'MODULE_PATHNAME','BOX2D_to_BOX3D'
+	AS '@MODULE_PATHNAME@','BOX2D_to_BOX3D'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION box(box3d)
 	RETURNS box
-	AS 'MODULE_PATHNAME','BOX3D_to_BOX'
+	AS '@MODULE_PATHNAME@','BOX3D_to_BOX'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION text(geometry)
 	RETURNS text
-	AS 'MODULE_PATHNAME','LWGEOM_to_text'
+	AS '@MODULE_PATHNAME@','LWGEOM_to_text'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- this is kept for backward-compatibility
 -- Deprecation in 1.2.3
 CREATE OR REPLACE FUNCTION box3dtobox(box3d)
 	RETURNS box
-	AS 'MODULE_PATHNAME','BOX3D_to_BOX'
+	AS '@MODULE_PATHNAME@','BOX3D_to_BOX'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry(box2d)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','BOX2D_to_LWGEOM'
+	AS '@MODULE_PATHNAME@','BOX2D_to_LWGEOM'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry(box3d)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','BOX3D_to_LWGEOM'
+	AS '@MODULE_PATHNAME@','BOX3D_to_LWGEOM'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry(text)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','parse_WKT_lwgeom'
+	AS '@MODULE_PATHNAME@','parse_WKT_lwgeom'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION geometry(bytea)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_from_bytea'
+	AS '@MODULE_PATHNAME@','LWGEOM_from_bytea'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION bytea(geometry)
 	RETURNS bytea
-	AS 'MODULE_PATHNAME','LWGEOM_to_bytea'
+	AS '@MODULE_PATHNAME@','LWGEOM_to_bytea'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- 7.3+ explicit casting definitions
@@ -2977,32 +2956,32 @@ CREATE CAST (geometry AS bytea) WITH FUNCTION bytea(geometry) AS IMPLICIT;
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Simplify(geometry, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_simplify2d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_simplify2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_Simplify(geometry, float8, boolean)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_simplify2d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_simplify2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_SimplifyVW(geometry,  float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_SetEffectiveArea'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_SetEffectiveArea'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_SetEffectiveArea(geometry,  float8 default -1, integer default 1)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_SetEffectiveArea'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_SetEffectiveArea'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- ST_SnapToGrid(input, xoff, yoff, xsize, ysize)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_SnapToGrid(geometry, float8, float8, float8, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_snaptogrid'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_snaptogrid'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- ST_SnapToGrid(input, xsize, ysize) # offsets=0
@@ -3023,13 +3002,13 @@ CREATE OR REPLACE FUNCTION ST_SnapToGrid(geometry, float8)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_SnapToGrid(geom1 geometry, geom2 geometry, float8, float8, float8, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_snaptogrid_pointoff'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_snaptogrid_pointoff'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Segmentize(geometry, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_segmentize2d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_segmentize2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 ---------------------------------------------------------------
@@ -3039,7 +3018,7 @@ CREATE OR REPLACE FUNCTION ST_Segmentize(geometry, float8)
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_LineInterpolatePoint(geometry, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_line_interpolate_point'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_line_interpolate_point'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -3054,7 +3033,7 @@ CREATE OR REPLACE FUNCTION ST_line_interpolate_point(geometry, float8)
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_LineSubstring(geometry, float8, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_line_substring'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_line_substring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -3069,7 +3048,7 @@ CREATE OR REPLACE FUNCTION ST_line_substring(geometry, float8, float8)
 -- Availability: 2.1.0
 CREATE OR REPLACE FUNCTION ST_LineLocatePoint(geom1 geometry, geom2 geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'LWGEOM_line_locate_point'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_line_locate_point'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -3086,7 +3065,7 @@ CREATE OR REPLACE FUNCTION ST_line_locate_point(geom1 geometry, geom2 geometry)
 -- TODO: switch to use of _postgis_deprecate() in 2.3.0 (or drop)
 CREATE OR REPLACE FUNCTION ST_locate_between_measures(geometry, float8, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_locate_between_m'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_locate_between_m'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -3100,7 +3079,7 @@ CREATE OR REPLACE FUNCTION ST_locate_along_measure(geometry, float8)
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION ST_AddMeasure(geometry, float8, float8) 
 	RETURNS geometry 
-	AS 'MODULE_PATHNAME', 'ST_AddMeasure' 
+	AS '@MODULE_PATHNAME@', 'ST_AddMeasure' 
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 ---------------------------------------------------------------
@@ -3110,25 +3089,25 @@ CREATE OR REPLACE FUNCTION ST_AddMeasure(geometry, float8, float8)
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_ClosestPointOfApproach(geometry, geometry)
 	RETURNS float8 
-	AS 'MODULE_PATHNAME', 'ST_ClosestPointOfApproach' 
+	AS '@MODULE_PATHNAME@', 'ST_ClosestPointOfApproach' 
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_DistanceCPA(geometry, geometry)
 	RETURNS float8 
-	AS 'MODULE_PATHNAME', 'ST_DistanceCPA'
+	AS '@MODULE_PATHNAME@', 'ST_DistanceCPA'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_CPAWithin(geometry, geometry, float8)
 	RETURNS bool
-	AS 'MODULE_PATHNAME', 'ST_CPAWithin'
+	AS '@MODULE_PATHNAME@', 'ST_CPAWithin'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_IsValidTrajectory(geometry)
 	RETURNS bool 
-	AS 'MODULE_PATHNAME', 'ST_IsValidTrajectory' 
+	AS '@MODULE_PATHNAME@', 'ST_IsValidTrajectory' 
 	LANGUAGE 'c' IMMUTABLE STRICT;
     
 ---------------------------------------------------------------
@@ -3138,21 +3117,21 @@ CREATE OR REPLACE FUNCTION ST_IsValidTrajectory(geometry)
 -- PostGIS equivalent function: intersection(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION ST_Intersection(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','intersection'
+	AS '@MODULE_PATHNAME@','intersection'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 -- PostGIS equivalent function: buffer(geometry,float8)
 CREATE OR REPLACE FUNCTION ST_Buffer(geometry,float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','buffer'
+	AS '@MODULE_PATHNAME@','buffer'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 -- Availability: 1.5.0 - requires GEOS-3.2 or higher
 CREATE OR REPLACE FUNCTION _ST_Buffer(geometry,float8,cstring)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','buffer'
+	AS '@MODULE_PATHNAME@','buffer'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3177,14 +3156,14 @@ CREATE OR REPLACE FUNCTION ST_Buffer(geometry,float8,text)
 -- Availability: 2.0.0 - requires GEOS-3.2 or higher
 CREATE OR REPLACE FUNCTION ST_OffsetCurve(line geometry, distance float8, params text DEFAULT '')
        RETURNS geometry
-       AS 'MODULE_PATHNAME','ST_OffsetCurve'
+       AS '@MODULE_PATHNAME@','ST_OffsetCurve'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
 -- PostGIS equivalent function: convexhull(geometry)
 CREATE OR REPLACE FUNCTION ST_ConvexHull(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','convexhull'
+	AS '@MODULE_PATHNAME@','convexhull'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3192,7 +3171,7 @@ CREATE OR REPLACE FUNCTION ST_ConvexHull(geometry)
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION _ST_LineCrossingDirection(geom1 geometry, geom2 geometry)
 	RETURNS integer
-	AS 'MODULE_PATHNAME', 'ST_LineCrossingDirection'
+	AS '@MODULE_PATHNAME@', 'ST_LineCrossingDirection'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3206,7 +3185,7 @@ CREATE OR REPLACE FUNCTION ST_LineCrossingDirection(geom1 geometry, geom2 geomet
 -- Availability: 1.3.3
 CREATE OR REPLACE FUNCTION ST_SimplifyPreserveTopology(geometry, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','topologypreservesimplify'
+	AS '@MODULE_PATHNAME@','topologypreservesimplify'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3214,7 +3193,7 @@ CREATE OR REPLACE FUNCTION ST_SimplifyPreserveTopology(geometry, float8)
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION ST_IsValidReason(geometry)
 	RETURNS text
-	AS 'MODULE_PATHNAME', 'isvalidreason'
+	AS '@MODULE_PATHNAME@', 'isvalidreason'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3229,7 +3208,7 @@ CREATE TYPE valid_detail AS (
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_IsValidDetail(geometry)
 	RETURNS valid_detail
-	AS 'MODULE_PATHNAME', 'isvaliddetail'
+	AS '@MODULE_PATHNAME@', 'isvaliddetail'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3237,7 +3216,7 @@ CREATE OR REPLACE FUNCTION ST_IsValidDetail(geometry)
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_IsValidDetail(geometry, int4)
 	RETURNS valid_detail
-	AS 'MODULE_PATHNAME', 'isvaliddetail'
+	AS '@MODULE_PATHNAME@', 'isvaliddetail'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3266,7 +3245,7 @@ CREATE OR REPLACE FUNCTION ST_IsValid(geometry, int4)
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION ST_HausdorffDistance(geom1 geometry, geom2 geometry)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME', 'hausdorffdistance'
+	AS '@MODULE_PATHNAME@', 'hausdorffdistance'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3274,45 +3253,45 @@ CREATE OR REPLACE FUNCTION ST_HausdorffDistance(geom1 geometry, geom2 geometry)
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION ST_HausdorffDistance(geom1 geometry, geom2 geometry, float8)
 	RETURNS FLOAT8
-	AS 'MODULE_PATHNAME', 'hausdorffdistancedensify'
+	AS '@MODULE_PATHNAME@', 'hausdorffdistancedensify'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 -- PostGIS equivalent function: difference(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION ST_Difference(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','difference'
+	AS '@MODULE_PATHNAME@','difference'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: boundary(geometry)
 CREATE OR REPLACE FUNCTION ST_Boundary(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','boundary'
+	AS '@MODULE_PATHNAME@','boundary'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: symdifference(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION ST_SymDifference(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','symdifference'
+	AS '@MODULE_PATHNAME@','symdifference'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_symmetricdifference(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','symdifference'
+	AS '@MODULE_PATHNAME@','symdifference'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: GeomUnion(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION ST_Union(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','geomunion'
+	AS '@MODULE_PATHNAME@','geomunion'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 -- Requires: GEOS-3.3.0
 CREATE OR REPLACE FUNCTION ST_UnaryUnion(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','ST_UnaryUnion'
+	AS '@MODULE_PATHNAME@','ST_UnaryUnion'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- ST_RemoveRepeatedPoints(in geometry)
@@ -3324,7 +3303,7 @@ CREATE OR REPLACE FUNCTION ST_UnaryUnion(geometry)
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_RemoveRepeatedPoints(geom geometry, tolerance float8 default 0.0)
        RETURNS geometry
-       AS 'MODULE_PATHNAME', 'ST_RemoveRepeatedPoints'
+       AS '@MODULE_PATHNAME@', 'ST_RemoveRepeatedPoints'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
@@ -3332,7 +3311,7 @@ CREATE OR REPLACE FUNCTION ST_RemoveRepeatedPoints(geom geometry, tolerance floa
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_ClipByBox2d(geom geometry, box box2d)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_ClipByBox2d'
+	AS '@MODULE_PATHNAME@', 'ST_ClipByBox2d'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 50;
 
@@ -3340,7 +3319,7 @@ CREATE OR REPLACE FUNCTION ST_ClipByBox2d(geom geometry, box box2d)
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_Subdivide(geom geometry, maxvertices integer DEFAULT 256)
 	RETURNS setof geometry
-	AS 'MODULE_PATHNAME', 'ST_Subdivide'
+	AS '@MODULE_PATHNAME@', 'ST_Subdivide'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3360,7 +3339,7 @@ CREATE OR REPLACE FUNCTION ST_Subdivide(geom geometry, maxvertices integer DEFAU
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_MakeValid(geometry)
        RETURNS geometry
-       AS 'MODULE_PATHNAME', 'ST_MakeValid'
+       AS '@MODULE_PATHNAME@', 'ST_MakeValid'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
@@ -3381,7 +3360,7 @@ CREATE OR REPLACE FUNCTION ST_MakeValid(geometry)
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_CleanGeometry(geometry)
        RETURNS geometry
-       AS 'MODULE_PATHNAME', 'ST_CleanGeometry'
+       AS '@MODULE_PATHNAME@', 'ST_CleanGeometry'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
@@ -3401,7 +3380,7 @@ CREATE OR REPLACE FUNCTION ST_CleanGeometry(geometry)
 --
 CREATE OR REPLACE FUNCTION ST_Split(geom1 geometry, geom2 geometry)
        RETURNS geometry
-       AS 'MODULE_PATHNAME', 'ST_Split'
+       AS '@MODULE_PATHNAME@', 'ST_Split'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
@@ -3424,7 +3403,7 @@ CREATE OR REPLACE FUNCTION ST_Split(geom1 geometry, geom2 geometry)
 --
 CREATE OR REPLACE FUNCTION ST_SharedPaths(geom1 geometry, geom2 geometry)
        RETURNS geometry
-       AS 'MODULE_PATHNAME', 'ST_SharedPaths'
+       AS '@MODULE_PATHNAME@', 'ST_SharedPaths'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
@@ -3441,7 +3420,7 @@ CREATE OR REPLACE FUNCTION ST_SharedPaths(geom1 geometry, geom2 geometry)
 --
 CREATE OR REPLACE FUNCTION ST_Snap(geom1 geometry, geom2 geometry, float8)
        RETURNS geometry
-       AS 'MODULE_PATHNAME', 'ST_Snap'
+       AS '@MODULE_PATHNAME@', 'ST_Snap'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
@@ -3458,7 +3437,7 @@ CREATE OR REPLACE FUNCTION ST_Snap(geom1 geometry, geom2 geometry, float8)
 --
 CREATE OR REPLACE FUNCTION ST_RelateMatch(text, text)
        RETURNS bool
-       AS 'MODULE_PATHNAME', 'ST_RelateMatch'
+       AS '@MODULE_PATHNAME@', 'ST_RelateMatch'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
@@ -3477,7 +3456,7 @@ CREATE OR REPLACE FUNCTION ST_RelateMatch(text, text)
 --
 CREATE OR REPLACE FUNCTION ST_Node(g geometry)
        RETURNS geometry
-       AS 'MODULE_PATHNAME', 'ST_Node'
+       AS '@MODULE_PATHNAME@', 'ST_Node'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
@@ -3501,7 +3480,7 @@ CREATE OR REPLACE FUNCTION ST_Node(g geometry)
 --
 CREATE OR REPLACE FUNCTION ST_DelaunayTriangles(g1 geometry, tolerance float8 DEFAULT 0.0, flags int4 DEFAULT 0)
        RETURNS geometry
-       AS 'MODULE_PATHNAME', 'ST_DelaunayTriangles'
+       AS '@MODULE_PATHNAME@', 'ST_DelaunayTriangles'
        LANGUAGE 'c' IMMUTABLE STRICT
        COST 100;
 
@@ -3515,7 +3494,7 @@ CREATE OR REPLACE FUNCTION ST_DelaunayTriangles(g1 geometry, tolerance float8 DE
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_CombineBBox(box3d,geometry)
 	RETURNS box3d
-	AS 'MODULE_PATHNAME', 'BOX3D_combine'
+	AS '@MODULE_PATHNAME@', 'BOX3D_combine'
 	LANGUAGE 'c' IMMUTABLE;
 
 -- Availability: 1.2.2
@@ -3530,7 +3509,7 @@ CREATE OR REPLACE FUNCTION ST_Combine_BBox(box3d,geometry)
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_CombineBbox(box2d,geometry)
 	RETURNS box2d
-	AS 'MODULE_PATHNAME', 'BOX2D_combine'
+	AS '@MODULE_PATHNAME@', 'BOX2D_combine'
 	LANGUAGE 'c' IMMUTABLE;
 
 -- Availability: 1.2.2
@@ -3561,7 +3540,7 @@ CREATE AGGREGATE ST_3DExtent(
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Collect(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_collect'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_collect'
 	LANGUAGE 'c' IMMUTABLE;
 
 -- Availability: 1.2.2
@@ -3574,7 +3553,7 @@ CREATE AGGREGATE ST_MemCollect(
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Collect(geometry[])
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_collect_garray'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_collect_garray'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -3591,12 +3570,12 @@ CREATE AGGREGATE ST_MemUnion (
 --
 CREATE OR REPLACE FUNCTION pgis_abs_in(cstring)
 	RETURNS pgis_abs
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION pgis_abs_out(pgis_abs)
 	RETURNS cstring
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.4.0
@@ -3610,55 +3589,55 @@ CREATE TYPE pgis_abs (
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION pgis_geometry_accum_transfn(pgis_abs, geometry)
 	RETURNS pgis_abs
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c';
 
 -- Availability: 2.2
 CREATE OR REPLACE FUNCTION pgis_geometry_accum_transfn(pgis_abs, geometry, float8)
 	RETURNS pgis_abs
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c';
 
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION pgis_geometry_accum_finalfn(pgis_abs)
 	RETURNS geometry[]
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c';
 
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION pgis_geometry_union_finalfn(pgis_abs)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c';
 
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION pgis_geometry_collect_finalfn(pgis_abs)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c';
 
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION pgis_geometry_polygonize_finalfn(pgis_abs)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c';
 
 -- Availability: 2.2
 CREATE OR REPLACE FUNCTION pgis_geometry_clusterintersecting_finalfn(pgis_abs)
 	RETURNS geometry[]
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c';
 
 -- Availability: 2.2
 CREATE OR REPLACE FUNCTION pgis_geometry_clusterwithin_finalfn(pgis_abs)
 	RETURNS geometry[]
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c';
 
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION pgis_geometry_makeline_finalfn(pgis_abs)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME'
+	AS '@MODULE_PATHNAME@'
 	LANGUAGE 'c';
 
 -- Availability: 1.2.2
@@ -3672,7 +3651,7 @@ CREATE AGGREGATE ST_Accum (
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION ST_Union (geometry[])
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','pgis_union_geometry_array'
+	AS '@MODULE_PATHNAME@','pgis_union_geometry_array'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
@@ -3729,32 +3708,32 @@ CREATE AGGREGATE ST_MakeLine (
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_Relate(geom1 geometry, geom2 geometry)
 	RETURNS text
-	AS 'MODULE_PATHNAME','relate_full'
+	AS '@MODULE_PATHNAME@','relate_full'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 -- Requires GEOS >= 3.3.0
 CREATE OR REPLACE FUNCTION ST_Relate(geom1 geometry, geom2 geometry, int4)
 	RETURNS text
-	AS 'MODULE_PATHNAME','relate_full'
+	AS '@MODULE_PATHNAME@','relate_full'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: relate(geom1 geometry, geom2 geometry,text)
 CREATE OR REPLACE FUNCTION ST_Relate(geom1 geometry, geom2 geometry,text)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','relate_pattern'
+	AS '@MODULE_PATHNAME@','relate_pattern'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: disjoint(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION ST_Disjoint(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','disjoint'
+	AS '@MODULE_PATHNAME@','disjoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: touches(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION _ST_Touches(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','touches'
+	AS '@MODULE_PATHNAME@','touches'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3768,7 +3747,7 @@ CREATE OR REPLACE FUNCTION ST_Touches(geom1 geometry, geom2 geometry)
 -- Availability: 1.3.4
 CREATE OR REPLACE FUNCTION _ST_DWithin(geom1 geometry, geom2 geometry,float8)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'LWGEOM_dwithin'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_dwithin'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3781,7 +3760,7 @@ CREATE OR REPLACE FUNCTION ST_DWithin(geom1 geometry, geom2 geometry, float8)
 -- PostGIS equivalent function: intersects(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION _ST_Intersects(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','intersects'
+	AS '@MODULE_PATHNAME@','intersects'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3795,7 +3774,7 @@ CREATE OR REPLACE FUNCTION ST_Intersects(geom1 geometry, geom2 geometry)
 -- PostGIS equivalent function: crosses(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION _ST_Crosses(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','crosses'
+	AS '@MODULE_PATHNAME@','crosses'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3809,7 +3788,7 @@ CREATE OR REPLACE FUNCTION ST_Crosses(geom1 geometry, geom2 geometry)
 -- PostGIS equivalent function: contains(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION _ST_Contains(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','contains'
+	AS '@MODULE_PATHNAME@','contains'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3823,7 +3802,7 @@ CREATE OR REPLACE FUNCTION ST_Contains(geom1 geometry, geom2 geometry)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION _ST_CoveredBy(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'coveredby'
+	AS '@MODULE_PATHNAME@', 'coveredby'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3836,7 +3815,7 @@ CREATE OR REPLACE FUNCTION ST_CoveredBy(geom1 geometry, geom2 geometry)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION _ST_Covers(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'covers'
+	AS '@MODULE_PATHNAME@', 'covers'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3850,7 +3829,7 @@ CREATE OR REPLACE FUNCTION ST_Covers(geom1 geometry, geom2 geometry)
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION _ST_ContainsProperly(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','containsproperly'
+	AS '@MODULE_PATHNAME@','containsproperly'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3864,7 +3843,7 @@ CREATE OR REPLACE FUNCTION ST_ContainsProperly(geom1 geometry, geom2 geometry)
 -- PostGIS equivalent function: overlaps(geom1 geometry, geom2 geometry)
 CREATE OR REPLACE FUNCTION _ST_Overlaps(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','overlaps'
+	AS '@MODULE_PATHNAME@','overlaps'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3892,45 +3871,45 @@ CREATE OR REPLACE FUNCTION ST_Overlaps(geom1 geometry, geom2 geometry)
 -- TODO: change null returns to true
 CREATE OR REPLACE FUNCTION ST_IsValid(geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'isvalid'
+	AS '@MODULE_PATHNAME@', 'isvalid'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 -- PostGIS equivalent function: Centroid(geometry)
 CREATE OR REPLACE FUNCTION ST_Centroid(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'centroid'
+	AS '@MODULE_PATHNAME@', 'centroid'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- PostGIS equivalent function: IsRing(geometry)
 CREATE OR REPLACE FUNCTION ST_IsRing(geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'isring'
+	AS '@MODULE_PATHNAME@', 'isring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: PointOnSurface(geometry)
 CREATE OR REPLACE FUNCTION ST_PointOnSurface(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'pointonsurface'
+	AS '@MODULE_PATHNAME@', 'pointonsurface'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 -- PostGIS equivalent function: IsSimple(geometry)
 CREATE OR REPLACE FUNCTION ST_IsSimple(geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'issimple'
+	AS '@MODULE_PATHNAME@', 'issimple'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_IsCollection(geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'ST_IsCollection'
+	AS '@MODULE_PATHNAME@', 'ST_IsCollection'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION _ST_Equals(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','ST_Equals'
+	AS '@MODULE_PATHNAME@','ST_Equals'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -3944,7 +3923,7 @@ CREATE OR REPLACE FUNCTION ST_Equals(geom1 geometry, geom2 geometry)
 -- TODO: drop in 2.0.0 ! 
 CREATE OR REPLACE FUNCTION Equals(geom1 geometry, geom2 geometry) 
 	RETURNS boolean 
-	AS 'MODULE_PATHNAME','ST_Equals' 
+	AS '@MODULE_PATHNAME@','ST_Equals' 
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -----------------------------------------------------------------------
@@ -3952,13 +3931,13 @@ CREATE OR REPLACE FUNCTION Equals(geom1 geometry, geom2 geometry)
 -----------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION _ST_GeomFromGML(text, int4)
         RETURNS geometry
-        AS 'MODULE_PATHNAME','geom_from_gml'
+        AS '@MODULE_PATHNAME@','geom_from_gml'
         LANGUAGE 'c' IMMUTABLE;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_GeomFromGML(text, int4)
         RETURNS geometry
-        AS 'MODULE_PATHNAME','geom_from_gml'
+        AS '@MODULE_PATHNAME@','geom_from_gml'
         LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.5.0
@@ -3976,13 +3955,13 @@ CREATE OR REPLACE FUNCTION ST_GMLToSQL(text)
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_GMLToSQL(text, int4)
         RETURNS geometry
-        AS 'MODULE_PATHNAME','geom_from_gml'
+        AS '@MODULE_PATHNAME@','geom_from_gml'
         LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION ST_GeomFromKML(text)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','geom_from_kml'
+	AS '@MODULE_PATHNAME@','geom_from_kml'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -----------------------------------------------------------------------
@@ -3991,13 +3970,13 @@ CREATE OR REPLACE FUNCTION ST_GeomFromKML(text)
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_GeomFromGeoJson(text)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','geom_from_geojson'
+	AS '@MODULE_PATHNAME@','geom_from_geojson'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION postgis_libjson_version()
 	RETURNS text
-	AS 'MODULE_PATHNAME','postgis_libjson_version'
+	AS '@MODULE_PATHNAME@','postgis_libjson_version'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 ----------------------------------------------------------------------
@@ -4007,7 +3986,7 @@ CREATE OR REPLACE FUNCTION postgis_libjson_version()
 -- ST_LineFromEncodedPolyline(polyline text, precision int4)
 CREATE OR REPLACE FUNCTION ST_LineFromEncodedPolyline(text, int4 DEFAULT 5)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','line_from_encoded_polyline'
+	AS '@MODULE_PATHNAME@','line_from_encoded_polyline'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 ------------------------------------------------------------------------
@@ -4019,7 +3998,7 @@ CREATE OR REPLACE FUNCTION ST_LineFromEncodedPolyline(text, int4 DEFAULT 5)
 -- ST_AsEncodedPolyline(geom geometry, precision int4)
 CREATE OR REPLACE FUNCTION ST_AsEncodedPolyline(geom geometry, int4 DEFAULT 5)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asEncodedPolyline'
+	AS '@MODULE_PATHNAME@','LWGEOM_asEncodedPolyline'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 ------------------------------------------------------------------------
@@ -4031,7 +4010,7 @@ CREATE OR REPLACE FUNCTION ST_AsEncodedPolyline(geom geometry, int4 DEFAULT 5)
 -- Changed: 2.0.0 changed to use default args and allow calling by named args
 CREATE OR REPLACE FUNCTION ST_AsSVG(geom geometry,rel int4 DEFAULT 0,maxdecimaldigits int4 DEFAULT 15)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asSVG'
+	AS '@MODULE_PATHNAME@','LWGEOM_asSVG'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -----------------------------------------------------------------------
@@ -4040,7 +4019,7 @@ CREATE OR REPLACE FUNCTION ST_AsSVG(geom geometry,rel int4 DEFAULT 0,maxdecimald
 -- _ST_AsGML(version, geom, precision, option, prefix, id)
 CREATE OR REPLACE FUNCTION _ST_AsGML(int4, geometry, int4, int4, text, text)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asGML'
+	AS '@MODULE_PATHNAME@','LWGEOM_asGML'
 	LANGUAGE 'c' IMMUTABLE;
 
 -- ST_AsGML(version, geom) / precision=15 
@@ -4074,7 +4053,7 @@ CREATE OR REPLACE FUNCTION ST_AsGML(version int4, geom geometry, maxdecimaldigit
 -- _ST_AsKML(version, geom, precision, nprefix)
 CREATE OR REPLACE FUNCTION _ST_AsKML(int4,geometry, int4, text)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asKML'
+	AS '@MODULE_PATHNAME@','LWGEOM_asKML'
 	LANGUAGE 'c' IMMUTABLE;
 
 -- Availability: 1.2.2
@@ -4102,7 +4081,7 @@ CREATE OR REPLACE FUNCTION ST_AsKML(version int4, geom geometry, maxdecimaldigit
 -- Changed 2.0.0 to use default args and named args
 CREATE OR REPLACE FUNCTION ST_AsGeoJson(geom geometry, maxdecimaldigits int4 DEFAULT 15, options int4 DEFAULT 0)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asGeoJson'
+	AS '@MODULE_PATHNAME@','LWGEOM_asGeoJson'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- _ST_AsGeoJson(version, geom, precision, options)
@@ -4126,7 +4105,7 @@ CREATE OR REPLACE FUNCTION ST_AsGeoJson(gj_version int4, geom geometry, maxdecim
 -- Changed 2.0.0 to use default args and named args
 CREATE OR REPLACE FUNCTION ST_GeoHash(geom geometry, maxchars int4 DEFAULT 0)
 	RETURNS TEXT
-		AS 'MODULE_PATHNAME', 'ST_GeoHash'
+		AS '@MODULE_PATHNAME@', 'ST_GeoHash'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -----------------------------------------------------------------------
@@ -4136,13 +4115,13 @@ CREATE OR REPLACE FUNCTION ST_GeoHash(geom geometry, maxchars int4 DEFAULT 0)
 -- ST_Box2dFromGeoHash(geohash text, precision int4)
 CREATE OR REPLACE FUNCTION ST_Box2dFromGeoHash(text, int4 DEFAULT NULL)
 	RETURNS box2d
-	AS 'MODULE_PATHNAME','box2d_from_geohash'
+	AS '@MODULE_PATHNAME@','box2d_from_geohash'
 	LANGUAGE 'c' IMMUTABLE;
 
 -- ST_PointFromGeoHash(geohash text, precision int4)
 CREATE OR REPLACE FUNCTION ST_PointFromGeoHash(text, int4 DEFAULT NULL)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','point_from_geohash'
+	AS '@MODULE_PATHNAME@','point_from_geohash'
 	LANGUAGE 'c' IMMUTABLE;
 
 -- ST_GeomFromGeoHash(geohash text, precision int4)
@@ -4157,67 +4136,67 @@ CREATE OR REPLACE FUNCTION ST_GeomFromGeoHash(text, int4 DEFAULT NULL)
 -- PostGIS equivalent function: NumPoints(geometry)
 CREATE OR REPLACE FUNCTION ST_NumPoints(geometry)
 	RETURNS int4
-	AS 'MODULE_PATHNAME', 'LWGEOM_numpoints_linestring'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_numpoints_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: NumGeometries(geometry)
 CREATE OR REPLACE FUNCTION ST_NumGeometries(geometry)
 	RETURNS int4
-	AS 'MODULE_PATHNAME', 'LWGEOM_numgeometries_collection'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_numgeometries_collection'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: GeometryN(geometry)
 CREATE OR REPLACE FUNCTION ST_GeometryN(geometry,integer)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_geometryn_collection'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_geometryn_collection'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: Dimension(geometry)
 CREATE OR REPLACE FUNCTION ST_Dimension(geometry)
 	RETURNS int4
-	AS 'MODULE_PATHNAME', 'LWGEOM_dimension'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_dimension'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: ExteriorRing(geometry)
 CREATE OR REPLACE FUNCTION ST_ExteriorRing(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_exteriorring_polygon'
+	AS '@MODULE_PATHNAME@','LWGEOM_exteriorring_polygon'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: NumInteriorRings(geometry)
 CREATE OR REPLACE FUNCTION ST_NumInteriorRings(geometry)
 	RETURNS integer
-	AS 'MODULE_PATHNAME','LWGEOM_numinteriorrings_polygon'
+	AS '@MODULE_PATHNAME@','LWGEOM_numinteriorrings_polygon'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_NumInteriorRing(geometry)
 	RETURNS integer
-	AS 'MODULE_PATHNAME','LWGEOM_numinteriorrings_polygon'
+	AS '@MODULE_PATHNAME@','LWGEOM_numinteriorrings_polygon'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: InteriorRingN(geometry)
 CREATE OR REPLACE FUNCTION ST_InteriorRingN(geometry,integer)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_interiorringn_polygon'
+	AS '@MODULE_PATHNAME@','LWGEOM_interiorringn_polygon'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Deprecation in 1.2.3 -- this should not be deprecated (2011-01-04 robe)
 CREATE OR REPLACE FUNCTION GeometryType(geometry)
 	RETURNS text
-	AS 'MODULE_PATHNAME', 'LWGEOM_getTYPE'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_getTYPE'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Not quite equivalent to GeometryType
 CREATE OR REPLACE FUNCTION ST_GeometryType(geometry)
 	RETURNS text
-	AS 'MODULE_PATHNAME', 'geometry_geometrytype'
+	AS '@MODULE_PATHNAME@', 'geometry_geometrytype'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: PointN(geometry,integer)
 CREATE OR REPLACE FUNCTION ST_PointN(geometry,integer)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_pointn_linestring'
+	AS '@MODULE_PATHNAME@','LWGEOM_pointn_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
@@ -4243,85 +4222,85 @@ CREATE OR REPLACE FUNCTION ST_PatchN(geometry, integer)
 -- PostGIS equivalent function of old StartPoint(geometry))
 CREATE OR REPLACE FUNCTION ST_StartPoint(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_startpoint_linestring'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_startpoint_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function of old EndPoint(geometry)
 CREATE OR REPLACE FUNCTION ST_EndPoint(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_endpoint_linestring'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_endpoint_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: IsClosed(geometry)
 CREATE OR REPLACE FUNCTION ST_IsClosed(geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'LWGEOM_isclosed'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_isclosed'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: IsEmpty(geometry)
 CREATE OR REPLACE FUNCTION ST_IsEmpty(geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'LWGEOM_isempty'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_isempty'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION ST_SRID(geometry)
 	RETURNS int4
-	AS 'MODULE_PATHNAME','LWGEOM_get_srid'
+	AS '@MODULE_PATHNAME@','LWGEOM_get_srid'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_SetSRID(geometry,int4)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_set_srid'
+	AS '@MODULE_PATHNAME@','LWGEOM_set_srid'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_AsBinary(geometry,text)
 	RETURNS bytea
-	AS 'MODULE_PATHNAME','LWGEOM_asBinary'
+	AS '@MODULE_PATHNAME@','LWGEOM_asBinary'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- PostGIS equivalent of old function: AsBinary(geometry)
 CREATE OR REPLACE FUNCTION ST_AsBinary(geometry)
 	RETURNS bytea
-	AS 'MODULE_PATHNAME','LWGEOM_asBinary'
+	AS '@MODULE_PATHNAME@','LWGEOM_asBinary'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- PostGIS equivalent function: AsText(geometry)
 CREATE OR REPLACE FUNCTION ST_AsText(geometry)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asText'
+	AS '@MODULE_PATHNAME@','LWGEOM_asText'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_GeometryFromText(text)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_from_text'
+	AS '@MODULE_PATHNAME@','LWGEOM_from_text'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_GeometryFromText(text, int4)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_from_text'
+	AS '@MODULE_PATHNAME@','LWGEOM_from_text'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_GeomFromText(text)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_from_text'
+	AS '@MODULE_PATHNAME@','LWGEOM_from_text'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: ST_GeometryFromText(text, int4)
 CREATE OR REPLACE FUNCTION ST_GeomFromText(text, int4)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_from_text'
+	AS '@MODULE_PATHNAME@','LWGEOM_from_text'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- PostGIS equivalent function: ST_GeometryFromText(text)
 -- SQL/MM alias for ST_GeomFromText
 CREATE OR REPLACE FUNCTION ST_WKTToSQL(text)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_from_text'
+	AS '@MODULE_PATHNAME@','LWGEOM_from_text'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 -- Availability: 1.2.2
@@ -4515,7 +4494,7 @@ CREATE OR REPLACE FUNCTION ST_GeomCollFromText(text)
 -- Availability: 1.2.2
 CREATE OR REPLACE FUNCTION ST_GeomFromWKB(bytea)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_from_WKB'
+	AS '@MODULE_PATHNAME@','LWGEOM_from_WKB'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- PostGIS equivalent function: GeomFromWKB(bytea, int)
@@ -4767,7 +4746,7 @@ CREATE OR REPLACE FUNCTION ST_GeomCollFromWKB(bytea)
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION _ST_MaxDistance(geom1 geometry, geom2 geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'LWGEOM_maxdistance2d_linestring'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_maxdistance2d_linestring'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 	
 -- Availability: 1.5.0
@@ -4778,17 +4757,17 @@ CREATE OR REPLACE FUNCTION ST_MaxDistance(geom1 geometry, geom2 geometry)
 
 CREATE OR REPLACE FUNCTION ST_ClosestPoint(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_closestpoint'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_closestpoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION ST_ShortestLine(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_shortestline2d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_shortestline2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION _ST_LongestLine(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_longestline2d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_longestline2d'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION ST_LongestLine(geom1 geometry, geom2 geometry)
@@ -4798,7 +4777,7 @@ CREATE OR REPLACE FUNCTION ST_LongestLine(geom1 geometry, geom2 geometry)
 
 CREATE OR REPLACE FUNCTION _ST_DFullyWithin(geom1 geometry, geom2 geometry,float8)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'LWGEOM_dfullywithin'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_dfullywithin'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 CREATE OR REPLACE FUNCTION ST_DFullyWithin(geom1 geometry, geom2 geometry, float8)
@@ -4809,7 +4788,7 @@ CREATE OR REPLACE FUNCTION ST_DFullyWithin(geom1 geometry, geom2 geometry, float
 -- Availability: 2.2.0
 CREATE OR REPLACE FUNCTION ST_SwapOrdinates(geom geometry, ords cstring)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_SwapOrdinates'
+	AS '@MODULE_PATHNAME@', 'ST_SwapOrdinates'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- NOTE: same as ST_SwapOrdinates(geometry, 'xy')
@@ -4817,7 +4796,7 @@ CREATE OR REPLACE FUNCTION ST_SwapOrdinates(geom geometry, ords cstring)
 --       spec strings
 CREATE OR REPLACE FUNCTION ST_FlipCoordinates(geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_FlipCoordinates'
+	AS '@MODULE_PATHNAME@', 'ST_FlipCoordinates'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 
 --
@@ -4901,9 +4880,9 @@ END;
 $$
 LANGUAGE 'plpgsql' IMMUTABLE STRICT;
 
-/* Should we include the .sql directly here ? */
-#include "long_xact.sql.in"
-#include "geography.sql.in"
+@LONG_XACT_SQL@
+
+@GEOGRAPHY_SQL@
 
 
 -- Availability: 2.2.0
@@ -5137,37 +5116,37 @@ CREATE OR REPLACE RULE geometry_columns_delete AS
 
 CREATE OR REPLACE FUNCTION ST_3DDistance(geom1 geometry, geom2 geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'distance3d'
+	AS '@MODULE_PATHNAME@', 'distance3d'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 	
 CREATE OR REPLACE FUNCTION ST_3DMaxDistance(geom1 geometry, geom2 geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'LWGEOM_maxdistance3d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_maxdistance3d'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;	
 
 CREATE OR REPLACE FUNCTION ST_3DClosestPoint(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_closestpoint3d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_closestpoint3d'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 CREATE OR REPLACE FUNCTION ST_3DShortestLine(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_shortestline3d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_shortestline3d'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
 CREATE OR REPLACE FUNCTION ST_3DLongestLine(geom1 geometry, geom2 geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_longestline3d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_longestline3d'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 	
 CREATE OR REPLACE FUNCTION _ST_3DDWithin(geom1 geometry, geom2 geometry,float8)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'LWGEOM_dwithin3d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_dwithin3d'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 	
@@ -5179,7 +5158,7 @@ CREATE OR REPLACE FUNCTION ST_3DDWithin(geom1 geometry, geom2 geometry,float8)
 	
 CREATE OR REPLACE FUNCTION _ST_3DDFullyWithin(geom1 geometry, geom2 geometry,float8)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'LWGEOM_dfullywithin3d'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_dfullywithin3d'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 	
@@ -5191,7 +5170,7 @@ CREATE OR REPLACE FUNCTION ST_3DDFullyWithin(geom1 geometry, geom2 geometry,floa
 
 CREATE OR REPLACE FUNCTION _ST_3DIntersects(geom1 geometry, geom2 geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME','intersects3d'
+	AS '@MODULE_PATHNAME@','intersects3d'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 	
@@ -5208,7 +5187,7 @@ CREATE OR REPLACE FUNCTION ST_3DIntersects(geom1 geometry, geom2 geometry)
 -- PostGIS equivalent function: ST_ndims(geometry)
 CREATE OR REPLACE FUNCTION ST_CoordDim(Geometry geometry)
 	RETURNS smallint
-	AS 'MODULE_PATHNAME', 'LWGEOM_ndims'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_ndims'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 --
 -- SQL-MM
@@ -5220,7 +5199,7 @@ CREATE OR REPLACE FUNCTION ST_CoordDim(Geometry geometry)
 -- the given number of segments per quarter circle.
 CREATE OR REPLACE FUNCTION ST_CurveToLine(geometry, integer)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_curve_segmentize'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_curve_segmentize'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 --
 -- SQL-MM
@@ -5236,18 +5215,18 @@ CREATE OR REPLACE FUNCTION ST_CurveToLine(geometry)
 
 CREATE OR REPLACE FUNCTION ST_HasArc(Geometry geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'LWGEOM_has_arc'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_has_arc'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 CREATE OR REPLACE FUNCTION ST_LineToCurve(Geometry geometry)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_line_desegmentize'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_line_desegmentize'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- Availability: 1.5.0
 CREATE OR REPLACE FUNCTION _ST_OrderingEquals(GeometryA geometry, GeometryB geometry)
 	RETURNS boolean
-	AS 'MODULE_PATHNAME', 'LWGEOM_same'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_same'
 	LANGUAGE 'c' IMMUTABLE STRICT
 	COST 100;
 
@@ -5266,7 +5245,7 @@ CREATE OR REPLACE FUNCTION ST_OrderingEquals(GeometryA geometry, GeometryB geome
 -- PostGIS equivalent function: ST_MakePoint(XCoordinate float8,YCoordinate float8)
 CREATE OR REPLACE FUNCTION ST_Point(float8, float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'LWGEOM_makepoint'
+	AS '@MODULE_PATHNAME@', 'LWGEOM_makepoint'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 	
 -- PostGIS equivalent function: ST_MakePolygon(Geometry geometry)
@@ -5281,7 +5260,7 @@ CREATE OR REPLACE FUNCTION ST_Polygon(geometry, int)
 -- Note: Defaults to an SRID=-1, not 0 as per SQL/MM specs.
 CREATE OR REPLACE FUNCTION ST_WKBToSQL(WKB bytea)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME','LWGEOM_from_WKB'
+	AS '@MODULE_PATHNAME@','LWGEOM_from_WKB'
 	LANGUAGE 'c' IMMUTABLE STRICT; 
 	
 ---
@@ -5290,26 +5269,26 @@ CREATE OR REPLACE FUNCTION ST_WKBToSQL(WKB bytea)
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_LocateBetween(Geometry geometry, FromMeasure float8, ToMeasure float8, LeftRightOffset float8 default 0.0)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_LocateBetween'
+	AS '@MODULE_PATHNAME@', 'ST_LocateBetween'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 	
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_LocateAlong(Geometry geometry, Measure float8, LeftRightOffset float8 default 0.0)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_LocateAlong'
+	AS '@MODULE_PATHNAME@', 'ST_LocateAlong'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Only accepts LINESTRING as parameters.
 -- Availability: 1.4.0
 CREATE OR REPLACE FUNCTION ST_LocateBetweenElevations(Geometry geometry, FromElevation float8, ToElevation float8)
 	RETURNS geometry
-	AS 'MODULE_PATHNAME', 'ST_LocateBetweenElevations'
+	AS '@MODULE_PATHNAME@', 'ST_LocateBetweenElevations'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 -- Availability: 2.0.0
 CREATE OR REPLACE FUNCTION ST_InterpolatePoint(Line geometry, Point geometry)
 	RETURNS float8
-	AS 'MODULE_PATHNAME', 'ST_InterpolatePoint'
+	AS '@MODULE_PATHNAME@', 'ST_InterpolatePoint'
 	LANGUAGE 'c' IMMUTABLE STRICT;
 
 ---------------------------------------------------------------
@@ -5669,7 +5648,7 @@ LANGUAGE 'plpgsql' IMMUTABLE STRICT;
 -- _ST_AsX3D(version, geom, precision, option, attribs)
 CREATE OR REPLACE FUNCTION _ST_AsX3D(int4, geometry, int4, int4, text)
 	RETURNS TEXT
-	AS 'MODULE_PATHNAME','LWGEOM_asX3D'
+	AS '@MODULE_PATHNAME@','LWGEOM_asX3D'
 	LANGUAGE 'c' IMMUTABLE;
 	
 -- ST_AsX3D(geom, precision, options)

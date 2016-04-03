@@ -41,6 +41,17 @@ MACRO(THREE_PART_VERSION_TO_VARS version major minor patch)
   ENDIF(${version} MATCHES ${THREE_PART_VERSION_REGEX})
 ENDMACRO(THREE_PART_VERSION_TO_VARS)
 
+function(check_svn_revision rev)
+    file(READ "${CMAKE_SOURCE_DIR}/postgis_svn_revision.h" _POSTGIS_SVN)
+    string(STRIP ${_POSTGIS_SVN} _POSTGIS_SVN)
+
+    string(REGEX MATCH "POSTGIS_SVN_REVISION[t\ ]([0-9]+)"
+        POSTGIS_SVN_REVISION ${_POSTGIS_SVN})
+    string (REGEX MATCH "([0-9]+)"
+      POSTGIS_SVN_REVISION ${POSTGIS_SVN_REVISION})
+    set(${rev} ${POSTGIS_SVN_REVISION} PARENT_SCOPE)
+endfunction()
+
 function(check_version major minor rev)
 
     file(READ "${CMAKE_SOURCE_DIR}/Version.config" _POSTGIS_VERSION_CONFIG)

@@ -26,7 +26,68 @@
 ################################################################################
 project(postgis)
 
+set(LIB_NAME_POSTGIS ${PROJECT_NAME})
+set(MODULE_PATHNAME "\$libdir/${LIB_NAME_POSTGIS}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
+check_svn_revision(POSTGIS_SVN_REVISION)
+
 configure_file(sqldefines.h.in ${CMAKE_CURRENT_BINARY_DIR}/sqldefines.h)
+
+configure_file(long_xact.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql)
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql LONG_XACT_SQL)
+
+configure_file(geography.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/geography.sql)
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/geography.sql GEOGRAPHY_SQL)
+
+if(POSTGIS_PGSQL_VERSION GREATER 90)
+    set(GIST_GEOMETRY_OPS_ND_ADDS "
+ -- Availability: 2.2.0
+	OPERATOR        13       <<->> FOR ORDER BY pg_catalog.float_ops,")
+endif()
+
+if(POSTGIS_PGSQL_VERSION GREATER 94)
+    set(GEOMETRY_DISTANCE_CENTROID distance)
+    set(GIST_GEOMETRY_OPS_ND_ADDS "${GIST_GEOMETRY_OPS_ND_ADDS}
+ -- Availability: 2.2.0
+	OPERATOR        20       |=| FOR ORDER BY pg_catalog.float_ops,")
+else()
+    set(GEOMETRY_DISTANCE_CENTROID gserialized_distance_centroid_2d)
+endif()
+
+if(POSTGIS_PGSQL_VERSION GREATER 90)
+    set(GIST_GEOMETRY_OPS_2D_ADDS "
+    OPERATOR        13       <-> FOR ORDER BY pg_catalog.float_ops,
+	OPERATOR        14       <#> FOR ORDER BY pg_catalog.float_ops,
+	FUNCTION        8        geometry_gist_distance_2d (internal, geometry, int4),")
+	
+	set(GIST_GEOMETRY_OPS_ND_ADDS "${GIST_GEOMETRY_OPS_ND_ADDS}
+ -- Availability: 2.2.0
+	FUNCTION        8        geometry_gist_distance_nd (internal, geometry, int4),")
+endif()
+
+configure_file(postgis.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql)
+configure_file(legacy_minimal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql)
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql LEGACY_MINIMAL_SQL)
+
+configure_file(legacy.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy.sql)
+configure_file(legacy_gist.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_gist.sql)
+
+set(PL_SKIP \$skip)
+set(PL_NEWSRID \${newsrid})
+set(SRID_MAXIMUM ${SRID_MAX})
+set(SRID_USER_MAXIMUM ${SRID_USR_MAX})
+configure_file(${CMAKE_SOURCE_DIR}/utils/postgis_restore.pl.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/postgis_restore.pl)
+
+
+set(POSTGIS_CONTRIB_FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql
+    ${CMAKE_SOURCE_DIR}/spatial_ref_sys.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/legacy.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/legacy_gist.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql
+    ${CMAKE_SOURCE_DIR}/doc/postgis_comments.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/postgis_restore.pl
+)
+
 set_property(GLOBAL PROPERTY POSTGIS_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR})
@@ -83,15 +144,7 @@ set(CSOURCES
 	geometry_inout.c
 )
 
-# Files to be copied to the contrib/ directory
-set(SQL_built postgis.sql uninstall_postgis.sql postgis_upgrade.sql postgis_proc_set_search_path.sql legacy.sql uninstall_legacy.sql legacy_minimal.sql legacy_gist.sql) 
-set(DATA spatial_ref_sys.sql)
-
-# SQL objects (files requiring pre-processing)
-set(SQL_objs postgis.sql legacy.sql legacy_minimal.sql)
-
 get_property(LIB_NAME_LWGEOM GLOBAL PROPERTY LIB_NAME_LWGEOM)
-set(LIB_NAME_POSTGIS ${PROJECT_NAME})
 
 add_library(${LIB_NAME_POSTGIS}
   $<TARGET_OBJECTS:libpgcommon>
@@ -111,27 +164,15 @@ elseif(BUILD_SHARED_LIBS AND WIN32)
 endif()
 
 #/usr/lib/postgresql/9.3/lib/postgis-2.1.so
-if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
+if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )   
     install(TARGETS ${LIB_NAME_POSTGIS}
         EXPORT ${LIB_NAME_POSTGIS}
         RUNTIME DESTINATION ${PGSQL_PKGBINDIR} COMPONENT libraries
         ARCHIVE DESTINATION ${PGSQL_PKGLIBDIR} COMPONENT libraries
         LIBRARY DESTINATION ${PGSQL_PKGLIBDIR} COMPONENT libraries
     )
+    
+    install(FILES ${POSTGIS_CONTRIB_FILES} DESTINATION "${PGSQL_SHAREDIR}/contrib/${LIB_NAME_POSTGIS}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}/")
 endif()
 
-#target_link_libraries(postgis)
 
-#add_custom_command(OUTPUT postgis.sql.in
-#  COMMAND
-#  "${CMAKE_C_COMPILER}" -E -P -w ${CMAKE_CURRENT_SOURCE_DIR}/postgis.sql.in.c -o postgis.sql.in -I${CMAKE_CURRENT_BINARY_DIR} -I${CMAKE_SOURCE_DIR}/#libpgcommon
-#  MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/postgis.sql.in.c
-#  COMMENT "Preprocessing postgis.sql.in file"
-#  VERBATIM
-#)
-#add_custom_target(PreprocessSQL
-#  ALL
-#  DEPENDS postgis.sql.in
-#  COMMENT "Preprocessing SQL files"
-# VERBATIM
-#  SOURCES postgis.sql.in.c)
