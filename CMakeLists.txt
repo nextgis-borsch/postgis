@@ -25,10 +25,16 @@ set(INSTALL_MAN_DIR ${CMAKE_INSTALL_MANDIR} CACHE INTERNAL "Installation directo
 # User options to control PostGIS features
 
 option(POSTGIS_WITH_RASTER
-    "Set ON|OFF (default=OFF) to control building raster extension" ON)
+    "Set ON|OFF (default=ON) to control building raster extension" ON)
 
 option(POSTGIS_WITH_TOPOLOGY
-    "Set ON|OFF (default=OFF) to control building topology extension" ON)
+    "Set ON|OFF (default=ON) to control building topology extension" ON)
+
+option(POSTGIS_WITH_SFCGAL
+    "Set ON|OFF (default=OFF) to control building SFCGAL extension" OFF)
+    
+option(POSTGIS_WITH_ADDRESS_STD
+    "Set ON|OFF (default=ON) to control building address standardizer extension" ON)
     
 option(POSTGIS_ENABLE_STATS
     "Set ON|OFF (default=ON) to control use ANALYZE statistics" ON)
@@ -73,7 +79,10 @@ endif()
 # Dependency (required): PostgreSQL
 
 find_package(PostgreSQL 9.0) # TODO: req version?
-
+if(POSTGRESQL_FOUND)
+    set(WITH_POSTGRESQL ${POSTGRESQL_FOUND})
+endif()
+    
 if(NOT PG_CONFIG)
     message(FATAL ERROR " Please check your PostgreSQL installation")
 endif(NOT PG_CONFIG)
@@ -198,6 +207,15 @@ if(POSTGIS_WITH_TOPOLOGY)
 #TODO:    add_subdirectory(topology)
 endif()
 
+if(POSTGIS_WITH_SFCGAL)
+#TODO:
+endif()
+
+
+if(POSTGIS_WITH_ADDRESS_STD)
+#TODO:
+endif()
+
 ### Shared libraries
 add_subdirectory(postgis)
 
@@ -205,17 +223,10 @@ set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${PostgreSQL_LIBRARIES})
 add_subdirectory(loader)
 
 ################################################################################
-# Configuration summary
-if(NOT SUPRESS_VERBOSE_OUTPUT)
-    message(STATUS)
-    postgis_report_value(POSTGIS_VERSION)
-    postgis_report_value(POSTGIS_LIB_VERSION)
-    postgis_report_value(POSTGIS_SCRIPTS_VERSION)
-    postgis_report_value(POSTGIS_BUILD_DATE)
-    postgis_report_value(POSTGIS_WITH_RASTER)
-    postgis_report_value(POSTGIS_WITH_TOPOLOGY)
-    postgis_report_value(POSTGIS_PGSQL_VERSION)
-endif()
-
 # uninstall
 add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+
+# info
+if(NOT SUPRESS_VERBOSE_OUTPUT)
+    include(summary)
+endif()

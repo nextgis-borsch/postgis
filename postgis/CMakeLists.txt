@@ -77,6 +77,100 @@ set(SRID_MAXIMUM ${SRID_MAX})
 set(SRID_USER_MAXIMUM ${SRID_USR_MAX})
 configure_file(${CMAKE_SOURCE_DIR}/utils/postgis_restore.pl.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/postgis_restore.pl)
 
+execute_process(COMMAND ${PERL_EXECUTABLE} 
+                    ${CMAKE_SOURCE_DIR}/utils/postgis_proc_set_search_path.pl
+                    ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql "UNUSED" 
+                OUTPUT_VARIABLE PG_SEARCH_PATH_OUT)
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/postgis_proc_set_search_path.sql ${PG_SEARCH_PATH_OUT})
+unset(PG_SEARCH_PATH_OUT)
+
+#/usr/bin/perl ../utils/postgis_proc_upgrade.pl postgis.sql UNUSED > postgis_upgrade.sql.in
+#echo "BEGIN;" > postgis_upgrade.sql
+#cat postgis_drop_before.sql postgis_upgrade.sql.in postgis_drop_after.sql >> postgis_upgrade.sql
+#echo "COMMIT;" >> postgis_upgrade.sql
+
+file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "BEGIN;\n")
+
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/postgis_drop_before.sql PG_DROP_BEFORE)
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "${PG_DROP_BEFORE}\n")
+unset(PG_DROP_BEFORE)
+
+execute_process(COMMAND ${PERL_EXECUTABLE} 
+                    ${CMAKE_SOURCE_DIR}/utils/postgis_proc_upgrade.pl
+                    ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql "UNUSED" 
+                OUTPUT_VARIABLE PG_UPGRADE_OUT)
+
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "${PG_UPGRADE_OUT}\n")
+unset(PG_UPGRADE_OUT)
+
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/postgis_drop_after.sql PG_DROP_AFTER)
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "${PG_DROP_AFTER}\n")
+unset(PG_DROP_AFTER)
+
+file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "COMMIT;")
+
+macro(CREATE_UNDEF name)
+#/usr/bin/perl ../utils/create_undef.pl postgis.sql 94 > uninstall_postgis.sql
+    execute_process(COMMAND ${PERL_EXECUTABLE} 
+                    ${CMAKE_SOURCE_DIR}/utils/create_undef.pl
+                    ${CMAKE_CURRENT_BINARY_DIR}/${name}.sql ${POSTGIS_PGSQL_VERSION} 
+                OUTPUT_VARIABLE UNDEF_OUT)
+                
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/uninstall_${name}.sql ${UNDEF_OUT})
+    unset(UNDEF_OUT)
+endmacro()
+
+create_undef(postgis)
+create_undef(legacy)
+
+if(POSTGIS_WITH_SFCGAL)
+    if(POSTGIS_SFCGAL_VERSION LESS 12)
+        set(ST_APPROXIMATEMEDIALAXIS "
+       AS $$
+       DECLARE
+         poly alias for $1;
+         ret GEOMETRY;
+       BEGIN
+         WITH components AS (
+           SELECT (ST_Dump(ST_StraightSkeleton(poly))).geom
+         ),
+         filtered AS (
+           SELECT ST_Collect(geom) g
+           FROM components
+           WHERE NOT ST_Touches(geom, ST_Boundary(poly))
+         )
+         SELECT
+          COALESCE(g, ST_SetSRID('MULTILINESTRING EMPTY'::geometry, ST_Srid(poly)))
+         INTO ret
+         FROM filtered;
+         RETURN ret;
+       END; $$
+       LANGUAGE 'plpgsql' ")
+    else()
+        set(ST_APPROXIMATEMEDIALAXIS "
+        AS '${MODULE_PATHNAME}','sfcgal_approximate_medial_axis'
+       LANGUAGE 'c'")
+    endif()
+
+    configure_file(sfcgal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/sfcgal.sql)
+  
+    #sfcgal_upgrade.sql.in: sfcgal.sql ../utils/postgis_proc_upgrade.pl 
+	#$(PERL) ../utils/postgis_proc_upgrade.pl $< UNUSED > $@
+	# postgis_drop_after.sql
+
+    execute_process(COMMAND ${PERL_EXECUTABLE} 
+                    ${CMAKE_SOURCE_DIR}/utils/postgis_proc_upgrade.pl
+                    ${CMAKE_CURRENT_BINARY_DIR}/sfcgal.sql "UNUSED" 
+                OUTPUT_VARIABLE PG_SFCGAL_OUT)
+    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/sfcgal_upgrade.sql ${PG_SFCGAL_OUT})
+    unset(PG_SFCGAL_OUT)
+    
+    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/postgis_drop_after.sql PG_DROP_AFTER)
+    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/sfcgal_upgrade.sql "${PG_DROP_AFTER}\n")
+    unset(PG_DROP_AFTER)
+    
+    create_undef(sfcgal)
+endif()
 
 set(POSTGIS_CONTRIB_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql
@@ -86,7 +180,16 @@ set(POSTGIS_CONTRIB_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql
     ${CMAKE_SOURCE_DIR}/doc/postgis_comments.sql
     ${CMAKE_CURRENT_BINARY_DIR}/postgis_restore.pl
+    ${CMAKE_CURRENT_BINARY_DIR}/uninstall_postgis.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/uninstall_legacy.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql
 )
+
+if(POSTGIS_WITH_SFCGAL)
+    set(POSTGIS_CONTRIB_FILES ${POSTGIS_CONTRIB_FILES}
+        ${CMAKE_SOURCE_DIR}/doc/sfcgal_comments.sql
+    )
+endif()
 
 set_property(GLOBAL PROPERTY POSTGIS_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}
