@@ -4,7 +4,6 @@
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
 # Copyright (C) 2016, NextGIS <info@nextgis.com>
-# Copyright (C) 2012 Mateusz Loskot <mateusz@loskot.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -24,29 +23,34 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
-project(pgcommon)
+project(rtcore)
 
-set_property(GLOBAL PROPERTY LIBPGCOMMON_INCLUDE_DIRS
+set_property(GLOBAL PROPERTY LIBRTCORE_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 set(HHEADERS
-  common.h
-  gserialized_gist.h
-  lwgeom_cache.h
-  lwgeom_pg.h
-  lwgeom_transform.h
-  pgsql_compat.h
+	rt_serialize.h
+	librtcore.h
+	librtcore_internal.h
+	../raster_config.h
 )
 
 set(CSOURCES
-  gserialized_gist.c
-  lwgeom_transform.c
-  lwgeom_cache.c
-  lwgeom_pg.c
+	rt_util.c
+	rt_spatial_relationship.c
+	rt_mapalgebra.c
+	rt_geometry.c
+	rt_statistics.c
+	rt_pixel.c
+	rt_warp.c
+	rt_band.c
+	rt_raster.c
+	rt_serialize.c
+	rt_wkb.c
+	rt_context.c
 )
-
 
 set(LIB_NAME ${PROJECT_NAME})
 
@@ -54,3 +58,4 @@ add_library(${LIB_NAME} STATIC ${CSOURCES} ${HHEADERS}) #always static
 target_link_extlibraries(${LIB_NAME})
 set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIB_NAME} PARENT_SCOPE)
 set(DEPENDENCY_LIB ${DEPENDENCY_LIB} ${LIB_NAME} PARENT_SCOPE)
+

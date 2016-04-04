@@ -26,8 +26,8 @@
 ################################################################################
 project(postgis)
 
-set(LIB_NAME_POSTGIS ${PROJECT_NAME})
-set(MODULE_PATHNAME "\$libdir/${LIB_NAME_POSTGIS}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
+set(LIB_NAME ${PROJECT_NAME})
+set(MODULE_PATHNAME "\$libdir/${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
 check_svn_revision(POSTGIS_SVN_REVISION)
 
 configure_file(sqldefines.h.in ${CMAKE_CURRENT_BINARY_DIR}/sqldefines.h)
@@ -237,35 +237,35 @@ set(CSOURCES
 	geometry_inout.c
 )
 
-get_property(LIB_NAME_LWGEOM GLOBAL PROPERTY LIB_NAME_LWGEOM)
-
-add_library(${LIB_NAME_POSTGIS}
-  $<TARGET_OBJECTS:libpgcommon>
+add_library(${LIB_NAME}
   ${CSOURCES}
   ${HHEADERS}
 )
 
-target_link_extlibraries(${LIB_NAME_POSTGIS})
+target_link_extlibraries(${LIB_NAME})
 
-set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIB_NAME_POSTGIS} PARENT_SCOPE)
+set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIB_NAME} PARENT_SCOPE)
 
 
 if(UNIX)
-    set_target_properties(${LIB_NAME_POSTGIS} PROPERTIES OUTPUT_NAME "${LIB_NAME_POSTGIS}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
+    set_target_properties(${LIB_NAME} PROPERTIES 
+        OUTPUT_NAME "${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}"
+        PREFIX ""
+        )
 elseif(BUILD_SHARED_LIBS AND WIN32)
-    set_target_properties(${LIB_NAME_POSTGIS} PROPERTIES SUFFIX "${POSTGIS_MAJOR_VERSION}${POSTGIS_MINOR_VERSION}.dll")
+    set_target_properties(${LIB_NAME} PROPERTIES SUFFIX "${POSTGIS_MAJOR_VERSION}${POSTGIS_MINOR_VERSION}.dll")
 endif()
 
 #/usr/lib/postgresql/9.3/lib/postgis-2.1.so
 if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )   
-    install(TARGETS ${LIB_NAME_POSTGIS}
-        EXPORT ${LIB_NAME_POSTGIS}
+    install(TARGETS ${LIB_NAME}
+        EXPORT ${LIB_NAME}
         RUNTIME DESTINATION ${PGSQL_PKGBINDIR} COMPONENT libraries
         ARCHIVE DESTINATION ${PGSQL_PKGLIBDIR} COMPONENT libraries
         LIBRARY DESTINATION ${PGSQL_PKGLIBDIR} COMPONENT libraries
     )
     
-    install(FILES ${POSTGIS_CONTRIB_FILES} DESTINATION "${PGSQL_SHAREDIR}/contrib/${LIB_NAME_POSTGIS}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}/")
+    install(FILES ${POSTGIS_CONTRIB_FILES} DESTINATION "${PGSQL_SHAREDIR}/contrib/postgis-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}/")
 endif()
 
 

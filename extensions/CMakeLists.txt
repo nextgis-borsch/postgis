@@ -51,7 +51,7 @@ set(UPGRADEABLE_VERSIONS
 add_subdirectory(postgis)
 
 if(POSTGIS_WITH_ADDRESS_STD)
-#TODO:    add_subdirectory(address_standardizer)
+#    add_subdirectory(address_standardizer)
 endif()
 
 if(POSTGIS_WITH_SFCGAL)

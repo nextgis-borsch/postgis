@@ -32,10 +32,7 @@ include (CheckIncludeFiles)
 include (CheckPrototypeExists)
 include (CheckSymbolExists)
 include (CheckTypeSize)
-#include (TestBigEndian)
 include (CheckCSourceCompiles)
-#include (CheckCXXSourceCompiles)
-#include (CheckCSourceRuns)
 
 ################################################################################
 # Predefined constants
@@ -148,10 +145,9 @@ if(FLEX_FOUND)
  
 endif()
 
-#TODO: configure: error: the PGXS Makefile /usr/lib/postgresql/9.4/lib/pgxs/src/makefiles/pgxs.mk cannot be found. Please install the PostgreSQL server development packages and re-run configure.
 ################################################################################
 # Generate config header
-configure_file(${CMAKE_SOURCE_DIR}/cmake/postgis_config.h.cmake
+configure_file(${CMAKE_SOURCE_DIR}/postgis_config.h.cmake.in
     ${CMAKE_BINARY_DIR}/postgis_config.h)
 configure_file(${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in 
     ${CMAKE_BINARY_DIR}/cmake_uninstall.cmake IMMEDIATE @ONLY)

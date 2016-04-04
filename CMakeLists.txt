@@ -35,7 +35,14 @@ option(POSTGIS_WITH_SFCGAL
     
 option(POSTGIS_WITH_ADDRESS_STD
     "Set ON|OFF (default=ON) to control building address standardizer extension" ON)
-    
+ 
+option(POSTGIS_WITH_RASTER_WARN_ON_TRUNCATION
+    "Set ON|OFF (default=OFF) to control warning outputted every time a double is truncated" OFF)
+set(POSTGIS_RASTER_WARN_ON_TRUNCATION 0)
+if(POSTGIS_WITH_RASTER_WARN_ON_TRUNCATION)
+    set(POSTGIS_RASTER_WARN_ON_TRUNCATION 1)
+endif()
+
 option(POSTGIS_ENABLE_STATS
     "Set ON|OFF (default=ON) to control use ANALYZE statistics" ON)
 set(POSTGIS_USE_STATS 1)
@@ -49,7 +56,7 @@ endif()
 
 include(util)
 check_version(POSTGIS_MAJOR_VERSION POSTGIS_MINOR_VERSION POSTGIS_MICRO_VERSION)
-check_version(POSTGIS_RASTER_MAJOR_VERSION POSTGIS_RASTER_MINOR_VERSION POSTGIS_RASTER_MICRO_VERSION)
+check_raster_version(POSTGIS_RASTER_MAJOR_VERSION POSTGIS_RASTER_MINOR_VERSION POSTGIS_RASTER_MICRO_VERSION)
   
 set(POSTGIS_USE_PROJ 1) # Proj.4 is required
 set(POSTGIS_USE_GEOS 1) # GEOS is required
@@ -153,7 +160,10 @@ endif()
 # Dependency (optional): GDAL
 if(POSTGIS_WITH_RASTER)
     find_anyproject(GDAL DEFAULT ON)
-    if(NOT GDAL_FOUND)
+    if(GDAL_FOUND)
+        THREE_PART_VERSION_TO_VARS(${GDAL_VERSION_STRING} GDAL_MAJOR GDAL_MINOR GDAL_PATCH)
+        set(POSTGIS_GDAL_VERSION ${GDAL_MAJOR}${GDAL_MINOR})
+    else()
         set(POSTGIS_WITH_RASTER OFF)
     endif()
 endif()
@@ -200,7 +210,7 @@ get_property(LIBPGCOMMON_INCLUDE_DIRS GLOBAL PROPERTY LIBPGCOMMON_INCLUDE_DIRS)
 include_directories(${LIBPGCOMMON_INCLUDE_DIRS})
 
 if(POSTGIS_WITH_RASTER)
-#TODO:    add_subdirectory(raster)
+    add_subdirectory(raster)
 endif()
 
 if(POSTGIS_WITH_TOPOLOGY)
@@ -213,7 +223,7 @@ endif()
 
 
 if(POSTGIS_WITH_ADDRESS_STD)
-#TODO:
+#TODO:  add_subdirectory(topology)
 endif()
 
 ### Shared libraries
