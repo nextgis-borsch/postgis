@@ -65,9 +65,8 @@ if(POSTGIS_PGSQL_VERSION GREATER 90)
 endif()
 
 configure_file(postgis.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql)
-configure_file(legacy_minimal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql)
-file(READ ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql LEGACY_MINIMAL_SQL)
 
+configure_file(legacy_minimal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql)
 configure_file(legacy.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy.sql)
 configure_file(legacy_gist.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_gist.sql)
 
@@ -80,9 +79,7 @@ configure_file(${CMAKE_SOURCE_DIR}/utils/postgis_restore.pl.cmake.in ${CMAKE_CUR
 execute_process(COMMAND ${PERL_EXECUTABLE} 
                     ${CMAKE_SOURCE_DIR}/utils/postgis_proc_set_search_path.pl
                     ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql "UNUSED" 
-                OUTPUT_VARIABLE PG_SEARCH_PATH_OUT)
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/postgis_proc_set_search_path.sql ${PG_SEARCH_PATH_OUT})
-unset(PG_SEARCH_PATH_OUT)
+                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/postgis_proc_set_search_path.sql)
 
 #/usr/bin/perl ../utils/postgis_proc_upgrade.pl postgis.sql UNUSED > postgis_upgrade.sql.in
 #echo "BEGIN;" > postgis_upgrade.sql
@@ -91,9 +88,8 @@ unset(PG_SEARCH_PATH_OUT)
 
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "BEGIN;\n")
 
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/postgis_drop_before.sql PG_DROP_BEFORE)
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "${PG_DROP_BEFORE}\n")
-unset(PG_DROP_BEFORE)
+append_file(${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql 
+            ${CMAKE_CURRENT_SOURCE_DIR}/postgis_drop_before.sql)
 
 execute_process(COMMAND ${PERL_EXECUTABLE} 
                     ${CMAKE_SOURCE_DIR}/utils/postgis_proc_upgrade.pl
@@ -103,9 +99,8 @@ execute_process(COMMAND ${PERL_EXECUTABLE}
 file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "${PG_UPGRADE_OUT}\n")
 unset(PG_UPGRADE_OUT)
 
-file(READ ${CMAKE_CURRENT_SOURCE_DIR}/postgis_drop_after.sql PG_DROP_AFTER)
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "${PG_DROP_AFTER}\n")
-unset(PG_DROP_AFTER)
+append_file(${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql 
+            ${CMAKE_CURRENT_SOURCE_DIR}/postgis_drop_after.sql)
 
 file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "COMMIT;")
 
@@ -114,10 +109,8 @@ macro(CREATE_UNDEF name)
     execute_process(COMMAND ${PERL_EXECUTABLE} 
                     ${CMAKE_SOURCE_DIR}/utils/create_undef.pl
                     ${CMAKE_CURRENT_BINARY_DIR}/${name}.sql ${POSTGIS_PGSQL_VERSION} 
-                OUTPUT_VARIABLE UNDEF_OUT)
-                
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/uninstall_${name}.sql ${UNDEF_OUT})
-    unset(UNDEF_OUT)
+                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/uninstall_${name}.sql)
+
 endmacro()
 
 create_undef(postgis)
@@ -161,14 +154,11 @@ if(POSTGIS_WITH_SFCGAL)
     execute_process(COMMAND ${PERL_EXECUTABLE} 
                     ${CMAKE_SOURCE_DIR}/utils/postgis_proc_upgrade.pl
                     ${CMAKE_CURRENT_BINARY_DIR}/sfcgal.sql "UNUSED" 
-                OUTPUT_VARIABLE PG_SFCGAL_OUT)
-    file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/sfcgal_upgrade.sql ${PG_SFCGAL_OUT})
-    unset(PG_SFCGAL_OUT)
+                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/sfcgal_upgrade.sql)
     
-    file(READ ${CMAKE_CURRENT_SOURCE_DIR}/postgis_drop_after.sql PG_DROP_AFTER)
-    file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/sfcgal_upgrade.sql "${PG_DROP_AFTER}\n")
-    unset(PG_DROP_AFTER)
-    
+    append_file(${CMAKE_CURRENT_BINARY_DIR}/sfcgal_upgrade.sql 
+                ${CMAKE_CURRENT_SOURCE_DIR}/postgis_drop_after.sql)
+   
     create_undef(sfcgal)
 endif()
 

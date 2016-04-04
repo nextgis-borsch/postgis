@@ -33,6 +33,8 @@ set_property(GLOBAL PROPERTY LIBLWGEOM_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+check_lwgeom_version(LIBLWGEOM_ABI_MAJOR LIBLWGEOM_ABI_MINOR LIBLWGEOM_ABI_PATCH)
+
 set(HHEADERS_PUB
     ${CMAKE_CURRENT_BINARY_DIR}/liblwgeom.h
     liblwgeom_topo.h
@@ -137,6 +139,21 @@ if(UNIX)
 elseif(BUILD_SHARED_LIBS AND WIN32)
     set_target_properties(${LIB_NAME_LWGEOM} PROPERTIES SUFFIX "${POSTGIS_MAJOR_VERSION}${POSTGIS_MINOR_VERSION}.dll")
 endif()
+
+if(BUILD_SHARED_LIBS)
+    if(WIN32)
+        set (LIB_VERSION ${LIBLWGEOM_ABI_MAJOR})
+        if(MSVC)        
+            set_target_properties(${LIB_NAME_LWGEOM} PROPERTIES IMPORT_SUFFIX "_i.lib")
+        endif()
+    else ()
+      set (LIB_VERSION "${LIBLWGEOM_ABI_MAJOR}.${LIBLWGEOM_ABI_MINOR}.${LIBLWGEOM_ABI_PATCH}")
+    endif()    
+    set_target_properties (${LIB_NAME_LWGEOM} PROPERTIES VERSION ${LIB_VERSION})
+    set_target_properties (${LIB_NAME_LWGEOM} PROPERTIES SOVERSION ${LIBLWGEOM_ABI_MAJOR})
+endif()
+
+
 target_link_extlibraries(${LIB_NAME_LWGEOM})
 set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIB_NAME_LWGEOM} PARENT_SCOPE)
 

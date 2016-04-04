@@ -69,21 +69,38 @@ function(check_version major minor rev)
     set(${rev} ${POSTGIS_MICRO_VERSION} PARENT_SCOPE)
 endfunction()
 
+function(check_lwgeom_version major minor rev)
+
+    file(READ "${CMAKE_SOURCE_DIR}/Version.config" _POSTGIS_VERSION_CONFIG)
+    string(STRIP ${_POSTGIS_VERSION_CONFIG} _POSTGIS_VERSION_CONFIG)
+
+    string(REGEX REPLACE ".*LIBLWGEOM_IFACE_CUR=([0-9]+)[\r\n\t\ ].*" "\\1"
+        LIBLWGEOM_IFACE_CUR ${_POSTGIS_VERSION_CONFIG})
+    string(REGEX REPLACE ".*LIBLWGEOM_IFACE_AGE=([0-9]+)[\r\n\t\ ].*" "\\1"
+        LIBLWGEOM_IFACE_AGE "${_POSTGIS_VERSION_CONFIG}")
+    string(REGEX REPLACE ".*LIBLWGEOM_IFACE_REV=([0-9]+).*" "\\1"
+        LIBLWGEOM_IFACE_REV "${_POSTGIS_VERSION_CONFIG}")
+  
+    set(${major} ${LIBLWGEOM_IFACE_CUR} PARENT_SCOPE)
+    set(${minor} ${LIBLWGEOM_IFACE_AGE} PARENT_SCOPE)
+    set(${rev} ${LIBLWGEOM_IFACE_REV} PARENT_SCOPE)
+endfunction()
+
 function(check_raster_version major minor rev)
 
     file(READ "${CMAKE_SOURCE_DIR}/raster/Version.config" _POSTGIS_VERSION_CONFIG)
     string(STRIP ${_POSTGIS_VERSION_CONFIG} _POSTGIS_VERSION_CONFIG)
 
-    string(REGEX REPLACE ".*POSTGIS_MAJOR_VERSION=([0-9]+)[\r\n\t\ ].*" "\\1"
-        POSTGIS_MAJOR_VERSION ${_POSTGIS_VERSION_CONFIG})
-    string(REGEX REPLACE ".*POSTGIS_MINOR_VERSION=([0-9]+)[\r\n\t\ ].*" "\\1"
-        POSTGIS_MINOR_VERSION "${_POSTGIS_VERSION_CONFIG}")
-    string(REGEX REPLACE ".*POSTGIS_MICRO_VERSION=([0-9]+)[\r\n\t\ ].*" "\\1"
-        POSTGIS_MICRO_VERSION "${_POSTGIS_VERSION_CONFIG}")
+    string(REGEX REPLACE ".*POSTGIS_RASTER_MAJOR_VERSION=([0-9a-z]+)[\r\n\t\ ].*" "\\1"
+        POSTGIS_RASTER_MAJOR_VERSION ${_POSTGIS_VERSION_CONFIG})
+    string(REGEX REPLACE ".*POSTGIS_RASTER_MINOR_VERSION=([0-9a-z]+)[\r\n\t\ ].*" "\\1"
+        POSTGIS_RASTER_MINOR_VERSION "${_POSTGIS_VERSION_CONFIG}")
+    string(REGEX REPLACE ".*POSTGIS_RASTER_MICRO_VERSION=([0-9a-z]+)[\r\n\t\ ].*" "\\1"
+        POSTGIS_RASTER_MICRO_VERSION "${_POSTGIS_VERSION_CONFIG}")
   
-    set(${major} ${POSTGIS_MAJOR_VERSION} PARENT_SCOPE)
-    set(${minor} ${POSTGIS_MINOR_VERSION} PARENT_SCOPE)
-    set(${rev} ${POSTGIS_MICRO_VERSION} PARENT_SCOPE)
+    set(${major} ${POSTGIS_RASTER_MAJOR_VERSION} PARENT_SCOPE)
+    set(${minor} ${POSTGIS_RASTER_MINOR_VERSION} PARENT_SCOPE)
+    set(${rev} ${POSTGIS_RASTER_MICRO_VERSION} PARENT_SCOPE)
 endfunction()
 
 function(report_version name ver)
@@ -95,3 +112,20 @@ function(report_version name ver)
     message(STATUS "${BoldYellow}${name} version ${ver}${ColourReset}")
     
 endfunction()    
+
+
+function(prepare_extension_sql input_path output_path)
+    file(STRINGS ${input_path} LINES)
+    file(WRITE ${output_path} "-- extension ready \n")
+    foreach(LINE ${LINES})
+        if(NOT LINE MATCHES ".*BEGIN;.*" AND NOT LINE MATCHES ".*COMMIT;.*")
+            file(APPEND ${output_path} "${LINE}\n")
+        endif()    
+    endforeach() 
+endfunction()
+
+function(append_file file_to_append file_which_append)
+    file(READ ${file_which_append} APPEND_DATA)
+    file(APPEND ${file_to_append} "${APPEND_DATA}\n")
+    unset(APPEND_DATA)
+endfunction()

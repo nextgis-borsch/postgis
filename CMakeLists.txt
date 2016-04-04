@@ -78,7 +78,7 @@ endif()
 ################################################################################
 # Dependency (required): PostgreSQL
 
-find_package(PostgreSQL 9.0) # TODO: req version?
+find_package(PostgreSQL 9.1) # version 9.1 support extensions
 if(POSTGRESQL_FOUND)
     set(WITH_POSTGRESQL ${POSTGRESQL_FOUND})
 endif()
@@ -218,6 +218,7 @@ endif()
 
 ### Shared libraries
 add_subdirectory(postgis)
+add_subdirectory(extensions)
 
 set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${PostgreSQL_LIBRARIES})
 add_subdirectory(loader)
