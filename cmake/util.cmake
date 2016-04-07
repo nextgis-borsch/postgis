@@ -113,19 +113,26 @@ function(report_version name ver)
     
 endfunction()    
 
-
 function(prepare_extension_sql input_path output_path)
-    file(STRINGS ${input_path} LINES)
+    file (READ ${input_path} _file_content)
+	string (REPLACE "COMMIT;" "--COMMIT" _file_content "${_file_content}")
+	string (REPLACE "BEGIN;" "--BEGIN" _file_content "${_file_content}")
+	
     file(WRITE ${output_path} "-- extension ready \n")
-    foreach(LINE ${LINES})
-        if(NOT LINE MATCHES ".*BEGIN;.*" AND NOT LINE MATCHES ".*COMMIT;.*")
-            file(APPEND ${output_path} "${LINE}\n")
-        endif()    
-    endforeach() 
+    file(APPEND ${output_path} "${_file_content}")
 endfunction()
 
 function(append_file file_to_append file_which_append)
     file(READ ${file_which_append} APPEND_DATA)
     file(APPEND ${file_to_append} "${APPEND_DATA}\n")
     unset(APPEND_DATA)
+endfunction()
+
+function(create_undef name)
+#/usr/bin/perl ../utils/create_undef.pl postgis.sql 94 > uninstall_postgis.sql
+    execute_process(COMMAND ${PERL_EXECUTABLE} 
+                    ${CMAKE_SOURCE_DIR}/utils/create_undef.pl
+                    ${CMAKE_CURRENT_BINARY_DIR}/${name}.sql ${POSTGIS_PGSQL_VERSION} 
+                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/uninstall_${name}.sql)
+
 endfunction()

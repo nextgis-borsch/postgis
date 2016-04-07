@@ -28,15 +28,13 @@ project(postgis)
 
 set(LIB_NAME ${PROJECT_NAME})
 set(MODULE_PATHNAME "\$libdir/${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
-check_svn_revision(POSTGIS_SVN_REVISION)
 
 configure_file(sqldefines.h.in ${CMAKE_CURRENT_BINARY_DIR}/sqldefines.h)
 
 configure_file(long_xact.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql)
-file(READ ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql LONG_XACT_SQL)
-
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql LONG_XACT_SQL) # use in *.cmake.in
 configure_file(geography.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/geography.sql)
-file(READ ${CMAKE_CURRENT_BINARY_DIR}/geography.sql GEOGRAPHY_SQL)
+file(READ ${CMAKE_CURRENT_BINARY_DIR}/geography.sql GEOGRAPHY_SQL)  # use in *.cmake.in
 
 if(POSTGIS_PGSQL_VERSION GREATER 90)
     set(GIST_GEOMETRY_OPS_ND_ADDS "
@@ -104,15 +102,6 @@ append_file(${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql
 
 file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "COMMIT;")
 
-macro(CREATE_UNDEF name)
-#/usr/bin/perl ../utils/create_undef.pl postgis.sql 94 > uninstall_postgis.sql
-    execute_process(COMMAND ${PERL_EXECUTABLE} 
-                    ${CMAKE_SOURCE_DIR}/utils/create_undef.pl
-                    ${CMAKE_CURRENT_BINARY_DIR}/${name}.sql ${POSTGIS_PGSQL_VERSION} 
-                OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/uninstall_${name}.sql)
-
-endmacro()
-
 create_undef(postgis)
 create_undef(legacy)
 
@@ -161,6 +150,10 @@ if(POSTGIS_WITH_SFCGAL)
    
     create_undef(sfcgal)
 endif()
+
+unset (LONG_XACT_SQL) # use in *.cmake.in
+unset (GEOGRAPHY_SQL) # use in *.cmake.in
+
 
 set(POSTGIS_CONTRIB_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql
