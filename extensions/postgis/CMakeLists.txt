@@ -105,7 +105,7 @@ macro(prepare_extension_drop_sql input_path output_path)
 	      
 	    MATH(EXPR CURRENT_OFFSET "${CURRENT_OFFSET}+${FILE_DATA_LEN}")
 	    
-	    string(CONCAT FILE_DATA "${LEFT_STR}" "${FILE_DATA}")
+	    set(FILE_DATA "${LEFT_STR}${FILE_DATA}")
 	        
 	    set(SCAN_DONE FALSE)
 	    while(NOT SCAN_DONE)
