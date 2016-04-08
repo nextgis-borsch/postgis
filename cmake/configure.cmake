@@ -145,6 +145,21 @@ if(FLEX_FOUND)
  
 endif()
 
+if(NOT WIN32)
+    find_library(M_LIBRARY
+        NAMES m
+        PATHS /usr/lib /usr/local/lib
+    )
+    if(NOT M_LIBRARY)
+      message(STATUS "math lib 'libm' not found; floating point support disabled")
+    endif()
+else()
+  # not needed on windows
+  set(M_LIBRARY "")
+endif()
+        
+set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${M_LIBRARY})
+
 ################################################################################
 # Generate config header
 configure_file(${CMAKE_SOURCE_DIR}/postgis_config.h.cmake.in

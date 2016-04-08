@@ -24,18 +24,31 @@
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/raster_config.h.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/raster_config.h)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-variable")
 
-add_subdirectory(rt_core)
+set(RASTER2PGSQL raster2pgsql)
 
-get_property(LIBRTCORE_INCLUDE_DIRS GLOBAL PROPERTY LIBRTCORE_INCLUDE_DIRS)
-include_directories(${LIBRTCORE_INCLUDE_DIRS})
+set(CSOURCES
+    raster2pgsql.c
+)
 
-add_subdirectory(rt_pg)
+set(HHEADERS
+    raster2pgsql.h
+)
 
-get_property(LIBRTPOSTGIS_INCLUDE_DIRS GLOBAL PROPERTY LIBRTPOSTGIS_INCLUDE_DIRS)
-include_directories(${LIBRTPOSTGIS_INCLUDE_DIRS})
+add_executable(${RASTER2PGSQL} ${CSOURCES} ${HHEADERS})
+target_link_extlibraries(${RASTER2PGSQL})
 
-add_subdirectory(loader)
+set(MAN_FILES
+    ${CMAKE_SOURCE_DIR}/doc/man/raster2pgsql
+)
 
+if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
+    install(TARGETS ${RASTER2PGSQL}
+        RUNTIME DESTINATION ${INSTALL_BIN_DIR} COMPONENT applications
+        ARCHIVE DESTINATION ${INSTALL_LIB_DIR} COMPONENT applications
+        LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT applications
+    )
+    
+    install(FILES ${MAN_FILES} DESTINATION "${INSTALL_MAN_DIR}/man1")
+endif()
