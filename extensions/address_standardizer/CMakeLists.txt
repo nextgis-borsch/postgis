@@ -25,13 +25,83 @@
 ################################################################################
 project(address_standardizer)
 
+set(LIB_NAME ${PROJECT_NAME})
+set(MODULE_PATHNAME "\$libdir/${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
+
+configure_file(address_standardizer.control.in ${CMAKE_CURRENT_BINARY_DIR}/address_standardizer.control)
+configure_file(address_standardizer_types.sql.in ${CMAKE_CURRENT_BINARY_DIR}/address_standardizer_types.sql)
+configure_file(address_standardizer_functions.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/address_standardizer_functions.sql)
+
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/sql)
+#cat sql/address_standardizer_types.sql sql/address_standardizer_functions.sql > sql/address_standardizer.sql
+file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer.sql)
+append_file(${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer.sql
+                ${CMAKE_CURRENT_BINARY_DIR}/address_standardizer_types.sql)
+append_file(${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer.sql
+                ${CMAKE_CURRENT_BINARY_DIR}/address_standardizer_functions.sql)
+
+#cat sql/address_standardizer_functions.sql > sql/address_standardizer--1.0--2.2.2.sql
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/address_standardizer_functions.sql
+     ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer--1.0--${POSTGIS_LIB_VERSION}.sql COPYONLY)  
+
+#cat sql/address_standardizer_types.sql sql/address_standardizer_functions.sql > sql/address_standardizer--2.2.2.sql
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer.sql
+     ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer--${POSTGIS_LIB_VERSION}.sql COPYONLY)  
+
+#cat sql/address_standardizer_functions.sql > sql/address_standardizer--2.2.2--2.2.2next.sql
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/address_standardizer_functions.sql
+     ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer--${POSTGIS_LIB_VERSION}--${POSTGIS_LIB_VERSION}next.sql COPYONLY)  
+
+#cat sql/address_standardizer_functions.sql > sql/address_standardizer--2.2.2next--2.2.2.sql		
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/address_standardizer_functions.sql
+     ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer--${POSTGIS_LIB_VERSION}next--${POSTGIS_LIB_VERSION}.sql COPYONLY)  
+
+#cat us_lex.sql us_gaz.sql us_rules.sql sql_bits/address_standardizer_data_us_mark_editable_objects.sql.in > sql/address_standardizer_data_us.sql
+set(APPEND_POSTGIS
+    us_lex.sql
+    us_gaz.sql
+    us_rules.sql
+    sql_bits/address_standardizer_data_us_mark_editable_objects.sql.in
+)
+
+file(REMOVE ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us.sql)
+foreach(APPEND_FILE ${APPEND_POSTGIS})
+    append_file(${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us.sql
+                ${APPEND_FILE})
+endforeach()
+
+configure_file(address_standardizer_data_us.control.in ${CMAKE_CURRENT_BINARY_DIR}/address_standardizer_data_us.control)
+
+#cat us_lex.sql us_gaz.sql us_rules.sql sql_bits/address_standardizer_data_us_mark_editable_objects.sql.in > sql/address_standardizer_data_us--2.2.2.sql
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us.sql
+     ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us--${POSTGIS_LIB_VERSION}.sql COPYONLY)  
+
+#cat sql/address_standardizer_data_us--2.2.2.sql > sql/address_standardizer_data_us--2.2.2--2.2.2next.sql
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us--${POSTGIS_LIB_VERSION}.sql
+     ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us--${POSTGIS_LIB_VERSION}--${POSTGIS_LIB_VERSION}next.sql COPYONLY)  
+
+#cat sql/address_standardizer_data_us--2.2.2.sql > sql/address_standardizer_data_us--2.2.2next--2.2.2.sql	
+configure_file(${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us--${POSTGIS_LIB_VERSION}.sql
+     ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us--${POSTGIS_LIB_VERSION}next--${POSTGIS_LIB_VERSION}.sql COPYONLY)  
+
+set(POSTGIS_EXTENSION_FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/address_standardizer.control
+    ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer--1.0--${POSTGIS_LIB_VERSION}.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer--${POSTGIS_LIB_VERSION}--${POSTGIS_LIB_VERSION}next.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer--${POSTGIS_LIB_VERSION}.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer--${POSTGIS_LIB_VERSION}next--${POSTGIS_LIB_VERSION}.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us--${POSTGIS_LIB_VERSION}--${POSTGIS_LIB_VERSION}next.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us--${POSTGIS_LIB_VERSION}.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us--${POSTGIS_LIB_VERSION}next--${POSTGIS_LIB_VERSION}.sql
+    ${CMAKE_CURRENT_BINARY_DIR}/address_standardizer_data_us.control
+    ${CMAKE_CURRENT_BINARY_DIR}/sql/address_standardizer_data_us.sql
+)
+
 set_property(GLOBAL PROPERTY LIBADDRESS_STD_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-set(LIB_NAME ${PROJECT_NAME})
-set(MODULE_PATHNAME "\$libdir/${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
 
 
 set(HHEADERS
@@ -86,7 +156,7 @@ if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
         LIBRARY DESTINATION ${PGSQL_PKGLIBDIR} COMPONENT libraries
     )
     
-#    install(FILES ${POSTGIS_EXTENSION_FILES} DESTINATION "${PGSQL_SHAREDIR}/extension/")
+    install(FILES ${POSTGIS_EXTENSION_FILES} DESTINATION "${PGSQL_SHAREDIR}/extension/")
 endif()
 
 
