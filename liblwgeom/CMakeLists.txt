@@ -24,6 +24,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
+
 project(lwgeom)
 
 configure_file(liblwgeom.h.in ${CMAKE_CURRENT_BINARY_DIR}/liblwgeom.h)
@@ -176,4 +177,3 @@ endif()
 if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL )
     install(FILES ${HHEADERS_PUB} DESTINATION "${INSTALL_INC_DIR}" COMPONENT headers)
 endif()
-
