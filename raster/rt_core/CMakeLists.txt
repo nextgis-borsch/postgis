@@ -23,7 +23,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
-project(rtcore)
+project(rtcore C)
 
 set_property(GLOBAL PROPERTY LIBRTCORE_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}

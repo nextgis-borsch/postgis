@@ -24,7 +24,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
-project(postgis)
+project(postgis C)
 
 set(LIB_NAME ${PROJECT_NAME})
 set(MODULE_PATHNAME "\$libdir/${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
@@ -201,6 +201,7 @@ set(CSOURCES
 	lwgeom_box.c
 	lwgeom_box3d.c
 	lwgeom_backend_api.c
+	lwgeom_geos.c
 	lwgeom_geos_prepared.c
 	lwgeom_geos_clean.c
 	lwgeom_geos_relatematch.c

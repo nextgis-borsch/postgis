@@ -195,7 +195,7 @@ else()
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffloat-store")
 
   # Turn on Position Independent Code generation for GEOS C shared library
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -DPIC")
 endif()  
 
 ################################################################################
