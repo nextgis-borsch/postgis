@@ -59,7 +59,7 @@ if(POSTGIS_WITH_SFCGAL)
 endif()
 
 if(POSTGIS_WITH_TOPOLOGY)
-#TODO:    add_subdirectory(postgis_topology)
+    add_subdirectory(postgis_topology)
 endif()
 
 #TODO: add_subdirectory(postgis_tiger_geocoder)

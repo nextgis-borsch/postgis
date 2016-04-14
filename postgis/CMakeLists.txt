@@ -243,6 +243,7 @@ set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIB_NAME} PARENT_SCOPE)
 
 if(UNIX)
     set_target_properties(${LIB_NAME} PROPERTIES 
+        LINK_FLAGS "-Wl,--exclude-libs,ALL"
         OUTPUT_NAME "${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}"
         PREFIX ""
         )

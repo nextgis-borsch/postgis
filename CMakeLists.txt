@@ -216,16 +216,11 @@ if(POSTGIS_WITH_RASTER)
 endif()
 
 if(POSTGIS_WITH_TOPOLOGY)
-#TODO:    add_subdirectory(topology)
+    add_subdirectory(topology)
 endif()
 
 if(POSTGIS_WITH_SFCGAL)
 #TODO:
-endif()
-
-
-if(POSTGIS_WITH_ADDRESS_STD)
-#TODO:  add_subdirectory(topology)
 endif()
 
 ### Shared libraries
