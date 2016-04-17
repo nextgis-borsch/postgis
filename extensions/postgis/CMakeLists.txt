@@ -83,7 +83,6 @@ execute_process(COMMAND ${PERL_EXECUTABLE}
                     postgis
                     ${CMAKE_CURRENT_BINARY_DIR}/postgis_unpackaged.sql
                 OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/sql/postgis--unpackaged--${POSTGIS_LIB_VERSION}.sql)
-unset(UNPACKAGED_INPUT) 
 
 macro(prepare_extension_drop_sql input_path output_path)   
     file(WRITE ${output_path} "-- extension ready \n")
