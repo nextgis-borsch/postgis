@@ -51,6 +51,8 @@ function(find_anyproject name)
     endif()
     string(TOUPPER ${name} UPPER_NAME)
 
+    write_ext_options()
+    
     if(WITH_${name})
         option(WITH_${name}_EXTERNAL "Set ON to use external ${name}" OFF)
         if(WITH_${name}_EXTERNAL)
@@ -108,7 +110,7 @@ function(find_anyproject name)
         set(DEPENDENCY_LIB ${DEPENDENCY_LIB} PARENT_SCOPE)    
     endif()
     set(WITHOPT ${WITHOPT} PARENT_SCOPE)
-    set(EXPORTS_PATHS ${EXPORTS_PATHS} PARENT_SCOPE)
+    set(EXPORTS_PATHS ${EXPORTS_PATHS} PARENT_SCOPE)    
 endfunction()
 
 function(target_link_extlibraries name)
@@ -119,7 +121,7 @@ function(target_link_extlibraries name)
         #list(REMOVE_DUPLICATES TARGET_LINK_LIB) debug;...;optimised;... etc. if filter out
         target_link_libraries(${name} ${TARGET_LINK_LIB})
     endif()
-    write_ext_options()
+    
 endfunction()
 
 function(write_ext_options)
