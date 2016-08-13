@@ -78,7 +78,7 @@ set(TARGET_OBJECTS)
 include(FindAnyProject)
 include(PostGISUtilities)
 
-if(NOT SUPRESS_VERBOSE_OUTPUT)
+if(NOT SUPPRESS_VERBOSE_OUTPUT)
     message(STATUS)
     colormsg(_HIBLUE_ "Configuring PostGIS:")
     message(STATUS)
@@ -235,6 +235,6 @@ add_subdirectory(loader)
 add_custom_target(uninstall COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
 
 # info
-if(NOT SUPRESS_VERBOSE_OUTPUT)
+if(NOT SUPPRESS_VERBOSE_OUTPUT)
     include(summary)
 endif()
