@@ -20,6 +20,6 @@
 # along with this script.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
-set(repo_name lib_xml2)
-set(repo_project xml2)
-set(repo_include xml2)
+set(repo_name lib_z)
+set(repo_project zlib)
+set(repo_include)
