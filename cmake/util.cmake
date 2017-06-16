@@ -63,7 +63,7 @@ function(check_version major minor rev)
         POSTGIS_MINOR_VERSION "${_POSTGIS_VERSION_CONFIG}")
     string(REGEX REPLACE ".*POSTGIS_MICRO_VERSION=([0-9]+)[\r\n\t\ ].*" "\\1"
         POSTGIS_MICRO_VERSION "${_POSTGIS_VERSION_CONFIG}")
-  
+
     set(${major} ${POSTGIS_MAJOR_VERSION} PARENT_SCOPE)
     set(${minor} ${POSTGIS_MINOR_VERSION} PARENT_SCOPE)
     set(${rev} ${POSTGIS_MICRO_VERSION} PARENT_SCOPE)
@@ -80,7 +80,7 @@ function(check_lwgeom_version major minor rev)
         LIBLWGEOM_IFACE_AGE "${_POSTGIS_VERSION_CONFIG}")
     string(REGEX REPLACE ".*LIBLWGEOM_IFACE_REV=([0-9]+).*" "\\1"
         LIBLWGEOM_IFACE_REV "${_POSTGIS_VERSION_CONFIG}")
-  
+
     set(${major} ${LIBLWGEOM_IFACE_CUR} PARENT_SCOPE)
     set(${minor} ${LIBLWGEOM_IFACE_AGE} PARENT_SCOPE)
     set(${rev} ${LIBLWGEOM_IFACE_REV} PARENT_SCOPE)
@@ -97,7 +97,7 @@ function(check_raster_version major minor rev)
         POSTGIS_RASTER_MINOR_VERSION "${_POSTGIS_VERSION_CONFIG}")
     string(REGEX REPLACE ".*POSTGIS_RASTER_MICRO_VERSION=([0-9a-z]+).*" "\\1"
         POSTGIS_RASTER_MICRO_VERSION "${_POSTGIS_VERSION_CONFIG}")
-  
+
     set(${major} ${POSTGIS_RASTER_MAJOR_VERSION} PARENT_SCOPE)
     set(${minor} ${POSTGIS_RASTER_MINOR_VERSION} PARENT_SCOPE)
     set(${rev} ${POSTGIS_RASTER_MICRO_VERSION} PARENT_SCOPE)
@@ -108,16 +108,16 @@ function(report_version name ver)
     string(ASCII 27 Esc)
     set(BoldYellow  "${Esc}[1;33m")
     set(ColourReset "${Esc}[m")
-        
+
     message(STATUS "${BoldYellow}${name} version ${ver}${ColourReset}")
-    
-endfunction()    
+
+endfunction()
 
 function(prepare_extension_sql input_path output_path)
     file (READ ${input_path} _file_content)
 	string (REPLACE "COMMIT;" "--COMMIT" _file_content "${_file_content}")
 	string (REPLACE "BEGIN;" "--BEGIN" _file_content "${_file_content}")
-	
+
     file(WRITE ${output_path} "-- extension ready \n")
     file(APPEND ${output_path} "${_file_content}")
 endfunction()
@@ -130,9 +130,9 @@ endfunction()
 
 function(create_undef name)
 #/usr/bin/perl ../utils/create_undef.pl postgis.sql 94 > uninstall_postgis.sql
-    execute_process(COMMAND ${PERL_EXECUTABLE} 
+    execute_process(COMMAND ${PERL_EXECUTABLE}
                     ${CMAKE_SOURCE_DIR}/utils/create_undef.pl
-                    ${CMAKE_CURRENT_BINARY_DIR}/${name}.sql ${POSTGIS_PGSQL_VERSION} 
+                    ${CMAKE_CURRENT_BINARY_DIR}/${name}.sql ${POSTGIS_PGSQL_VERSION}
                 OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/uninstall_${name}.sql)
 
 endfunction()
@@ -143,17 +143,9 @@ macro( find_exthost_package )
         set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER )
         set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER )
         set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER )
-        if( CMAKE_HOST_WIN32 )
-            SET( WIN32 1 )
-            SET( UNIX )
-        elseif( CMAKE_HOST_APPLE )
-            SET( APPLE 1 )
-            SET( UNIX )
-        endif()
+
         find_package( ${ARGN} )
-        SET( WIN32 )
-        SET( APPLE )
-        SET( UNIX 1 )
+
         set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY )
         set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY )
         set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY )
@@ -169,17 +161,9 @@ macro( find_exthost_program )
         set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER )
         set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY NEVER )
         set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE NEVER )
-        if( CMAKE_HOST_WIN32 )
-            SET( WIN32 1 )
-            SET( UNIX )
-        elseif( CMAKE_HOST_APPLE )
-            SET( APPLE 1 )
-            SET( UNIX )
-        endif()
+
         find_program( ${ARGN} )
-        SET( WIN32 )
-        SET( APPLE )
-        SET( UNIX 1 )
+
         set( CMAKE_FIND_ROOT_PATH_MODE_PROGRAM ONLY )
         set( CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY )
         set( CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY )
@@ -187,4 +171,3 @@ macro( find_exthost_program )
         find_program( ${ARGN} )
     endif()
 endmacro()
-
