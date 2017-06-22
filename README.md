@@ -1,21 +1,34 @@
-Travis:
- [![Build Status](https://secure.travis-ci.org/postgis/postgis.png?branch=svn-2.2)]
- (http://travis-ci.org/postgis/postgis)
 Debbie:
- [![Build Status](http://debbie.postgis.net:8080/buildStatus/icon?job=PostGIS_2.2)]
- (http://debbie.postgis.net:8080/view/PostGIS/job/PostGIS_2.2/)
+ [![Build Status](https://debbie.postgis.net/buildStatus/icon?job=PostGIS_2.3)]
+ (https://debbie.postgis.net/view/PostGIS/job/PostGIS_2.3/)
 Winnie:
- [![Build Status](http://winnie.postgis.net:1500/buildStatus/icon?job=PostGIS_2.2)]
- (http://winnie.postgis.net:1500/view/PostGIS/job/PostGIS_2.2/)
+ [![Build Status](https://debbie.postgis.net:444/buildStatus/icon?job=PostGIS_2.3)]
+ (https://debbie.postgis.net:444/view/PostGIS/job/PostGIS_2.3/)
+Dronie:
+ [![Build Status](https://drone.osgeo.kbt.io/api/badges/postgis/postgis/status.svg?branch=svn-2.3)]
+ (https://drone.osgeo.kbt.io/postgis/postgis?branch=svn-2.3)
+Travis:
+ [![Build Status](https://secure.travis-ci.org/postgis/postgis.png?branch=svn-2.3)]
+ (http://travis-ci.org/postgis/postgis?branch=svn-2.3)
 GitLab-CI:
- [![Build Status](http://gitlab.com/ci/projects/3944/status.png?ref=svn-2.2)]
- (http://gitlab.com/ci/projects/3944?ref=svn-2.2)
+ [![Gitlab-CI](https://gitlab.com/postgis/postgis/badges/svn-2.3/build.svg)]
+ (https://gitlab.com/postgis/postgis/commits/svn-2.3)
 
 This file is here to play nicely with modern code repository facilities.
 Actual readme is [here](README.postgis).
 
 ## Official code repository, issue tracker and wiki:
 https://trac.osgeo.org/postgis/
+
+## Official chat room:
+
+Use your preferred client, if configured:
+
+ irc://irc.freenode.net/#postgis
+
+Or try a web client like:
+ - [qwebirc@freenode](https://webchat.freenode.net/?channels=#postgis)
+ - [KiwiIRC](https://kiwiirc.com/client/irc.freenode.net/#postgis)
 
 ## Official source tarball releases
 http://postgis.net/source

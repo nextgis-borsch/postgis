@@ -1,12 +1,32 @@
 /**********************************************************************
  *
- * This is free software; you can redistribute and/or modify it under
- * the terms of the GNU General Public Licence. See the COPYING file.
+ * PostGIS - Spatial Types for PostgreSQL
+ * http://postgis.net
+ *
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
+ * Copyright (C) 2010-2015 Paul Ramsey <pramsey@cleverelephant.ca>
+ * Copyright (C) 2011 Sandro Santilli <strk@kbt.io>
  *
  **********************************************************************/
 
+
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "liblwgeom_internal.h"
 
 /* Ensures the given lat and lon are in the "normal" range:
@@ -85,6 +105,8 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 	int sec_has_decpoint = 0;
 	int sec_dec_digits = 0;
 	int sec_piece = -1;
+
+	int round_pow = 0;
 
 	int format_length = ((NULL == format) ? 0 : strlen(format));
 
@@ -293,8 +315,8 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 	degrees = val;
 	if (min_digits > 0)
 	{
-		degrees = (long)degrees;
-		minutes = (val - degrees) * 60;
+		/* Break degrees to integer and use fraction for minutes */
+		minutes = modf(val, &degrees) * 60;
 	}
 	if (sec_digits > 0)
 	{
@@ -302,8 +324,17 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 		{
 			lwerror("Bad format, cannot include seconds (SS.SSS) without including minutes (MM.MMM).");
 		}
-		minutes = (long)minutes;
-		seconds = (val - (degrees + (minutes / 60))) * 3600;
+		seconds = modf(minutes, &minutes) * 60;
+		if (sec_piece >= 0)
+		{
+			/* See if the formatted seconds round up to 60. If so, increment minutes and reset seconds. */
+			round_pow = pow(10, sec_dec_digits);
+			if (floorf(seconds * round_pow) / round_pow >= 60)
+			{
+				minutes += 1;
+				seconds = 0;
+			}
+		}
 	}
 
 	/* Handle the compass direction.  If not using compass dir, display degrees as a positive/negative number. */
@@ -321,7 +352,7 @@ static char * lwdouble_to_dms(double val, const char *pos_dir_symbol, const char
 	{
 		lwerror("Bad format, degrees (DD.DDD) number of digits was greater than our working limit.");
 	}
-	if(deg_piece >= 0) 
+	if(deg_piece >= 0)
 	{
 		sprintf(pieces[deg_piece], "%*.*f", deg_digits, deg_dec_digits, degrees);
 	}

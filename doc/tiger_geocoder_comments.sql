@@ -1,7 +1,7 @@
 
 COMMENT ON FUNCTION Drop_Indexes_Generate_Script(text ) IS 'args: param_schema=tiger_data - Generates a script that drops all non-primary key and non-unique indexes on tiger schema and user specified schema. Defaults schema to tiger_data if no schema is specified.';
 			
-COMMENT ON FUNCTION Drop_Nation_Tables_Generate_Script(text ) IS 'args: param_schema=tiger_data - Generates a script that drops all tables in the specified schema that start with county_all, state_all or stae code followed by county or state.';
+COMMENT ON FUNCTION Drop_Nation_Tables_Generate_Script(text ) IS 'args: param_schema=tiger_data - Generates a script that drops all tables in the specified schema that start with county_all, state_all or state code followed by county or state.';
 			
 COMMENT ON FUNCTION Drop_State_Tables_Generate_Script(text , text ) IS 'args: param_state, param_schema=tiger_data - Generates a script that drops all tables in the specified schema that are prefixed with the state abbreviation. Defaults schema to tiger_data if no schema is specified.';
 			
@@ -9,7 +9,7 @@ COMMENT ON FUNCTION geocode(varchar , integer , geometry ) IS 'args: address, ma
 			
 COMMENT ON FUNCTION geocode(norm_addy , integer , geometry ) IS 'args: in_addy, max_results=10, restrict_region=NULL, OUT addy, OUT geomout, OUT rating - Takes in an address as a string (or other normalized address) and outputs a set of possible locations which include a point geometry in NAD 83 long lat, a normalized address for each, and the rating. The lower the rating the more likely the match. Results are sorted by lowest rating first. Can optionally pass in maximum results, defaults to 10, and restrict_region (defaults to NULL)';
 			
-COMMENT ON FUNCTION geocode_intersection(text , text , text , text , text , integer ) IS 'args:  roadway1,  roadway2,  in_state,  in_city,  in_zip, max_results=10, OUT addy, OUT geomout, OUT rating - Takes in 2 streets that intersect and a state, city, zip, and outputs a set of possible locations on the first cross street that is at the intersection, also includes a point geometry in NAD 83 long lat, a normalized address for each location, and the rating. The lower the rating the more likely the match. Results are sorted by lowest rating first. Can optionally pass in maximum results, defaults to 10';
+COMMENT ON FUNCTION geocode_intersection(text , text , text , text , text , integer ) IS 'args:  roadway1,  roadway2,  in_state,  in_city,  in_zip, max_results=10, OUT addy, OUT geomout, OUT rating - Takes in 2 streets that intersect and a state, city, zip, and outputs a set of possible locations on the first cross street that is at the intersection, also includes a geomout as the point location in NAD 83 long lat, a normalized_address (addy) for each location, and the rating. The lower the rating the more likely the match. Results are sorted by lowest rating first. Can optionally pass in maximum results, defaults to 10. Uses Tiger data (edges, faces, addr), PostgreSQL fuzzy string matching (soundex, levenshtein).';
 			
 COMMENT ON FUNCTION Get_Geocode_Setting(text ) IS 'args:  setting_name - Returns value of specific setting stored in tiger.geocode_settings table.';
 			

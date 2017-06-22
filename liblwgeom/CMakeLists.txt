@@ -127,6 +127,7 @@ set(CSOURCES
 	lwunionfind.c
 	effectivearea.c
 	varint.c
+	lwiterator.c
 )  
 
 set(LIB_NAME ${PROJECT_NAME})

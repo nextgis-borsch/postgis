@@ -17,6 +17,8 @@ COMMENT ON FUNCTION topology.DropTopology(varchar ) IS 'args: topology_schema_na
 			
 COMMENT ON FUNCTION topology.DropTopoGeometryColumn(varchar , varchar , varchar ) IS 'args: schema_name, table_name, column_name - Drops the topogeometry column from the table named table_name in schema schema_name and unregisters the columns from topology.layer table.';
 			
+COMMENT ON FUNCTION topology.Populate_Topology_Layer() IS 'Adds missing entries to topology.layer table by reading metadata from topo tables.';
+			
 COMMENT ON FUNCTION topology.TopologySummary(varchar ) IS 'args: topology_schema_name - Takes a topology name and provides summary totals of types of objects in topology';
 			
 COMMENT ON FUNCTION topology.ValidateTopology(varchar ) IS 'args: topology_schema_name - Returns a set of validatetopology_returntype objects detailing issues with topology';
@@ -25,9 +27,9 @@ COMMENT ON FUNCTION topology.CreateTopology(varchar ) IS 'args: topology_schema_
 			
 COMMENT ON FUNCTION topology.CreateTopology(varchar , integer ) IS 'args: topology_schema_name, srid - Creates a new topology schema and registers this new schema in the topology.topology table.';
 			
-COMMENT ON FUNCTION topology.CreateTopology(varchar , integer , double precision ) IS 'args: topology_schema_name, srid, tolerance - Creates a new topology schema and registers this new schema in the topology.topology table.';
+COMMENT ON FUNCTION topology.CreateTopology(varchar , integer , double precision ) IS 'args: topology_schema_name, srid, prec - Creates a new topology schema and registers this new schema in the topology.topology table.';
 			
-COMMENT ON FUNCTION topology.CreateTopology(varchar , integer , double precision , boolean ) IS 'args: topology_schema_name, srid, tolerance, hasz - Creates a new topology schema and registers this new schema in the topology.topology table.';
+COMMENT ON FUNCTION topology.CreateTopology(varchar , integer , double precision , boolean ) IS 'args: topology_schema_name, srid, prec, hasz - Creates a new topology schema and registers this new schema in the topology.topology table.';
 			
 COMMENT ON FUNCTION topology.CopyTopology(varchar , varchar ) IS 'args: existing_topology_name, new_name - Makes a copy of a topology structure (nodes, edges, faces, layers and TopoGeometries).';
 			
@@ -108,6 +110,10 @@ COMMENT ON FUNCTION topology.toTopoGeom(geometry , topogeometry , float8) IS 'ar
 COMMENT ON AGGREGATE topology.TopoElementArray_Agg(topoelement) IS 'args: tefield - Returns a topoelementarray for a set of element_id, type arrays (topoelements)';
 			
 COMMENT ON FUNCTION topology.clearTopoGeom(topogeometry ) IS 'args: topogeom - Clears the content of a topo geometry';
+			
+COMMENT ON FUNCTION topology.TopoGeom_addElement(topogeometry , topoelement ) IS 'args: tg, el - Add an element to the definition of a TopoGeometry';
+			
+COMMENT ON FUNCTION topology.TopoGeom_remElement(topogeometry , topoelement ) IS 'args: tg, el - Remove an element from the definition of a TopoGeometry';
 			
 COMMENT ON FUNCTION topology.GetTopoGeomElementArray(varchar , integer , integer) IS 'args: toponame, layer_id, tg_id - Returns a topoelementarray (an array of topoelements) containing the topological elements and type of the given TopoGeometry (primitive elements)';
 			

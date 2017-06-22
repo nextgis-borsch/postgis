@@ -3,17 +3,25 @@
  * PostGIS - Spatial Types for PostgreSQL
  * http://postgis.net
  *
- * Copyright (C) 2015 Sandro Santilli <strk@keybit.net>
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
  *
- * This is free software; you can redistribute and/or modify it under
- * the terms of the GNU General Public Licence. See the COPYING file.
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
  *
  **********************************************************************
  *
- * Topology extension for liblwgeom.
- * Initially funded by Tuscany Region (Italy) - SITA (CIG: 60351023B8)
+ * Copyright (C) 2015 Sandro Santilli <strk@kbt.io>
  *
  **********************************************************************/
+
 
 
 #include "../postgis_config.h"
@@ -35,18 +43,6 @@
 #else
 # define LWTFMT_ELEMID PRId64
 #endif
-
-/* TODO: move this to lwgeom_log.h */
-#define LWDEBUGG(level, geom, msg) \
-  if (POSTGIS_DEBUG_LEVEL >= level) \
-  do { \
-    size_t sz; \
-    char *wkt1 = lwgeom_to_wkt(geom, WKT_EXTENDED, 15, &sz); \
-    /* char *wkt1 = lwgeom_to_hexwkb(geom, WKT_EXTENDED, &sz); */ \
-    LWDEBUGF(level, msg ": %s", wkt1); \
-    lwfree(wkt1); \
-  } while (0);
-
 
 /*********************************************************************
  *
@@ -935,7 +931,7 @@ lwt_AddIsoEdge( LWT_TOPOLOGY* topo, LWT_ELEMID startNode,
    *
    * the nodes anode and anothernode are no more isolated
    * because now there is an edge connecting them
-   */ 
+   */
   updated_nodes[0].node_id = startNode;
   updated_nodes[0].containing_face = -1;
   updated_nodes[1].node_id = endNode;
@@ -1401,7 +1397,7 @@ typedef struct edgeend_t {
   double myaz; /* azimuth of edgeend geometry */
 } edgeend;
 
-/* 
+/*
  * Get first distinct vertex from endpoint
  * @param pa the pointarray to seek points in
  * @param ref the point we want to search a distinct one
@@ -1741,7 +1737,7 @@ _lwt_GetInteriorEdgePoint(const LWLINE* edge, POINT2D* ip)
   /* interpolate if start point != end point */
 
   if ( p2d_same(&fp, &lp) ) return 0; /* no distinct points in edge */
- 
+
   ip->x = fp.x + ( (lp.x - fp.x) * 0.5 );
   ip->y = fp.y + ( (lp.y - fp.y) * 0.5 );
 
@@ -2448,10 +2444,10 @@ _lwt_AddEdge( LWT_TOPOLOGY* topo,
              node->node_id, node->geom, start_node, end_node);
     if ( node->node_id == start_node ) {
       start_node_geom = node->geom;
-    } 
+    }
     if ( node->node_id == end_node ) {
       end_node_geom = node->geom;
-    } 
+    }
   }
 
   if ( ! skipChecks )
@@ -2553,9 +2549,27 @@ _lwt_AddEdge( LWT_TOPOLOGY* topo,
                 newedge.edge_id, newedge.next_left, prev_right);
     if ( newedge.face_right == -1 ) {
       newedge.face_right = span.ccwFace;
+    } else if ( newedge.face_right != epan.ccwFace ) {
+      /* side-location conflict */
+      lwerror("Side-location conflict: "
+              "new edge starts in face"
+               " %" LWTFMT_ELEMID " and ends in face"
+               " %" LWTFMT_ELEMID,
+              newedge.face_right, epan.ccwFace
+      );
+      return -1;
     }
     if ( newedge.face_left == -1 ) {
       newedge.face_left = span.cwFace;
+    } else if ( newedge.face_left != epan.cwFace ) {
+      /* side-location conflict */
+      lwerror("Side-location conflict: "
+              "new edge starts in face"
+               " %" LWTFMT_ELEMID " and ends in face"
+               " %" LWTFMT_ELEMID,
+              newedge.face_left, epan.cwFace
+      );
+      return -1;
     }
   } else {
     epan.was_isolated = 1;
@@ -2629,7 +2643,7 @@ _lwt_AddEdge( LWT_TOPOLOGY* topo,
     }
   }
 
-  /* Link prev_right to us 
+  /* Link prev_right to us
    * (if it's not us already) */
   if ( llabs(prev_right) != newedge.edge_id )
   {
@@ -2868,7 +2882,7 @@ lwt_GetFaceGeometry(LWT_TOPOLOGY* topo, LWT_ELEMID faceid)
     lwfree( face );
     if ( i > 1 ) {
       lwerror("Corrupted topology: multiple face records have face_id=%"
-              PRId64, faceid);
+              LWTFMT_ELEMID, faceid);
       return NULL;
     }
     /* Face has no boundary edges, we'll return EMPTY, see
@@ -3581,7 +3595,7 @@ lwt_ChangeEdgeGeom(LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, LWLINE *geom)
     if ( ! nface1 )
     {
       lwerror("lwt_ChangeEdgeGeom could not construct face %"
-                 PRId64 ", on the left of edge %" PRId64,
+                 LWTFMT_ELEMID ", on the left of edge %" LWTFMT_ELEMID,
                 oldedge->face_left, edge_id);
       return -1;
     }
@@ -3606,7 +3620,7 @@ lwt_ChangeEdgeGeom(LWT_TOPOLOGY* topo, LWT_ELEMID edge_id, LWLINE *geom)
     if ( ! nface2 )
     {
       lwerror("lwt_ChangeEdgeGeom could not construct face %"
-                 PRId64 ", on the right of edge %" PRId64,
+                 LWTFMT_ELEMID ", on the right of edge %" LWTFMT_ELEMID,
                 oldedge->face_right, edge_id);
       return -1;
     }
@@ -5170,7 +5184,7 @@ lwt_AddPoint(LWT_TOPOLOGY* topo, LWPOINT* point, double tol)
       _lwt_release_edges(edges, num);
       lwerror("GEOS exception on Contains: %s", lwgeom_geos_errmsg);
       return -1;
-    } 
+    }
     if ( ! contains )
     {{
       double snaptol;
@@ -5515,7 +5529,7 @@ _lwt_AddLineEdge( LWT_TOPOLOGY* topo, LWLINE* edge, double tol )
     lwgeom_free(tmp); /* probably too late, due to internal lwerror */
     return -1;
   }
-  if ( id ) 
+  if ( id )
   {
     lwgeom_free(tmp); /* possibly takes "edge" down with it */
     return id;
@@ -5541,7 +5555,7 @@ _lwt_AddLineEdge( LWT_TOPOLOGY* topo, LWLINE* edge, double tol )
       lwgeom_free(tmp); /* probably too late, due to internal lwerror */
       return -1;
     }
-    if ( id ) 
+    if ( id )
     {
       lwgeom_free(tmp); /* takes "edge" down with it */
       return id;
@@ -5637,7 +5651,7 @@ lwt_AddLine(LWT_TOPOLOGY* topo, LWLINE* line, double tol, int* nedges)
     lwerror("Backend error: %s", lwt_be_lastErrorMessage(topo->be_iface));
     return NULL;
   }
-  LWDEBUGF(1, "Line bbox intersects %d edges bboxes", num);
+  LWDEBUGF(1, "Line has %d points, its bbox intersects %d edges bboxes", line->points->npoints, num);
   if ( num )
   {{
     /* collect those whose distance from us is < tol */
@@ -5645,12 +5659,15 @@ lwt_AddLine(LWT_TOPOLOGY* topo, LWLINE* line, double tol, int* nedges)
     int nn=0;
     for (i=0; i<num; ++i)
     {
+      LW_ON_INTERRUPT(return NULL);
       LWT_ISO_EDGE *e = &(edges[i]);
       LWGEOM *g = lwline_as_lwgeom(e->geom);
+      LWDEBUGF(2, "Computing distance from edge %d having %d points", i, e->geom->points->npoints);
       double dist = lwgeom_mindistance2d(g, noded);
       if ( dist >= tol ) continue; /* must be closer than tolerated */
       nearby[nn++] = g;
     }
+    LWDEBUGF(2, "Found %d lines closer than tolerance (%g)", nn, tol);
     if ( nn )
     {{
       LWCOLLECTION *col;

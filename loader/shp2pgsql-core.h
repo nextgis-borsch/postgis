@@ -15,7 +15,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <locale.h> 
+#include <locale.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <errno.h>
@@ -29,7 +29,7 @@
 
 #include "../liblwgeom/stringbuffer.h"
 
-#define S2P_RCSID "$Id: shp2pgsql-core.h 13497 2015-05-13 18:29:52Z pramsey $"
+#define S2P_RCSID "$Id: shp2pgsql-core.h 14869 2016-04-27 14:45:28Z strk $"
 
 /* Number of digits of precision in WKT produced. */
 #define WKT_PRECISION 15
@@ -77,7 +77,7 @@
 #define ENCODING_DEFAULT "UTF-8"
 
 /*
- * Structure to hold the loader configuration options 
+ * Structure to hold the loader configuration options
  */
 typedef struct shp_loader_config
 {
@@ -91,7 +91,7 @@ typedef struct shp_loader_config
 	char *schema;
 
 	/* geometry/geography column name specified by the user, may be null. */
-	char *geo_col; 
+	char *geo_col;
 
 	/* the shape file (without the .shp extension) */
 	char *shp_file;
@@ -151,7 +151,7 @@ typedef struct shp_loader_config
 
 
 /*
- * Structure to holder the current loader state 
+ * Structure to holder the current loader state
  */
 typedef struct shp_loader_state
 {
@@ -215,7 +215,7 @@ typedef struct shp_loader_state
 
 	/* geometry/geography column name to use.  Will be set to the default if the config did
 	   not specify a column name. */
-	char *geo_col; 
+	char *geo_col;
 	
 	/* Column map */
   colmap column_map;

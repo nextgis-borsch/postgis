@@ -1,3 +1,31 @@
+/**********************************************************************
+ *
+ * PostGIS - Spatial Types for PostgreSQL
+ * http://postgis.net
+ *
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
+ * Copyright (C) 2004-2015 Sandro Santilli <strk@kbt.io>
+ * Copyright (C) 2006 Mark Leslie <mark.leslie@lisasoft.com>
+ * Copyright (C) 2008-2009 Mark Cave-Ayland <mark.cave-ayland@siriusit.co.uk>
+ * Copyright (C) 2009-2015 Paul Ramsey <pramsey@cleverelephant.ca>
+ * Copyright (C) 2010 Olivier Courtin <olivier.courtin@camptocamp.com>
+ *
+ **********************************************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -160,7 +188,7 @@ default_errorreporter(const char *fmt, va_list ap)
 }
 
 /**
- * This function is called by programs which want to set up custom handling 
+ * This function is called by programs which want to set up custom handling
  * for memory management and error reporting
  *
  * Only non-NULL values change their respective handler
@@ -184,7 +212,7 @@ lwgeom_set_debuglogger(lwdebuglogger debuglogger) {
 	if ( debuglogger ) lwdebug_var = debuglogger;
 }
 
-const char* 
+const char*
 lwtype_name(uint8_t type)
 {
 	if ( type > 15 )

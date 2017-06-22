@@ -3,12 +3,25 @@
  * PostGIS - Spatial Types for PostgreSQL
  * http://postgis.net
  *
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
  * Copyright 2001-2006 Refractions Research Inc.
  *
- * This is free software; you can redistribute and/or modify it under
- * the terms of the GNU General Public Licence. See the COPYING file.
- *
  **********************************************************************/
+
 
 
 #include "liblwgeom_internal.h"
@@ -463,9 +476,9 @@ getPoint2d_p(const POINTARRAY *pa, int n, POINT2D *point)
 }
 
 /**
-* Returns a pointer into the POINTARRAY serialized_ptlist, 
+* Returns a pointer into the POINTARRAY serialized_ptlist,
 * suitable for reading from. This is very high performance
-* and declared const because you aren't allowed to muck with the 
+* and declared const because you aren't allowed to muck with the
 * values, only read them.
 */
 const POINT2D*

@@ -1,12 +1,27 @@
 /**********************************************************************
  *
  * PostGIS - Spatial Types for PostgreSQL
+ * http://postgis.net
+ *
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
  * Copyright 2009 Paul Ramsey <pramsey@cleverelephant.ca>
  *
- * This is free software; you can redistribute and/or modify it under
- * the terms of the GNU General Public Licence. See the COPYING file.
- *
  **********************************************************************/
+
 
 /*
 ** R-Tree Bibliography
@@ -19,7 +34,7 @@
 ** [3] N. Beckmann, H.-P. Kriegel, R. Schneider, B. Seeger. The R*tree: an
 **     efficient and robust access method for points and rectangles.
 **     Proceedings of the ACM SIGMOD Conference. June 1990.
-** [4] A. Korotkov, "A new double sorting-based node splitting algorithm for R-tree", 
+** [4] A. Korotkov, "A new double sorting-based node splitting algorithm for R-tree",
 **     http://syrcose.ispras.ru/2011/files/SYRCoSE2011_Proceedings.pdf#page=36
 */
 
@@ -66,7 +81,7 @@ static int g2d_counter_internal = 0;
 #endif
 
 /*
-** GiST 2D key stubs 
+** GiST 2D key stubs
 */
 Datum box2df_out(PG_FUNCTION_ARGS);
 Datum box2df_in(PG_FUNCTION_ARGS);
@@ -100,6 +115,15 @@ Datum gserialized_overabove_2d(PG_FUNCTION_ARGS);
 Datum gserialized_overbelow_2d(PG_FUNCTION_ARGS);
 Datum gserialized_distance_box_2d(PG_FUNCTION_ARGS);
 Datum gserialized_distance_centroid_2d(PG_FUNCTION_ARGS);
+
+#if POSTGIS_PGSQL_VERSION > 94
+Datum gserialized_contains_box2df_geom_2d(PG_FUNCTION_ARGS);
+Datum gserialized_contains_box2df_box2df_2d(PG_FUNCTION_ARGS);
+Datum gserialized_within_box2df_geom_2d(PG_FUNCTION_ARGS);
+Datum gserialized_within_box2df_box2df_2d(PG_FUNCTION_ARGS);
+Datum gserialized_overlaps_box2df_geom_2d(PG_FUNCTION_ARGS);
+Datum gserialized_overlaps_box2df_box2df_2d(PG_FUNCTION_ARGS);
+#endif
 
 /*
 ** true/false test function type
@@ -156,7 +180,7 @@ static bool box2df_intersection(const BOX2DF *a, const BOX2DF *b, BOX2DF *n)
 {
 	POSTGIS_DEBUGF(5, "calculating intersection of %s with %s", box2df_to_string(a), box2df_to_string(b));
 
-	if( a == NULL || b == NULL || n == NULL ) 
+	if( a == NULL || b == NULL || n == NULL )
 		return FALSE;
 		
 	n->xmax = Min(a->xmax, b->xmax);
@@ -177,7 +201,7 @@ static float box2df_size(const BOX2DF *a)
 {
 	float result;
 
-	if ( a == NULL ) 
+	if ( a == NULL )
 		return (float)0.0;
 		
 	if ( (a->xmax <= a->xmin) || (a->ymax <= a->ymin) )
@@ -210,7 +234,7 @@ static float box2df_union_size(const BOX2DF *a, const BOX2DF *b)
 	if ( b == NULL )
 		return box2df_size(a);
 
-	result = ((double)Max(a->xmax,b->xmax) - (double)Min(a->xmin,b->xmin)) * 
+	result = ((double)Max(a->xmax,b->xmax) - (double)Min(a->xmin,b->xmin)) *
  	         ((double)Max(a->ymax,b->ymax) - (double)Min(a->ymin,b->ymin));
 
 	POSTGIS_DEBUGF(5, "union size of %s and %s is %.8g", box2df_to_string(a), box2df_to_string(b), result);
@@ -239,13 +263,13 @@ static inline void box2df_validate(BOX2DF *b)
 {
 	float tmp;
 	POSTGIS_DEBUGF(5,"validating box2df (%s)", box2df_to_string(b));
-	if ( b->xmax < b->xmin ) 
+	if ( b->xmax < b->xmin )
 	{
 		tmp = b->xmin;
 		b->xmin = b->xmax;
 		b->xmax = tmp;
 	}
-	if ( b->ymax < b->ymin ) 
+	if ( b->ymax < b->ymin )
 	{
 		tmp = b->ymin;
 		b->ymin = b->ymax;
@@ -267,7 +291,7 @@ static bool box2df_overlaps(const BOX2DF *a, const BOX2DF *b)
 	return TRUE;
 }
 
-static bool box2df_contains(const BOX2DF *a, const BOX2DF *b)
+bool box2df_contains(const BOX2DF *a, const BOX2DF *b)
 {
 	if ( ! a || ! b ) return FALSE; /* TODO: might be smarter for EMPTY */
 
@@ -372,7 +396,6 @@ static bool box2df_overabove(const BOX2DF *a, const BOX2DF *b)
 
 /**
 * Calculate the centroid->centroid distance between the boxes.
-* We return the square distance to avoid a call to sqrt.
 */
 static double box2df_distance_leaf_centroid(const BOX2DF *a, const BOX2DF *b)
 {
@@ -383,13 +406,12 @@ static double box2df_distance_leaf_centroid(const BOX2DF *a, const BOX2DF *b)
     double b_y = (b->ymax + b->ymin) / 2.0;
 
     /* This "distance" is only used for comparisons, */
-    /* so for speed we drop contants and skip the sqrt step. */
     return sqrt((a_x - b_x) * (a_x - b_x) + (a_y - b_y) * (a_y - b_y));
 }
 
 #if POSTGIS_PGSQL_VERSION < 95
 /**
-* Calculate the The node_box_edge->query_centroid distance 
+* Calculate the The node_box_edge->query_centroid distance
 * between the boxes.
 */
 static double box2df_distance_node_centroid(const BOX2DF *node, const BOX2DF *query)
@@ -459,10 +481,10 @@ static double box2df_distance_node_centroid(const BOX2DF *node, const BOX2DF *qu
 			elog(ERROR, "%s: reached unreachable code", __func__);
         }
     }
-    
+
     return sqrt(d);
 }
-#endif 
+#endif
 
 /* Quick distance function */
 static inline double pt_distance(double ax, double ay, double bx, double by)
@@ -475,27 +497,27 @@ static inline double pt_distance(double ax, double ay, double bx, double by)
 */
 static double box2df_distance(const BOX2DF *a, const BOX2DF *b)
 {
-    /* Check for overlap */
-    if ( box2df_overlaps(a, b) )
-        return 0.0;
+	/* Check for overlap */
+	if ( box2df_overlaps(a, b) )
+		return 0.0;
 
-    if ( box2df_left(a, b) )
-    {
-        if ( box2df_above(a, b) )
+	if ( box2df_left(a, b) )
+	{
+		if ( box2df_above(a, b) )
 			return pt_distance(a->xmax, a->ymin, b->xmin, b->ymax);
 		if ( box2df_below(a, b) )
 			return pt_distance(a->xmax, a->ymax, b->xmin, b->ymin);
 		else
-			return b->xmin - a->xmax;
+			return (double)b->xmin - (double)a->xmax;
 	}
 	if ( box2df_right(a, b) )
 	{
-        if ( box2df_above(a, b) )
+		if ( box2df_above(a, b) )
 			return pt_distance(a->xmin, a->ymin, b->xmax, b->ymax);
 		if ( box2df_below(a, b) )
 			return pt_distance(a->xmin, a->ymax, b->xmax, b->ymin);
 		else
-			return a->xmin - b->xmax;
+			return (double)a->xmin - (double)b->xmax;
 	}
 	if ( box2df_above(a, b) )
 	{
@@ -504,7 +526,7 @@ static double box2df_distance(const BOX2DF *a, const BOX2DF *b)
 		if ( box2df_right(a, b) )
 			return pt_distance(a->xmin, a->ymin, b->xmax, b->ymax);
 		else
-			return a->ymin - b->ymax;
+			return (double)a->ymin - (double)b->ymax;
 	}
 	if ( box2df_below(a, b) )
 	{
@@ -513,9 +535,9 @@ static double box2df_distance(const BOX2DF *a, const BOX2DF *b)
 		if ( box2df_right(a, b) )
 			return pt_distance(a->xmin, a->ymax, b->xmax, b->ymin);
 		else
-			return b->ymin - a->ymax;
+			return (double)b->ymin - (double)a->ymax;
 	}
-	
+
 	return FLT_MAX;
 }
 
@@ -526,7 +548,7 @@ static double box2df_distance(const BOX2DF *a, const BOX2DF *b)
 * full object and return the box based on that. If no box is available,
 * return #LW_FAILURE, otherwise #LW_SUCCESS.
 */
-static int 
+int
 gserialized_datum_get_box2df_p(Datum gsdatum, BOX2DF *box2df)
 {
 	GSERIALIZED *gpart;
@@ -536,7 +558,7 @@ gserialized_datum_get_box2df_p(Datum gsdatum, BOX2DF *box2df)
 	POSTGIS_DEBUG(4, "entered function");
 
 	/*
-	** The most info we need is the 8 bytes of serialized header plus the 
+	** The most info we need is the 8 bytes of serialized header plus the
 	** of floats necessary to hold the bounding box.
 	*/
 	if (VARATT_IS_EXTENDED(gsdatum))
@@ -565,17 +587,22 @@ gserialized_datum_get_box2df_p(Datum gsdatum, BOX2DF *box2df)
 		/* No, we need to calculate it from the full object. */
 		GBOX gbox;
 		GSERIALIZED *g = (GSERIALIZED*)PG_DETOAST_DATUM(gsdatum);
-		LWGEOM *lwgeom = lwgeom_from_gserialized(g);
-		if ( lwgeom_calculate_gbox(lwgeom, &gbox) == LW_FAILURE )
+
+		gbox_init(&gbox);
+
+		if (gserialized_get_gbox_p(g, &gbox) == LW_FAILURE)
 		{
 			POSTGIS_DEBUG(4, "could not calculate bbox, returning failure");
-			lwgeom_free(lwgeom);
+			POSTGIS_FREE_IF_COPY_P(gpart, gsdatum);
+			POSTGIS_FREE_IF_COPY_P(g, gsdatum);
 			return LW_FAILURE;
 		}
-		lwgeom_free(lwgeom);
+		POSTGIS_FREE_IF_COPY_P(g, gsdatum);
 		result = box2df_from_gbox_p(&gbox, box2df);
 	}
-	
+
+	POSTGIS_FREE_IF_COPY_P(gpart, gsdatum);
+
 	if ( result == LW_SUCCESS )
 	{
 		POSTGIS_DEBUGF(4, "got box2df %s", box2df_to_string(box2df));
@@ -589,7 +616,7 @@ gserialized_datum_get_box2df_p(Datum gsdatum, BOX2DF *box2df)
 * Support function. Based on two datums return true if
 * they satisfy the predicate and false otherwise.
 */
-static int 
+static int
 gserialized_datum_predicate_2d(Datum gs1, Datum gs2, box2df_predicate predicate)
 {
 	BOX2DF b1, b2, *br1=NULL, *br2=NULL;
@@ -606,8 +633,84 @@ gserialized_datum_predicate_2d(Datum gs1, Datum gs2, box2df_predicate predicate)
 	return LW_FALSE;
 }
 
+#if POSTGIS_PGSQL_VERSION > 94
+static int
+gserialized_datum_predicate_box2df_geom_2d(const BOX2DF *br1, Datum gs2, box2df_predicate predicate)
+{
+	BOX2DF b2, *br2=NULL;
+	POSTGIS_DEBUG(3, "entered function");
 
+	if (gserialized_datum_get_box2df_p(gs2, &b2) == LW_SUCCESS) br2 = &b2;
 
+	if ( predicate(br1, br2) )
+	{
+		POSTGIS_DEBUGF(3, "got boxes %s", br2 ? box2df_to_string(&b2) : "(null)");
+		return LW_TRUE;
+	}
+	return LW_FALSE;
+}
+
+/***********************************************************************
+* BRIN 2-D Index Operator Functions
+*/
+
+PG_FUNCTION_INFO_V1(gserialized_contains_box2df_geom_2d);
+Datum gserialized_contains_box2df_geom_2d(PG_FUNCTION_ARGS)
+{
+	POSTGIS_DEBUG(3, "entered function");
+        if ( gserialized_datum_predicate_box2df_geom_2d((BOX2DF*)PG_GETARG_POINTER(0), PG_GETARG_DATUM(1), box2df_contains) == LW_TRUE )
+                PG_RETURN_BOOL(TRUE);
+
+        PG_RETURN_BOOL(FALSE);
+}
+
+PG_FUNCTION_INFO_V1(gserialized_contains_box2df_box2df_2d);
+Datum gserialized_contains_box2df_box2df_2d(PG_FUNCTION_ARGS)
+{
+	if ( box2df_contains((BOX2DF *)PG_GETARG_POINTER(0), (BOX2DF *)PG_GETARG_POINTER(1)))
+		PG_RETURN_BOOL(TRUE);
+
+	PG_RETURN_BOOL(FALSE);
+}
+
+PG_FUNCTION_INFO_V1(gserialized_within_box2df_geom_2d);
+Datum gserialized_within_box2df_geom_2d(PG_FUNCTION_ARGS)
+{
+	POSTGIS_DEBUG(3, "entered function");
+        if ( gserialized_datum_predicate_box2df_geom_2d((BOX2DF*)PG_GETARG_POINTER(0), PG_GETARG_DATUM(1), box2df_within) == LW_TRUE )
+                PG_RETURN_BOOL(TRUE);
+
+        PG_RETURN_BOOL(FALSE);
+}
+
+PG_FUNCTION_INFO_V1(gserialized_within_box2df_box2df_2d);
+Datum gserialized_within_box2df_box2df_2d(PG_FUNCTION_ARGS)
+{
+        if ( box2df_within((BOX2DF *)PG_GETARG_POINTER(0), (BOX2DF *)PG_GETARG_POINTER(1)))
+                PG_RETURN_BOOL(TRUE);
+
+        PG_RETURN_BOOL(FALSE);
+}
+
+PG_FUNCTION_INFO_V1(gserialized_overlaps_box2df_geom_2d);
+Datum gserialized_overlaps_box2df_geom_2d(PG_FUNCTION_ARGS)
+{
+        POSTGIS_DEBUG(3, "entered function");
+        if ( gserialized_datum_predicate_box2df_geom_2d((BOX2DF*)PG_GETARG_POINTER(0), PG_GETARG_DATUM(1), box2df_overlaps) == LW_TRUE )
+                PG_RETURN_BOOL(TRUE);
+
+        PG_RETURN_BOOL(FALSE);
+}
+
+PG_FUNCTION_INFO_V1(gserialized_overlaps_box2df_box2df_2d);
+Datum gserialized_overlaps_box2df_box2df_2d(PG_FUNCTION_ARGS)
+{
+        if ( box2df_overlaps((BOX2DF *)PG_GETARG_POINTER(0), (BOX2DF *)PG_GETARG_POINTER(1)))
+                PG_RETURN_BOOL(TRUE);
+
+        PG_RETURN_BOOL(FALSE);
+}
+#endif
 
 /***********************************************************************
 * GiST 2-D Index Operator Functions
@@ -618,14 +721,14 @@ Datum gserialized_distance_centroid_2d(PG_FUNCTION_ARGS)
 {
 	BOX2DF b1, b2;
 	Datum gs1 = PG_GETARG_DATUM(0);
-	Datum gs2 = PG_GETARG_DATUM(1);    
+	Datum gs2 = PG_GETARG_DATUM(1);
 	
 	POSTGIS_DEBUG(3, "entered function");
 
 	/* Must be able to build box for each argument (ie, not empty geometry). */
 	if ( (gserialized_datum_get_box2df_p(gs1, &b1) == LW_SUCCESS) &&
 	     (gserialized_datum_get_box2df_p(gs2, &b2) == LW_SUCCESS) )
-	{	    
+	{	
 		double distance = box2df_distance_leaf_centroid(&b1, &b2);
 		POSTGIS_DEBUGF(3, "got boxes %s and %s", box2df_to_string(&b1), box2df_to_string(&b2));
 		PG_RETURN_FLOAT8(distance);
@@ -638,14 +741,14 @@ Datum gserialized_distance_box_2d(PG_FUNCTION_ARGS)
 {
 	BOX2DF b1, b2;
 	Datum gs1 = PG_GETARG_DATUM(0);
-	Datum gs2 = PG_GETARG_DATUM(1);    
+	Datum gs2 = PG_GETARG_DATUM(1);
 	
 	POSTGIS_DEBUG(3, "entered function");
 
 	/* Must be able to build box for each argument (ie, not empty geometry). */
 	if ( (gserialized_datum_get_box2df_p(gs1, &b1) == LW_SUCCESS) &&
 	     (gserialized_datum_get_box2df_p(gs2, &b2) == LW_SUCCESS) )
-	{	    
+	{	
 		double distance = box2df_distance(&b1, &b2);
 		POSTGIS_DEBUGF(3, "got boxes %s and %s", box2df_to_string(&b1), box2df_to_string(&b2));
 		PG_RETURN_FLOAT8(distance);
@@ -1048,7 +1151,7 @@ Datum gserialized_gist_consistent_2d(PG_FUNCTION_ARGS)
 /*
 ** GiST support function. Take in a query and an entry and return the "distance"
 ** between them.
-** 
+**
 ** Given an index entry p and a query value q, this function determines the
 ** index entry's "distance" from the query value. This function must be
 ** supplied if the operator class contains any ordering operators. A query
@@ -1057,7 +1160,7 @@ Datum gserialized_gist_consistent_2d(PG_FUNCTION_ARGS)
 ** with the operator's semantics. For a leaf index entry the result just
 ** represents the distance to the index entry; for an internal tree node, the
 ** result must be the smallest distance that any child entry could have.
-** 
+**
 ** Strategy 13 = true distance tests <->
 ** Strategy 14 = box-based distance tests <#>
 */
@@ -1075,7 +1178,7 @@ Datum gserialized_gist_distance_2d(PG_FUNCTION_ARGS)
 
 	POSTGIS_DEBUG(4, "[GIST] 'distance' function called");
 
-	/* We are using '13' as the gist true-distance <-> strategy number 
+	/* We are using '13' as the gist true-distance <-> strategy number
 	*  and '14' as the gist distance-between-boxes <#> strategy number */
 	if ( strategy != 13 && strategy != 14 ) {
 		elog(ERROR, "unrecognized strategy number: %d", strategy);
@@ -1097,7 +1200,7 @@ Datum gserialized_gist_distance_2d(PG_FUNCTION_ARGS)
 	/* Box-style distance test */
 	if ( strategy == 14 ) /* operator <#> */
 	{
-		distance = (double)box2df_distance(entry_box, &query_box);
+		distance = box2df_distance(entry_box, &query_box);
 	}
 	/* True distance test (formerly centroid distance) */
 	else if ( strategy == 13 ) /* operator <-> */
@@ -1105,7 +1208,7 @@ Datum gserialized_gist_distance_2d(PG_FUNCTION_ARGS)
 		/* In all cases, since we only have keys (boxes) we'll return */
 		/* the minimum possible distance, which is the box2df_distance */
 		/* and let the recheck sort things out in the case of leaves */
-		distance = (double)box2df_distance(entry_box, &query_box);
+		distance = box2df_distance(entry_box, &query_box);
 
 		if (GIST_LEAF(entry))
 			*recheck = true;

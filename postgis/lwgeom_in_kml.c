@@ -1,11 +1,24 @@
 /**********************************************************************
  *
  * PostGIS - Spatial Types for PostgreSQL
-
- * Copyright 2009 Oslandia
+ * http://postgis.net
  *
- * This is free software; you can redistribute and/or modify it under
- * the terms of the GNU General Public Licence. See the COPYING file.
+ * PostGIS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * PostGIS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with PostGIS.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ **********************************************************************
+ *
+ * Copyright 2009 Oslandia
  *
  **********************************************************************/
 
@@ -411,7 +424,7 @@ static LWGEOM* parse_kml_polygon(xmlNodePtr xnode, bool *hasz)
 			if (ppa[0]->npoints < 4)
 				lwpgerror("invalid KML representation");
 
-			if ((!*hasz && !ptarray_is_closed_2d(ppa[0])) || 
+			if ((!*hasz && !ptarray_is_closed_2d(ppa[0])) ||
 			    ( *hasz && !ptarray_is_closed_3d(ppa[0])))
 			{
 				POINT4D pt;
@@ -425,7 +438,7 @@ static LWGEOM* parse_kml_polygon(xmlNodePtr xnode, bool *hasz)
 	
 	if (outer_rings != 1)
 		lwpgerror("invalid KML representation");
-		 
+		
 	for (ring=1, xa = xnode->children ; xa != NULL ; xa = xa->next)
 	{
 
@@ -447,7 +460,7 @@ static LWGEOM* parse_kml_polygon(xmlNodePtr xnode, bool *hasz)
 			if (ppa[ring]->npoints < 4)
 				lwpgerror("invalid KML representation");
 
-			if ((!*hasz && !ptarray_is_closed_2d(ppa[ring])) || 
+			if ((!*hasz && !ptarray_is_closed_2d(ppa[ring])) ||
 			    ( *hasz && !ptarray_is_closed_3d(ppa[ring])))
 			{
 				POINT4D pt;
