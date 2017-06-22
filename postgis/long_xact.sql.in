@@ -11,6 +11,9 @@
 -- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
+#include "sqldefines.h"
+
+
 -----------------------------------------------------------------------
 -- LONG TERM LOCKING
 -----------------------------------------------------------------------
@@ -187,12 +190,12 @@ CREATE OR REPLACE FUNCTION CheckAuth(text, text)
 
 CREATE OR REPLACE FUNCTION CheckAuthTrigger()
 	RETURNS trigger AS 
-	'@MODULE_PATHNAME@', 'check_authorization'
+	'MODULE_PATHNAME', 'check_authorization'
 	LANGUAGE C;
 
 CREATE OR REPLACE FUNCTION GetTransactionID()
 	RETURNS xid AS 
-	'@MODULE_PATHNAME@', 'getTransactionID'
+	'MODULE_PATHNAME', 'getTransactionID'
 	LANGUAGE C;
 
 

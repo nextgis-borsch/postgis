@@ -29,11 +29,25 @@ project(postgis C)
 set(LIB_NAME ${PROJECT_NAME})
 set(MODULE_PATHNAME "\$libdir/${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
 
-configure_file(sqldefines.h.in ${CMAKE_CURRENT_BINARY_DIR}/sqldefines.h)
+configure_file(sqldefines.h.in ${CMAKE_CURRENT_BINARY_DIR}/sqldefines.h) # +
 
-configure_file(long_xact.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql)
+macro(sqlin2sql sqlin sql)
+  message(">>> sqlin2sql sqlin: ${sqlin}")
+  execute_process(
+    COMMAND "${CMAKE_C_COMPILER}" -w -x c -E ${sqlin} -I ../libpgcommon
+    COMMAND grep -v "^#"
+    COMMAND "${PERL_EXECUTABLE}" -lpe 
+      "s'MODULE_PATHNAME'\$$libdir/postgis-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"
+    OUTPUT_FILE ${sql}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+endmacro()
+
+#configure_file(long_xact.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql)
+sqlin2sql(long_xact.sql.in ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql)
 file(READ ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql LONG_XACT_SQL) # use in *.cmake.in
-configure_file(geography.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/geography.sql)
+# configure_file(geography.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/geography.sql)
+sqlin2sql(geography.sql.in ${CMAKE_CURRENT_BINARY_DIR}/geography.sql)
 file(READ ${CMAKE_CURRENT_BINARY_DIR}/geography.sql GEOGRAPHY_SQL)  # use in *.cmake.in
 
 if(POSTGIS_PGSQL_VERSION GREATER 90)
@@ -62,11 +76,15 @@ if(POSTGIS_PGSQL_VERSION GREATER 90)
 	FUNCTION        8        geometry_gist_distance_nd (internal, geometry, int4),")
 endif()
 
-configure_file(postgis.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql)
+# configure_file(postgis.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql)
+sqlin2sql(postgis.sql.in ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql)
 
-configure_file(legacy_minimal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql)
-configure_file(legacy.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy.sql)
-configure_file(legacy_gist.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_gist.sql)
+#configure_file(legacy_minimal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql)
+#configure_file(legacy.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy.sql)
+#configure_file(legacy_gist.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_gist.sql)
+sqlin2sql(legacy_minimal.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql)
+sqlin2sql(legacy.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy.sql)
+sqlin2sql(legacy_gist.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_gist.sql)
 
 set(PL_SKIP \$skip)
 set(PL_NEWSRID \${newsrid})
@@ -134,7 +152,8 @@ if(POSTGIS_WITH_SFCGAL)
        LANGUAGE 'c'")
     endif()
 
-    configure_file(sfcgal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/sfcgal.sql)
+    # configure_file(sfcgal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/sfcgal.sql)
+    sqlin2sql(sfcgal.sql.in ${CMAKE_CURRENT_BINARY_DIR}/sfcgal.sql)
   
     #sfcgal_upgrade.sql.in: sfcgal.sql ../utils/postgis_proc_upgrade.pl 
 	#$(PERL) ../utils/postgis_proc_upgrade.pl $< UNUSED > $@
