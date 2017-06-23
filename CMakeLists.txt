@@ -30,6 +30,7 @@ option(POSTGIS_WITH_RASTER
 option(POSTGIS_WITH_TOPOLOGY
     "Set ON|OFF (default=ON) to control building topology extension" ON)
 
+# TODO: Add cgal support from https://github.com/nextgis-borsch/lib_cgal
 option(POSTGIS_WITH_SFCGAL
     "Set ON|OFF (default=OFF) to control building SFCGAL extension" OFF)
     
