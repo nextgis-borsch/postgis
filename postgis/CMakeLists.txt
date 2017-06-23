@@ -249,6 +249,8 @@ set(CSOURCES
 	geometry_inout.c
 )
 
+#TODO add BRIN sources option
+
 add_library(${LIB_NAME}
   ${CSOURCES}
   ${HHEADERS}
