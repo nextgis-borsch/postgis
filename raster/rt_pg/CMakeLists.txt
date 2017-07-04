@@ -100,7 +100,7 @@ set(CSOURCES
 	rtpg_statistics.c
 )
 
-add_library(${LIB_NAME}
+add_library(${LIB_NAME} SHARED
   ${CSOURCES}
   ${HHEADERS}
 )

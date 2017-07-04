@@ -6,12 +6,12 @@
 /*
  * Define just the version numbers; otherwise we get some strange substitutions in postgis.sql.in
  */
-#define POSTGIS_PGSQL_VERSION 96
-#define POSTGIS_GEOS_VERSION 37
+#define POSTGIS_PGSQL_VERSION 95
+#define POSTGIS_GEOS_VERSION 36
 #define POSTGIS_PROJ_VERSION 49
 #define POSTGIS_LIB_VERSION '2.3.2'
-#define POSTGIS_LIBXML2_VERSION 2.9.4
-#define POSTGIS_SFCGAL_VERSION 13
+#define POSTGIS_LIBXML2_VERSION 2.9.3
+#define POSTGIS_SFCGAL_VERSION 
 
 #if POSTGIS_PGSQL_VERSION >= 96
 #define _PARALLEL PARALLEL SAFE
@@ -25,7 +25,7 @@
  * won't substitute within apostrophes)
  */
 #define _POSTGIS_SQL_SELECT_POSTGIS_VERSION 'SELECT ''2.3 USE_GEOS=1 USE_PROJ=1 USE_STATS=1''::text AS version'
-#define _POSTGIS_SQL_SELECT_POSTGIS_BUILD_DATE 'SELECT ''2017-01-31 06:00:14''::text AS version'
+#define _POSTGIS_SQL_SELECT_POSTGIS_BUILD_DATE 'SELECT ''2017-07-04 12:49:17''::text AS version'
 
 #if POSTGIS_SVN_REVISION
 #define _POSTGIS_SQL_SELECT_POSTGIS_SCRIPTS_VERSION $$ SELECT '2.3.2'::text || ' r' || POSTGIS_SVN_REVISION::text AS version $$

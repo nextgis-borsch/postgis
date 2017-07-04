@@ -61,6 +61,7 @@ set(HHEADERS ${HHEADERS_PUB}
     measures.h
     stringbuffer.h
     varint.h
+    kmeans.h
   )
   
 set(CSOURCES 
@@ -124,10 +125,15 @@ set(CSOURCES
 	lwgeom_geos_split.c
 	lwgeom_topo.c
 	lwgeom_transform.c
+	lwgeom_wrapx.c
 	lwunionfind.c
 	effectivearea.c
 	varint.c
 	lwiterator.c
+	lwboundingcircle.c
+	lwgeom_median.c
+	lwkmeans.c
+	kmeans.c
 )  
 
 set(LIB_NAME ${PROJECT_NAME})

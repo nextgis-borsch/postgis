@@ -29,14 +29,14 @@ project(postgis C)
 set(LIB_NAME ${PROJECT_NAME})
 set(MODULE_PATHNAME "\$libdir/${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
 
-configure_file(sqldefines.h.in ${CMAKE_CURRENT_BINARY_DIR}/sqldefines.h) # +
+configure_file(sqldefines.h.in ${CMAKE_CURRENT_SOURCE_DIR}/sqldefines.h) # +
 
 macro(sqlin2sql sqlin sql)
   execute_process(
     COMMAND "${CMAKE_C_COMPILER}" -w -x c -E ${sqlin} -I ../libpgcommon
     COMMAND grep -v "^#"
     COMMAND "${PERL_EXECUTABLE}" -lpe 
-      "s'MODULE_PATHNAME'\$$libdir/postgis-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"
+      "s'MODULE_PATHNAME'\$libdir/postgis-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"
     OUTPUT_FILE ${sql}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )
@@ -234,6 +234,8 @@ set(CSOURCES
 	lwgeom_dumppoints.c
 	lwgeom_functions_lrs.c
 	lwgeom_functions_temporal.c
+  lwgeom_functions_basic.c
+  lwgeom_window.c
 	long_xact.c
 	lwgeom_sqlmm.c
 	lwgeom_rtree.c
@@ -247,11 +249,12 @@ set(CSOURCES
 	geography_measurement.c
 	geography_measurement_trees.c
 	geometry_inout.c
+  brin_nd.c
+  brin_2d.c
+  brin_common.c
 )
 
-#TODO add BRIN sources option
-
-add_library(${LIB_NAME}
+add_library(${LIB_NAME} SHARED
   ${CSOURCES}
   ${HHEADERS}
 )
