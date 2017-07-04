@@ -249,10 +249,17 @@ set(CSOURCES
 	geography_measurement.c
 	geography_measurement_trees.c
 	geometry_inout.c
-  brin_nd.c
-  brin_2d.c
-  brin_common.c
 )
+
+if(NOT POSTGIS_PGSQL_VERSION LESS 95)
+
+  set(CSOURCES
+    ${CSOURCES}
+    brin_nd.c
+    brin_2d.c
+    brin_common.c
+  )
+endif()
 
 add_library(${LIB_NAME} SHARED
   ${CSOURCES}
