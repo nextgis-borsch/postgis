@@ -64,10 +64,6 @@ function(check_version major minor rev)
     string(REGEX REPLACE ".*POSTGIS_MICRO_VERSION=([0-9]+).*[\r\n\t\ ].*" "\\1"
         POSTGIS_MICRO_VERSION "${_POSTGIS_VERSION_CONFIG}")
 
-    message(">>> POSTGIS_MAJOR_VERSION: ${POSTGIS_MAJOR_VERSION}")
-    message(">>> POSTGIS_MINOR_VERSION: ${POSTGIS_MINOR_VERSION}")
-    message(">>> POSTGIS_MICRO_VERSION: ${POSTGIS_MICRO_VERSION}")
-
     set(${major} ${POSTGIS_MAJOR_VERSION} PARENT_SCOPE)
     set(${minor} ${POSTGIS_MINOR_VERSION} PARENT_SCOPE)
     set(${rev} ${POSTGIS_MICRO_VERSION} PARENT_SCOPE)
