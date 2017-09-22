@@ -12,6 +12,7 @@
 
 #include "postgres.h"
 #include "fmgr.h"
+#include "c.h" /* for UINT64_FORMAT and uint64 */
 #include "utils/elog.h"
 #include "utils/memutils.h" /* for TopMemoryContext */
 #include "utils/array.h" /* for ArrayType */
@@ -159,27 +160,42 @@ static LWT_BE_TOPOLOGY*
 cb_loadTopologyByName(const LWT_BE_DATA* be, const char *name)
 {
   int spi_result;
-  StringInfoData sqldata;
-  StringInfo sql = &sqldata;
+  const char *sql;
   Datum dat;
   bool isnull;
   LWT_BE_TOPOLOGY *topo;
   MemoryContext oldcontext = CurrentMemoryContext;
+  Datum values[1];
+  Oid argtypes[1];
+  static SPIPlanPtr plan = NULL;
 
-  initStringInfo(sql);
-  appendStringInfo(sql, "SELECT id,srid,precision,null::geometry"
-                        " FROM topology.topology "
-                        "WHERE name = '%s'", name);
-  spi_result = SPI_execute(sql->data, !be->data_changed, 0);
+  // prepare
+  if ( ! plan ) {
+    sql = "SELECT id,srid,precision,null::geometry"
+                          " FROM topology.topology "
+                          "WHERE name = $1::varchar";
+    argtypes[0] = CSTRINGOID;
+    plan = SPI_prepare(sql, 1, argtypes);
+    if ( ! plan )
+    {
+      cberror(be, "unexpected return (%d) from query preparation: %s",
+              SPI_result, sql);
+      return NULL;
+    }
+    SPI_keepplan(plan);
+    // SPI_freeplan to free, eventually
+  }
+
+  // execute
+  values[0] = CStringGetDatum(name);
+  spi_result = SPI_execute_plan(plan, values, NULL, !be->data_changed, 1);
   MemoryContextSwitchTo( oldcontext ); /* switch back */
   if ( spi_result != SPI_OK_SELECT ) {
-		cberror(be, "unexpected return (%d) from query execution: %s", spi_result, sql->data);
-    pfree(sqldata.data);
+		cberror(be, "unexpected return (%d) from query execution: %s", spi_result, sql);
 	  return NULL;
   }
   if ( ! SPI_processed )
   {
-    pfree(sqldata.data);
 		//cberror(be, "no topology named '%s' was found", name);
     if ( be->topoLoadFailMessageFlavor == 1 ) {
       cberror(be, "No topology with name \"%s\" in topology.topology", name);
@@ -190,11 +206,9 @@ cb_loadTopologyByName(const LWT_BE_DATA* be, const char *name)
   }
   if ( SPI_processed > 1 )
   {
-    pfree(sqldata.data);
 		cberror(be, "multiple topologies named '%s' were found", name);
 	  return NULL;
   }
-  pfree(sqldata.data);
 
   topo = palloc(sizeof(LWT_BE_TOPOLOGY));
   topo->be_data = (LWT_BE_DATA *)be; /* const cast.. */
@@ -231,7 +245,11 @@ cb_loadTopologyByName(const LWT_BE_DATA* be, const char *name)
   }
 
   /* we're dynamically querying geometry type here */
+#if POSTGIS_PGSQL_VERSION < 110
   topo->geometryOID = SPI_tuptable->tupdesc->attrs[3]->atttypid;
+#else
+  topo->geometryOID = SPI_tuptable->tupdesc->attrs[3].atttypid;
+#endif
 
   POSTGIS_DEBUGF(1, "cb_loadTopologyByName: topo '%s' has "
                     "id %d, srid %d, precision %g",
@@ -1423,9 +1441,9 @@ cb_insertNodes( const LWT_BE_TOPOLOGY* topo,
   if ( SPI_processed ) topo->be_data->data_changed = true;
 
   if ( SPI_processed != numelems ) {
-		cberror(topo->be_data, "processed %u rows, expected %d",
-            SPI_processed, numelems);
-	  return 0;
+    cberror(topo->be_data, "processed " UINT64_FORMAT " rows, expected %d",
+      (uint64)SPI_processed, numelems);
+    return 0;
   }
 
   /* Set node_id (could skip this if none had it set to -1) */
@@ -1480,9 +1498,9 @@ cb_insertEdges( const LWT_BE_TOPOLOGY* topo,
   if ( SPI_processed ) topo->be_data->data_changed = true;
   POSTGIS_DEBUGF(1, "cb_insertEdges query processed %d rows", SPI_processed);
   if ( SPI_processed != numelems ) {
-		cberror(topo->be_data, "processed %u rows, expected %d",
-            SPI_processed, numelems);
-	  return -1;
+    cberror(topo->be_data, "processed " UINT64_FORMAT " rows, expected %d",
+            (uint64)SPI_processed, numelems);
+    return -1;
   }
 
   if ( needsEdgeIdReturn )
@@ -1538,9 +1556,9 @@ cb_insertFaces( const LWT_BE_TOPOLOGY* topo,
   if ( SPI_processed ) topo->be_data->data_changed = true;
   POSTGIS_DEBUGF(1, "cb_insertFaces query processed %d rows", SPI_processed);
   if ( SPI_processed != numelems ) {
-		cberror(topo->be_data, "processed %u rows, expected %d",
-            SPI_processed, numelems);
-	  return -1;
+    cberror(topo->be_data, "processed " UINT64_FORMAT " rows, expected %d",
+            (uint64)SPI_processed, numelems);
+    return -1;
   }
 
   if ( needsFaceIdReturn )
@@ -1904,8 +1922,9 @@ cb_getNextEdgeId( const LWT_BE_TOPOLOGY* topo )
   if ( SPI_processed ) topo->be_data->data_changed = true;
 
   if ( SPI_processed != 1 ) {
-		cberror(topo->be_data, "processed %d rows, expected 1", SPI_processed);
-	  return -1;
+    cberror(topo->be_data, "processed " UINT64_FORMAT " rows, expected 1",
+            (uint64)SPI_processed);
+    return -1;
   }
 
   dat = SPI_getbinval( SPI_tuptable->vals[0],
@@ -2529,8 +2548,9 @@ cb_getFaceContainingPoint( const LWT_BE_TOPOLOGY* topo, const LWPOINT* pt )
   }
   /* TODO: call GetFaceGeometry internally, avoiding the round-trip to sql */
   appendStringInfo(sql,
-                   "SELECT face_id FROM \"%s\".face "
-                   "WHERE mbr && $1 AND _ST_Contains("
+                   "WITH faces AS ( SELECT face_id FROM \"%s\".face "
+                   "WHERE mbr && $1 ORDER BY ST_Area(mbr) ASC ) "
+                   "SELECT face_id FROM faces WHERE _ST_Contains("
                    "topology.ST_GetFaceGeometry('%s', face_id), $1)"
                    " LIMIT 1",
                    topo->name, topo->name);
@@ -2736,10 +2756,14 @@ cb_getEdgeWithinBox2D ( const LWT_BE_TOPOLOGY* topo, const GBOX* box,
     appendStringInfoString(sql, "SELECT ");
     addEdgeFields(sql, fields, 0);
   }
-  hexbox = _box2d_to_hexwkb(box, topo->srid);
-  appendStringInfo(sql, " FROM \"%s\".edge WHERE geom && '%s'::geometry",
-                        topo->name, hexbox);
-  lwfree(hexbox);
+  appendStringInfo(sql, " FROM \"%s\".edge", topo->name);
+
+  if ( box ) {
+    hexbox = _box2d_to_hexwkb(box, topo->srid);
+    appendStringInfo(sql, " WHERE geom && '%s'::geometry", hexbox);
+    lwfree(hexbox);
+  }
+
   if ( elems_requested == -1 ) {
     appendStringInfoString(sql, ")");
   } else if ( elems_requested > 0 ) {

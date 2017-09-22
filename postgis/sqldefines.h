@@ -9,7 +9,7 @@
 #define POSTGIS_PGSQL_VERSION 95
 #define POSTGIS_GEOS_VERSION 36
 #define POSTGIS_PROJ_VERSION 49
-#define POSTGIS_LIB_VERSION '2.3.2'
+#define POSTGIS_LIB_VERSION '2.4.0'
 #define POSTGIS_LIBXML2_VERSION 2.9.3
 #define POSTGIS_SFCGAL_VERSION 
 
@@ -24,13 +24,14 @@
  * (these substitiutions are done with extra quotes sinces CPP
  * won't substitute within apostrophes)
  */
-#define _POSTGIS_SQL_SELECT_POSTGIS_VERSION 'SELECT ''2.3 USE_GEOS=1 USE_PROJ=1 USE_STATS=1''::text AS version'
-#define _POSTGIS_SQL_SELECT_POSTGIS_BUILD_DATE 'SELECT ''2017-07-04 12:49:17''::text AS version'
+#define _POSTGIS_SQL_SELECT_POSTGIS_VERSION 'SELECT ''2.4 USE_GEOS=1 USE_PROJ=1 USE_STATS=1''::text AS version'
+#define _POSTGIS_SQL_SELECT_POSTGIS_BUILD_DATE 'SELECT ''2017-09-21 18:53:21''::text AS version'
+#define _POSTGIS_SQL_SELECT_POSTGIS_PGSQL_VERSION 'SELECT ''95''::text AS version'
 
 #if POSTGIS_SVN_REVISION
-#define _POSTGIS_SQL_SELECT_POSTGIS_SCRIPTS_VERSION $$ SELECT '2.3.2'::text || ' r' || POSTGIS_SVN_REVISION::text AS version $$
+#define _POSTGIS_SQL_SELECT_POSTGIS_SCRIPTS_VERSION $$ SELECT '2.4.0'::text || ' r' || POSTGIS_SVN_REVISION::text AS version $$
 #else
-#define _POSTGIS_SQL_SELECT_POSTGIS_SCRIPTS_VERSION $$ SELECT '2.3.2'::text AS version $$
+#define _POSTGIS_SQL_SELECT_POSTGIS_SCRIPTS_VERSION $$ SELECT '2.4.0'::text AS version $$
 #endif
 
 #define SRID_USR_MAX 998999

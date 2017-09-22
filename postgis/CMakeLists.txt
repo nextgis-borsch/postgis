@@ -205,50 +205,61 @@ set(HHEADERS
   lwgeom_geos.h
   lwgeom_geos_prepared.h
   lwgeom_rtree.h
+
+  geobuf.h
+  mvt.h
+  uthash.h
 )
 
 set(CSOURCES
-	postgis_module.c
-	lwgeom_accum.c
-	lwgeom_spheroid.c
-	lwgeom_ogc.c
-	lwgeom_functions_analytic.c
-	lwgeom_inout.c
-	lwgeom_functions_basic.c
-	lwgeom_btree.c
-	lwgeom_box.c
-	lwgeom_box3d.c
-	lwgeom_backend_api.c
-	lwgeom_geos.c
-	lwgeom_geos_prepared.c
-	lwgeom_geos_clean.c
-	lwgeom_geos_relatematch.c
-	lwgeom_export.c
-	lwgeom_in_gml.c
-	lwgeom_in_kml.c
-	lwgeom_in_geohash.c
-	lwgeom_in_geojson.c
-	lwgeom_in_encoded_polyline.c
-	lwgeom_triggers.c
-	lwgeom_dump.c
-	lwgeom_dumppoints.c
-	lwgeom_functions_lrs.c
-	lwgeom_functions_temporal.c
+  postgis_module.c
+  lwgeom_accum.c
+  lwgeom_spheroid.c
+  lwgeom_ogc.c
+  lwgeom_functions_analytic.c
+  lwgeom_inout.c
+  lwgeom_functions_basic.c
+  lwgeom_btree.c
+  lwgeom_box.c
+  lwgeom_box3d.c
+  lwgeom_backend_api.c
+  lwgeom_geos.c
+  lwgeom_geos_prepared.c
+  lwgeom_geos_clean.c
+  lwgeom_geos_relatematch.c
+  lwgeom_export.c
+  lwgeom_in_gml.c
+  lwgeom_in_kml.c
+  lwgeom_in_geohash.c
+  lwgeom_in_geojson.c
+  lwgeom_in_encoded_polyline.c
+  lwgeom_triggers.c
+  lwgeom_dump.c
+  lwgeom_dumppoints.c
+  lwgeom_functions_lrs.c
+  lwgeom_functions_temporal.c
   lwgeom_functions_basic.c
   lwgeom_window.c
-	long_xact.c
-	lwgeom_sqlmm.c
-	lwgeom_rtree.c
-	lwgeom_transform.c
-	gserialized_typmod.c
-	gserialized_gist_2d.c
-	gserialized_gist_nd.c
-	gserialized_estimate.c
-	geography_inout.c
-	geography_btree.c
-	geography_measurement.c
-	geography_measurement_trees.c
-	geometry_inout.c
+  long_xact.c
+  lwgeom_sqlmm.c
+  lwgeom_rtree.c
+  lwgeom_transform.c
+  gserialized_typmod.c
+  gserialized_gist_2d.c
+  gserialized_gist_nd.c
+  gserialized_estimate.c
+  geography_inout.c
+  geography_btree.c
+  geography_measurement.c
+  geography_measurement_trees.c
+  geometry_inout.c
+
+  geobuf.c
+  geography_centroid.c
+  lwgeom_out_geobuf.c
+  lwgeom_out_mvt.c
+  mvt.c
+  postgis_libprotobuf.c
 )
 
 if(NOT POSTGIS_PGSQL_VERSION LESS 95)
@@ -259,6 +270,24 @@ if(NOT POSTGIS_PGSQL_VERSION LESS 95)
     brin_2d.c
     brin_common.c
   )
+
+endif()
+
+
+if(PROTOBUF_FOUND)
+
+    add_definitions(-DHAVE_LIBPROTOBUF)
+    
+    execute_process(
+        COMMAND "protoc-c" --c_out=. vector_tile.proto geobuf.proto
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    )
+
+    set(CSOURCES
+      ${CSOURCES}
+      vector_tile.pb-c.c
+      geobuf.pb-c.c
+    )
 endif()
 
 add_library(${LIB_NAME} SHARED
