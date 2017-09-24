@@ -32,8 +32,14 @@
 *.dSYM/
 
 # Build
-/build
+/build*
 /inst
+
+#protoc-c
+postgis/geobuf.pb-c.c
+postgis/geobuf.pb-c.h
+postgis/vector_tile.pb-c.c
+postgis/vector_tile.pb-c.h
 
 # Temp
 *~
