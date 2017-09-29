@@ -32,11 +32,6 @@
 #include <assert.h>
 #include "../postgis_svn_revision.h"
 
-/*
- * Lower this to reduce integrity checks
- */
-#define PARANOIA_LEVEL 1
-
 const char *
 lwgeom_version()
 {
@@ -239,6 +234,8 @@ getPoint4d(const POINTARRAY *pa, int n)
  * will set point's m=NO_M_VALUE  if pa is 3d or 2d
  *
  * NOTE: this will modify the point4d pointed to by 'point'.
+ *
+ * @return 0 on error, 1 on success
  */
 int
 getPoint4d_p(const POINTARRAY *pa, int n, POINT4D *op)
@@ -246,14 +243,17 @@ getPoint4d_p(const POINTARRAY *pa, int n, POINT4D *op)
 	uint8_t *ptr;
 	int zmflag;
 
-#if PARANOIA_LEVEL > 0
-	if ( ! pa ) lwerror("getPoint4d_p: NULL pointarray");
+	if ( ! pa )
+	{
+		lwerror("%s [%d] NULL POINTARRAY input", __FILE__, __LINE__);
+		return 0;
+	}
 
 	if ( (n<0) || (n>=pa->npoints))
 	{
-		lwerror("getPoint4d_p: point offset out of range");
+		lwnotice("%s [%d] called with n=%d and npoints=%d", __FILE__, __LINE__, n, pa->npoints);
+		return 0;
 	}
-#endif
 
 	LWDEBUG(4, "getPoint4d_p called.");
 
@@ -288,6 +288,7 @@ getPoint4d_p(const POINTARRAY *pa, int n, POINT4D *op)
 
 	default:
 		lwerror("Unknown ZM flag ??");
+		return 0;
 	}
 	return 1;
 
@@ -333,15 +334,17 @@ getPoint3dz_p(const POINTARRAY *pa, int n, POINT3DZ *op)
 {
 	uint8_t *ptr;
 
-#if PARANOIA_LEVEL > 0
-	if ( ! pa ) return 0;
+	if ( ! pa )
+	{
+		lwerror("%s [%d] NULL POINTARRAY input", __FILE__, __LINE__);
+		return 0;
+	}
 
 	if ( (n<0) || (n>=pa->npoints))
 	{
-		LWDEBUGF(4, "%d out of numpoint range (%d)", n, pa->npoints);
-		return 0; /*error */
+		lwnotice("%s [%d] called with n=%d and npoints=%d", __FILE__, __LINE__, n, pa->npoints);
+		return 0;
 	}
-#endif
 
 	LWDEBUGF(2, "getPoint3dz_p called on array of %d-dimensions / %u pts",
 	         FLAGS_NDIMS(pa->flags), pa->npoints);
@@ -384,15 +387,17 @@ getPoint3dm_p(const POINTARRAY *pa, int n, POINT3DM *op)
 	uint8_t *ptr;
 	int zmflag;
 
-#if PARANOIA_LEVEL > 0
-	if ( ! pa ) return 0;
+	if ( ! pa )
+	{
+		lwerror("%s [%d] NULL POINTARRAY input", __FILE__, __LINE__);
+		return 0;
+	}
 
 	if ( (n<0) || (n>=pa->npoints))
 	{
-		lwerror("%d out of numpoint range (%d)", n, pa->npoints);
-		return 0; /*error */
+		lwnotice("%s [%d] called with n=%d and npoints=%d", __FILE__, __LINE__, n, pa->npoints);
+		return 0;
 	}
-#endif
 
 	LWDEBUGF(2, "getPoint3dm_p(%d) called on array of %d-dimensions / %u pts",
 	         n, FLAGS_NDIMS(pa->flags), pa->npoints);
@@ -460,15 +465,17 @@ getPoint2d(const POINTARRAY *pa, int n)
 int
 getPoint2d_p(const POINTARRAY *pa, int n, POINT2D *point)
 {
-#if PARANOIA_LEVEL > 0
-	if ( ! pa ) return 0;
+	if ( ! pa )
+	{
+		lwerror("%s [%d] NULL POINTARRAY input", __FILE__, __LINE__);
+		return 0;
+	}
 
 	if ( (n<0) || (n>=pa->npoints))
 	{
-		lwerror("getPoint2d_p: point offset out of range");
-		return 0; /*error */
+		lwnotice("%s [%d] called with n=%d and npoints=%d", __FILE__, __LINE__, n, pa->npoints);
+		return 0;
 	}
-#endif
 
 	/* this does x,y */
 	memcpy(point, getPoint_internal(pa, n), sizeof(POINT2D));
@@ -499,7 +506,7 @@ const POINT3DZ*
 getPoint3dz_cp(const POINTARRAY *pa, int n)
 {
 	if ( ! pa ) return 0;
-	
+
 	if ( ! FLAGS_GET_Z(pa->flags) )
 	{
 		lwerror("getPoint3dz_cp: no Z coordinates in point array");
@@ -520,7 +527,7 @@ const POINT4D*
 getPoint4d_cp(const POINTARRAY *pa, int n)
 {
 	if ( ! pa ) return 0;
-	
+
 	if ( ! (FLAGS_GET_Z(pa->flags) && FLAGS_GET_Z(pa->flags)) )
 	{
 		lwerror("getPoint3dz_cp: no Z and M coordinates in point array");

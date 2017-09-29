@@ -397,16 +397,6 @@ lwpoly_split_by_line(const LWPOLY* lwpoly_in, const LWLINE* blade_in)
 		return NULL;
 	}
 
-	/* debugging..
-		lwnotice("Bounds poly: %s",
-		               lwgeom_to_ewkt(GEOS2LWGEOM(g1_bounds, hasZ)));
-		lwnotice("Line: %s",
-		               lwgeom_to_ewkt(GEOS2LWGEOM(g2, hasZ)));
-
-		lwnotice("Noded bounds: %s",
-		               lwgeom_to_ewkt(GEOS2LWGEOM(vgeoms[0], hasZ)));
-	*/
-
 	polygons = GEOSPolygonize(vgeoms, 1);
 	if ( NULL == polygons )
 	{
@@ -419,14 +409,14 @@ lwpoly_split_by_line(const LWPOLY* lwpoly_in, const LWLINE* blade_in)
 	}
 
 #if PARANOIA_LEVEL > 0
-	if ( GEOSGeometryTypeId(polygons) != COLLECTIONTYPE )
+	if ( GEOSGeomTypeId(polygons) != COLLECTIONTYPE )
 	{
 		GEOSGeom_destroy(g1);
 		GEOSGeom_destroy(g2);
 		GEOSGeom_destroy(g1_bounds);
 		GEOSGeom_destroy((GEOSGeometry*)vgeoms[0]);
 		GEOSGeom_destroy(polygons);
-		lwerror("Unexpected return from GEOSpolygonize");
+		lwerror("%s [%s] Unexpected return from GEOSpolygonize", __FILE__, __LINE__);
 		return 0;
 	}
 #endif

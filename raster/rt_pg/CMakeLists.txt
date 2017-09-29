@@ -25,6 +25,17 @@
 ################################################################################
 project(rtpostgis C)
 
+macro(sqlin2sql sqlin sql)
+  execute_process(
+    COMMAND "${CMAKE_C_COMPILER}" -w -x c -E ${sqlin} -I ../../postgis
+    COMMAND grep -v "^#"
+    COMMAND "${PERL_EXECUTABLE}" -lpe 
+      "s'MODULE_PATHNAME'\$libdir/postgis_topology-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"
+    OUTPUT_FILE ${sql}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+endmacro()
+
 set_property(GLOBAL PROPERTY LIBRTPOSTGIS_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR})
@@ -34,16 +45,16 @@ set(LIB_NAME ${PROJECT_NAME})
 set(MODULE_PATHNAME "\$libdir/${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
 
 # create rtpostgis.sql
-configure_file(rtpostgis.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis.sql)
+sqlin2sql(rtpostgis.sql.in ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis.sql)
 
 # create rtpostgis_legacy.sql
-configure_file(rtpostgis_legacy.sql.in ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_legacy.sql)
+sqlin2sql(rtpostgis_legacy.sql.in ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_legacy.sql)
 
 # create rtpostgis_legacy.sql
-configure_file(rtpostgis_upgrade_cleanup.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade_cleanup.sql)
+sqlin2sql(rtpostgis_upgrade_cleanup.sql.in ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade_cleanup.sql)
 
 # create rtpostgis_drop.sql
-configure_file(rtpostgis_drop.sql.in ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_drop.sql)
+sqlin2sql(rtpostgis_drop.sql.in ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_drop.sql)
 
 # create rtpostgis_upgrade.sql
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade.sql "BEGIN;\n")

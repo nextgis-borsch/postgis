@@ -25,7 +25,7 @@
  * won't substitute within apostrophes)
  */
 #define _POSTGIS_SQL_SELECT_POSTGIS_VERSION 'SELECT ''2.4 USE_GEOS=1 USE_PROJ=1 USE_STATS=1''::text AS version'
-#define _POSTGIS_SQL_SELECT_POSTGIS_BUILD_DATE 'SELECT ''2017-09-21 18:53:21''::text AS version'
+#define _POSTGIS_SQL_SELECT_POSTGIS_BUILD_DATE 'SELECT ''2017-09-29 07:20:27''::text AS version'
 #define _POSTGIS_SQL_SELECT_POSTGIS_PGSQL_VERSION 'SELECT ''95''::text AS version'
 
 #if POSTGIS_SVN_REVISION

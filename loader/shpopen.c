@@ -263,7 +263,7 @@
 #include <string.h>
 #include <stdio.h>
 
-SHP_CVSID("$Id: shpopen.c 14869 2016-04-27 14:45:28Z strk $")
+SHP_CVSID("$Id$")
 
 typedef unsigned char uchar;
 

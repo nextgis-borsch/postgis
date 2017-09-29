@@ -59,6 +59,35 @@ lwgeom_force_clockwise(LWGEOM *lwgeom)
 	}
 }
 
+/** Check clockwise orientation on LWGEOM polygons **/
+int
+lwgeom_is_clockwise(LWGEOM *lwgeom)
+{
+	switch (lwgeom->type)
+	{
+		case POLYGONTYPE:
+			return lwpoly_is_clockwise((LWPOLY *)lwgeom);
+
+		case TRIANGLETYPE:
+			return lwtriangle_is_clockwise((LWTRIANGLE *)lwgeom);
+
+		case MULTIPOLYGONTYPE:
+		case COLLECTIONTYPE:
+		{
+			int i;
+			LWCOLLECTION* coll = (LWCOLLECTION *)lwgeom;
+
+			for (i=0; i < coll->ngeoms; i++)
+				if (!lwgeom_is_clockwise(coll->geoms[i]))
+					return LW_FALSE;
+			return LW_TRUE;
+		}
+		default:
+			return LW_TRUE;
+		return LW_FALSE;
+	}
+}
+
 /** Reverse vertex order of LWGEOM **/
 void
 lwgeom_reverse(LWGEOM *lwgeom)
@@ -77,11 +106,18 @@ lwgeom_reverse(LWGEOM *lwgeom)
 	case TRIANGLETYPE:
 		lwtriangle_reverse((LWTRIANGLE *)lwgeom);
 		return;
+	case CIRCSTRINGTYPE:
+		lwcircstring_reverse((LWCIRCSTRING *)lwgeom);
+		return;
+	case MULTICURVETYPE:
 	case MULTILINETYPE:
 	case MULTIPOLYGONTYPE:
+	case MULTISURFACETYPE:
 	case POLYHEDRALSURFACETYPE:
 	case TINTYPE:
 	case COLLECTIONTYPE:
+	case COMPOUNDTYPE:
+	case CURVEPOLYTYPE:
 		col = (LWCOLLECTION *)lwgeom;
 		for (i=0; i<col->ngeoms; i++)
 			lwgeom_reverse(col->geoms[i]);
@@ -483,7 +519,7 @@ lwgeom_to_ewkt(const LWGEOM *lwgeom)
 {
 	char* wkt = NULL;
 	size_t wkt_size = 0;
-	
+
 	wkt = lwgeom_to_wkt(lwgeom, WKT_EXTENDED, 12, &wkt_size);
 
 	if ( ! wkt )
@@ -583,7 +619,7 @@ lwpoint_inside_circle(const LWPOINT *p, double cx, double cy, double rad)
 
 	if ( ! p || ! p->point )
 		return LW_FALSE;
-		
+
 	pt = getPoint2d_cp(p->point, 0);
 
 	center.x = cx;
@@ -626,17 +662,17 @@ lwgeom_add_bbox_deep(LWGEOM *lwgeom, GBOX *gbox)
 	if ( lwgeom_is_empty(lwgeom) ) return;
 
 	FLAGS_SET_BBOX(lwgeom->flags, 1);
-	
+
 	if ( ! ( gbox || lwgeom->bbox ) )
 	{
 		lwgeom->bbox = gbox_new(lwgeom->flags);
-		lwgeom_calculate_gbox(lwgeom, lwgeom->bbox);		
+		lwgeom_calculate_gbox(lwgeom, lwgeom->bbox);
 	}
 	else if ( gbox && ! lwgeom->bbox )
 	{
 		lwgeom->bbox = gbox_clone(gbox);
 	}
-	
+
 	if ( lwgeom_is_collection(lwgeom) )
 	{
 		int i;
@@ -668,7 +704,7 @@ int lwgeom_calculate_gbox(const LWGEOM *lwgeom, GBOX *gbox)
 	if( FLAGS_GET_GEODETIC(lwgeom->flags) )
 		return lwgeom_calculate_gbox_geodetic(lwgeom, gbox);
 	else
-		return lwgeom_calculate_gbox_cartesian(lwgeom, gbox);	
+		return lwgeom_calculate_gbox_cartesian(lwgeom, gbox);
 }
 
 void
@@ -701,31 +737,31 @@ lwgeom_segmentize2d(LWGEOM *lwgeom, double dist)
 
 LWGEOM*
 lwgeom_force_2d(const LWGEOM *geom)
-{	
+{
 	return lwgeom_force_dims(geom, 0, 0);
 }
 
 LWGEOM*
 lwgeom_force_3dz(const LWGEOM *geom)
-{	
+{
 	return lwgeom_force_dims(geom, 1, 0);
 }
 
 LWGEOM*
 lwgeom_force_3dm(const LWGEOM *geom)
-{	
+{
 	return lwgeom_force_dims(geom, 0, 1);
 }
 
 LWGEOM*
 lwgeom_force_4d(const LWGEOM *geom)
-{	
+{
 	return lwgeom_force_dims(geom, 1, 1);
 }
 
 LWGEOM*
 lwgeom_force_dims(const LWGEOM *geom, int hasz, int hasm)
-{	
+{
 	switch(geom->type)
 	{
 		case POINTTYPE:
@@ -755,7 +791,7 @@ lwgeom_force_dims(const LWGEOM *geom, int hasz, int hasm)
 
 LWGEOM*
 lwgeom_force_sfs(LWGEOM *geom, int version)
-{	
+{
 	LWCOLLECTION *col;
 	int i;
 	LWGEOM *g;
@@ -784,7 +820,7 @@ lwgeom_force_sfs(LWGEOM *geom, int version)
 				return (LWGEOM *)geom;
 		}
 	}
-	
+
 
 	/* SFS 1.1 version */
 	switch(geom->type)
@@ -813,7 +849,7 @@ lwgeom_force_sfs(LWGEOM *geom, int version)
 			}
 			col->type = COLLECTIONTYPE;
 			return lwmpoly_as_lwgeom((LWMPOLY*)geom);
-		
+
 		case POLYHEDRALSURFACETYPE:
 			geom->type = COLLECTIONTYPE;
 			return (LWGEOM *)geom;
@@ -825,7 +861,7 @@ lwgeom_force_sfs(LWGEOM *geom, int version)
 				col->geoms[i] = lwgeom_force_sfs((LWGEOM*)col->geoms[i], version);
 
 			return lwcollection_as_lwgeom((LWCOLLECTION*)geom);
-		
+
 		default:
 			return (LWGEOM *)geom;
 	}
@@ -875,11 +911,11 @@ lwgeom_set_geodetic(LWGEOM *geom, int value)
 	LWPOLY *ply;
 	LWCOLLECTION *col;
 	int i;
-	
+
 	FLAGS_SET_GEODETIC(geom->flags, value);
 	if ( geom->bbox )
 		FLAGS_SET_GEODETIC(geom->bbox->flags, value);
-	
+
 	switch(geom->type)
 	{
 		case POINTTYPE:
@@ -960,10 +996,10 @@ int
 lwgeom_is_closed(const LWGEOM *geom)
 {
 	int type = geom->type;
-	
+
 	if( lwgeom_is_empty(geom) )
 		return LW_FALSE;
-	
+
 	/* Test linear types for closure */
 	switch (type)
 	{
@@ -980,7 +1016,7 @@ lwgeom_is_closed(const LWGEOM *geom)
 	case POLYHEDRALSURFACETYPE:
 		return lwpsurface_is_closed((LWPSURFACE*)geom);
 	}
-	
+
 	/* Recurse into collections and see if anything is not closed */
 	if ( lwgeom_is_collection(geom) )
 	{
@@ -995,7 +1031,7 @@ lwgeom_is_closed(const LWGEOM *geom)
 		}
 		return LW_TRUE;
 	}
-	
+
 	/* All non-linear non-collection types we will call closed */
 	return LW_TRUE;
 }
@@ -1067,7 +1103,7 @@ void lwgeom_free(LWGEOM *lwgeom)
 	if( ! lwgeom ) return;
 
 	LWDEBUGF(5,"freeing a %s",lwtype_name(lwgeom->type));
-	
+
 	switch (lwgeom->type)
 	{
 	case POINTTYPE:
@@ -1153,10 +1189,10 @@ int lwgeom_needs_bbox(const LWGEOM *geom)
 int lwgeom_count_vertices(const LWGEOM *geom)
 {
 	int result = 0;
-	
+
 	/* Null? Zero. */
 	if( ! geom ) return 0;
-	
+
 	LWDEBUGF(4, "lwgeom_count_vertices got type %s",
 	         lwtype_name(geom->type));
 
@@ -1207,7 +1243,7 @@ int lwgeom_dimension(const LWGEOM *geom)
 
 	/* Null? Zero. */
 	if( ! geom ) return -1;
-	
+
 	LWDEBUGF(4, "lwgeom_dimension got type %s",
 	         lwtype_name(geom->type));
 
@@ -1262,7 +1298,7 @@ int lwgeom_dimension(const LWGEOM *geom)
 int lwgeom_count_rings(const LWGEOM *geom)
 {
 	int result = 0;
-	
+
 	/* Null? Empty? Zero. */
 	if( ! geom || lwgeom_is_empty(geom) )
 		return 0;
@@ -1480,11 +1516,6 @@ void lwgeom_swap_ordinates(LWGEOM *in, LWORD o1, LWORD o2)
 	LWPOLY *poly;
 	int i;
 
-#if PARANOIA_LEVEL > 0
-  assert(o1 < 4);
-  assert(o2 < 4);
-#endif
-
 	if ( (!in) || lwgeom_is_empty(in) ) return;
 
   /* TODO: check for lwgeom NOT having the specified dimension ? */
@@ -1592,7 +1623,7 @@ LWGEOM* lwgeom_simplify(const LWGEOM *igeom, double dist, int preserve_collapsed
 double lwgeom_area(const LWGEOM *geom)
 {
 	int type = geom->type;
-	
+
 	if ( type == POLYGONTYPE )
 		return lwpoly_area((LWPOLY*)geom);
 	else if ( type == CURVEPOLYTYPE )
@@ -1851,7 +1882,7 @@ lwgeom_startpoint(const LWGEOM* lwgeom, POINT4D* pt)
 {
 	if ( ! lwgeom )
 		return LW_FAILURE;
-		
+
 	switch( lwgeom->type )
 	{
 		case POINTTYPE:
@@ -1918,25 +1949,25 @@ lwgeom_subdivide_recursive(const LWGEOM *geom, int maxvertices, int depth, LWCOL
 	double height = clip->ymax - clip->ymin;
 	GBOX subbox1, subbox2;
 	LWGEOM *clipped1, *clipped2;
-	
+
 	if ( geom->type == POLYHEDRALSURFACETYPE || geom->type == TINTYPE )
 	{
 		lwerror("%s: unsupported geometry type '%s'", __func__, lwtype_name(geom->type));
 	}
-	
+
 	if ( width == 0.0 && height == 0.0 )
 	{
 		if ( geom->type == POINTTYPE )
 		{
 			lwcollection_add_lwgeom(col, lwgeom_clone_deep(geom));
-			return 1;			
+			return 1;
 		}
 		else
 		{
 			return 0;
 		}
 	}
-	
+
 	/* Always just recurse into collections */
 	if ( lwgeom_is_collection(geom) && geom->type != MULTIPOINTTYPE )
 	{
@@ -1949,29 +1980,29 @@ lwgeom_subdivide_recursive(const LWGEOM *geom, int maxvertices, int depth, LWCOL
 		}
 		return n;
 	}
-	
-	/* But don't go too far. 2^25 = 33M, that's enough subdivision */
-	/* Signal callers above that we depth'ed out with a negative */
-	/* return value */
+
+	/* But don't go too far. 2^50 ~= 10^15, that's enough subdivision */
+	/* Just add what's left */
 	if ( depth > maxdepth )
 	{
-		return 0;
+		lwcollection_add_lwgeom(col, lwgeom_clone_deep(geom));
+		return 1;
 	}
-	
+
 	nvertices = lwgeom_count_vertices(geom);
 	/* Skip empties entirely */
 	if ( nvertices == 0 )
 	{
 		return 0;
 	}
-	
+
 	/* If it is under the vertex tolerance, just add it, we're done */
 	if ( nvertices < maxvertices )
 	{
 		lwcollection_add_lwgeom(col, lwgeom_clone_deep(geom));
 		return 1;
 	}
-	
+
 	subbox1 = subbox2 = *clip;
 	if ( width > height )
 	{
@@ -1981,7 +2012,7 @@ lwgeom_subdivide_recursive(const LWGEOM *geom, int maxvertices, int depth, LWCOL
 	{
 		subbox1.ymax = subbox2.ymin = (clip->ymin + clip->ymax)/2;
 	}
-	
+
 	if ( height == 0 )
 	{
 		subbox1.ymax += FP_TOLERANCE;
@@ -1997,24 +2028,26 @@ lwgeom_subdivide_recursive(const LWGEOM *geom, int maxvertices, int depth, LWCOL
 		subbox1.xmin -= FP_TOLERANCE;
 		subbox2.xmin -= FP_TOLERANCE;
 	}
-		
+
 	clipped1 = lwgeom_clip_by_rect(geom, subbox1.xmin, subbox1.ymin, subbox1.xmax, subbox1.ymax);
 	clipped2 = lwgeom_clip_by_rect(geom, subbox2.xmin, subbox2.ymin, subbox2.xmax, subbox2.ymax);
-	
+
+	++depth;
+
 	if ( clipped1 )
 	{
-		n += lwgeom_subdivide_recursive(clipped1, maxvertices, ++depth, col, &subbox1);
+		n += lwgeom_subdivide_recursive(clipped1, maxvertices, depth, col, &subbox1);
 		lwgeom_free(clipped1);
 	}
 
 	if ( clipped2 )
 	{
-		n += lwgeom_subdivide_recursive(clipped2, maxvertices, ++depth, col, &subbox2);
+		n += lwgeom_subdivide_recursive(clipped2, maxvertices, depth, col, &subbox2);
 		lwgeom_free(clipped2);
 	}
-	
+
 	return n;
-	
+
 }
 
 LWCOLLECTION *
@@ -2024,7 +2057,7 @@ lwgeom_subdivide(const LWGEOM *geom, int maxvertices)
 	static int minmaxvertices = 8;
 	LWCOLLECTION *col;
 	GBOX clip;
-	
+
 	col = lwcollection_construct_empty(COLLECTIONTYPE, geom->srid, lwgeom_has_z(geom), lwgeom_has_m(geom));
 
 	if ( lwgeom_is_empty(geom) )
@@ -2035,7 +2068,7 @@ lwgeom_subdivide(const LWGEOM *geom, int maxvertices)
 		lwcollection_free(col);
 		lwerror("%s: cannot subdivide to fewer than %d vertices per output", __func__, minmaxvertices);
 	}
-	
+
 	clip = *(lwgeom_get_bbox(geom));
 	lwgeom_subdivide_recursive(geom, maxvertices, startdepth, col, &clip);
 	lwgeom_set_srid((LWGEOM*)col, geom->srid);

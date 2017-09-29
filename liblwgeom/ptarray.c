@@ -391,11 +391,6 @@ ptarray_swap_ordinates(POINTARRAY *pa, LWORD o1, LWORD o2)
 	double d, *dp1, *dp2;
 	POINT4D p;
 
-#if PARANOIA_LEVEL > 0
-  assert(o1 < 4);
-  assert(o2 < 4);
-#endif
-
   dp1 = ((double*)&p)+(unsigned)o1;
   dp2 = ((double*)&p)+(unsigned)o2;
 	for (i=0 ; i < pa->npoints ; i++)
@@ -569,14 +564,15 @@ ptarray_removePoint(POINTARRAY *pa, uint32_t which)
 #if PARANOIA_LEVEL > 0
 	if ( which > pa->npoints-1 )
 	{
-		lwerror("ptarray_removePoint: offset (%d) out of range (%d..%d)",
+		lwerror("%s [%d] offset (%d) out of range (%d..%d)", __FILE__, __LINE__,
 		        which, 0, pa->npoints-1);
 		return NULL;
 	}
 
 	if ( pa->npoints < 3 )
 	{
-		lwerror("ptarray_removePointe: can't remove a point from a 2-vertex POINTARRAY");
+		lwerror("%s [%d] can't remove a point from a 2-vertex POINTARRAY", __FILE__, __LINE__);
+		return NULL;
 	}
 #endif
 
@@ -679,6 +675,13 @@ ptarray_clone(const POINTARRAY *in)
 int
 ptarray_is_closed(const POINTARRAY *in)
 {
+	if (!in)
+	{
+		lwerror("ptarray_is_closed: called with null point array");
+		return 0;
+	}
+	if (in->npoints <= 1 ) return in->npoints; /* single-point are closed, empty not closed */
+
 	return 0 == memcmp(getPoint_internal(in, 0), getPoint_internal(in, in->npoints-1), ptarray_point_size(in));
 }
 
@@ -686,13 +689,27 @@ ptarray_is_closed(const POINTARRAY *in)
 int
 ptarray_is_closed_2d(const POINTARRAY *in)
 {
-	return 0 == memcmp(getPoint_internal(in, 0), getPoint_internal(in, in->npoints-1), sizeof(POINT2D));
+	if (!in)
+	{
+		lwerror("ptarray_is_closed_2d: called with null point array");
+		return 0;
+	}
+	if (in->npoints <= 1 ) return in->npoints; /* single-point are closed, empty not closed */
+
+	return 0 == memcmp(getPoint_internal(in, 0), getPoint_internal(in, in->npoints-1), sizeof(POINT2D) );
 }
 
 int
 ptarray_is_closed_3d(const POINTARRAY *in)
 {
-	return 0 == memcmp(getPoint_internal(in, 0), getPoint_internal(in, in->npoints-1), sizeof(POINT3D));
+	if (!in)
+	{
+		lwerror("ptarray_is_closed_3d: called with null point array");
+		return 0;
+	}
+	if (in->npoints <= 1 ) return in->npoints; /* single-point are closed, empty not closed */
+
+	return 0 == memcmp(getPoint_internal(in, 0), getPoint_internal(in, in->npoints-1), sizeof(POINT3D) );
 }
 
 int
@@ -1690,7 +1707,7 @@ getPoint_internal(const POINTARRAY *pa, int n)
 #if PARANOIA_LEVEL > 0
 	if ( pa == NULL )
 	{
-		lwerror("getPoint got NULL pointarray");
+		lwerror("%s [%d] got NULL pointarray", __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -1700,7 +1717,7 @@ getPoint_internal(const POINTARRAY *pa, int n)
 	     ( n > pa->npoints ) ||
 	     ( n >= pa->maxpoints ) )
 	{
-		lwerror("getPoint_internal called outside of ptarray range (n=%d, pa.npoints=%d, pa.maxpoints=%d)",n,pa->npoints,pa->maxpoints);
+		lwerror("%s [%d] called outside of ptarray range (n=%d, pa.npoints=%d, pa.maxpoints=%d)", __FILE__, __LINE__, n, pa->npoints, pa->maxpoints);
 		return NULL; /*error */
 	}
 #endif

@@ -78,7 +78,7 @@ def is_nan(x):
 def parse_command_line():
     """Collects, parses and validates command line arguments."""
 
-    prs = OptionParser(version="%prog $Revision: 13496 $")
+    prs = OptionParser(version="%prog $Revision$")
 
     # Mandatory parameters
     grp0 = OptionGroup(prs, "Source and destination",

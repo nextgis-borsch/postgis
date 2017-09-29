@@ -162,7 +162,7 @@
 #include <ctype.h>
 #include <string.h>
 
-SHP_CVSID("$Id: dbfopen.c 14869 2016-04-27 14:45:28Z strk $")
+SHP_CVSID("$Id$")
 
 #ifndef FALSE
 #  define FALSE		0
@@ -1727,13 +1727,13 @@ int SHPAPI_CALL DBFIsRecordDeleted( DBFHandle psDBF, int iShape )
 /* -------------------------------------------------------------------- */
 /*      Verify selection.                                               */
 /* -------------------------------------------------------------------- */
-    if( iShape < 0 || iShape >= psDBF->nRecords )
+    if( iShape < 0 || (psDBF->nRecords > 0 && iShape >= psDBF->nRecords) )
         return TRUE;
 
 /* -------------------------------------------------------------------- */
 /*	Have we read the record?					*/
 /* -------------------------------------------------------------------- */
-    if( !DBFLoadRecord( psDBF, iShape ) )
+    if( psDBF->nRecords > 0 && !DBFLoadRecord( psDBF, iShape ) )
         return FALSE;
 
 /* -------------------------------------------------------------------- */

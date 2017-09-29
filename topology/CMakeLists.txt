@@ -25,6 +25,17 @@
 ################################################################################
 project(postgis_topology C)
 
+macro(sqlin2sql sqlin sql)
+  execute_process(
+    COMMAND "${CMAKE_C_COMPILER}" -w -x c -E ${sqlin}
+    COMMAND grep -v "^#"
+    COMMAND "${PERL_EXECUTABLE}" -lpe 
+      "s'MODULE_PATHNAME'\$libdir/postgis_topology-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"
+    OUTPUT_FILE ${sql}
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  )
+endmacro()
+
 set_property(GLOBAL PROPERTY LIBTOPOLOGY_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR})
@@ -38,13 +49,14 @@ file(READ "${CMAKE_CURRENT_SOURCE_DIR}/sql/manage/TopologySummary.sql.in" TOPOLO
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/sql/manage/CopyTopology.sql.in" COPYTOPOLOGY_CONTENT)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/sql/predicates.sql.in" PREDICATES_CONTENT)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sql/query/getnodebypoint.sql.cmake.in 
+sqlin2sql(${CMAKE_CURRENT_SOURCE_DIR}/sql/query/getnodebypoint.sql.in 
                ${CMAKE_CURRENT_BINARY_DIR}/getnodebypoint.sql)
+
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/getnodebypoint.sql" GETNODEBYPOINT_CONTENT)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sql/query/getedgebypoint.sql.cmake.in 
+sqlin2sql(${CMAKE_CURRENT_SOURCE_DIR}/sql/query/getedgebypoint.sql.in 
                ${CMAKE_CURRENT_BINARY_DIR}/getedgebypoint.sql)
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/getedgebypoint.sql" GETEDGEBYPOINT_CONTENT)
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sql/query/getfacebypoint.sql.cmake.in 
+sqlin2sql(${CMAKE_CURRENT_SOURCE_DIR}/sql/query/getfacebypoint.sql.in 
                ${CMAKE_CURRENT_BINARY_DIR}/getfacebypoint.sql)
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/getfacebypoint.sql" GETFACEBYPOINT_CONTENT)
 
@@ -76,7 +88,7 @@ if(POSTGIS_TOPOLOGY_DEBUG)
     ")
         
 endif()    
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sql/populate.sql.cmake.in 
+sqlin2sql(${CMAKE_CURRENT_SOURCE_DIR}/sql/populate.sql.in 
                ${CMAKE_CURRENT_BINARY_DIR}/populate.sql)
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/populate.sql" POPULATE_CONTENT)
 file(READ "${CMAKE_CURRENT_SOURCE_DIR}/sql/polygonize.sql.in" POLYGONIZE_CONTENT)
@@ -90,7 +102,7 @@ if(POSTGIS_TOPOLOGY_DEBUG)
     RAISE DEBUG '%', sql;
     ")
 endif()
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sql/topogeometry/cleartopogeom.sql.cmake.in 
+sqlin2sql(${CMAKE_CURRENT_SOURCE_DIR}/sql/topogeometry/cleartopogeom.sql.in 
                ${CMAKE_CURRENT_BINARY_DIR}/cleartopogeom.sql)
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/cleartopogeom.sql" CLEARTOPOGEOM_CONTENT)
 
@@ -114,7 +126,7 @@ if(POSTGIS_TOPOLOGY_DEBUG)
     RAISE DEBUG '%', sql;
     ")
 endif()
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sql/topogeometry/totopogeom.sql.cmake.in 
+sqlin2sql(${CMAKE_CURRENT_SOURCE_DIR}/sql/topogeometry/totopogeom.sql.in 
                ${CMAKE_CURRENT_BINARY_DIR}/totopogeom.sql)
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/totopogeom.sql" TOTOPOGEOM_CONTENT)
 
@@ -146,7 +158,7 @@ if(POSTGIS_TOPOLOGY_DEBUG)
     RAISE DEBUG ' % arcs: %', CASE WHEN looking_for_holes THEN 'hole' ELSE 'shell' END, arcs;
     ")
 endif()
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sql/export/TopoJSON.sql.cmake.in 
+sqlin2sql(${CMAKE_CURRENT_SOURCE_DIR}/sql/export/TopoJSON.sql.in 
                ${CMAKE_CURRENT_BINARY_DIR}/TopoJSON.sql)
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/TopoJSON.sql" TOPOJSON_CONTENT)
 
@@ -241,7 +253,7 @@ if(POSTGIS_TOPOLOGY_DEBUG)
     ")
 
 endif()
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sql/sqlmm.sql.cmake.in 
+sqlin2sql(${CMAKE_CURRENT_SOURCE_DIR}/sql/sqlmm.sql.in 
                ${CMAKE_CURRENT_BINARY_DIR}/sqlmm.sql)
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/sqlmm.sql" SQLMM_CONTENT)
 
@@ -256,7 +268,7 @@ if(POSTGIS_TOPOLOGY_DEBUG)
     RAISE DEBUG 'Edge:% az:%', rec.edge_id, rec.az;
     ")
 endif()
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/sql/query/GetNodeEdges.sql.cmake.in 
+sqlin2sql(${CMAKE_CURRENT_SOURCE_DIR}/sql/query/GetNodeEdges.sql.in 
                ${CMAKE_CURRENT_BINARY_DIR}/GetNodeEdges.sql)
 file(READ "${CMAKE_CURRENT_BINARY_DIR}/GetNodeEdges.sql" GETNODEEDGES_CONTENT)
 
@@ -273,7 +285,7 @@ if(POSTGIS_TOPOLOGY_DEBUG)
 endif()
 
 # create topology.sql
-configure_file(topology.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/topology.sql)
+sqlin2sql(topology.sql.in ${CMAKE_CURRENT_BINARY_DIR}/topology.sql)
 
 unset(TOPOLOGYSUMMARY_CONTENT)
 unset(COPYTOPOLOGY_CONTENT)
@@ -296,10 +308,10 @@ unset(GETNODEEDGES_CONTENT)
 unset(MANAGEHELPER_CONTENT)
 
 # create topology_drop_before.sql
-configure_file(topology_drop_before.sql.in ${CMAKE_CURRENT_BINARY_DIR}/topology_drop_before.sql)
+sqlin2sql(topology_drop_before.sql.in ${CMAKE_CURRENT_BINARY_DIR}/topology_drop_before.sql)
 
 # create topology_drop_after.sql
-configure_file(topology_drop_after.sql.in ${CMAKE_CURRENT_BINARY_DIR}/topology_drop_after.sql)
+sqlin2sql(topology_drop_after.sql.in ${CMAKE_CURRENT_BINARY_DIR}/topology_drop_after.sql)
 
 # create topology_upgrade.sql
 # /usr/bin/perl -0777 -ne 's/^(CREATE|ALTER) (CAST|OPERATOR|TYPE|TABLE|SCHEMA|DOMAIN|TRIGGER).*?;//msg;print;' topology.sql > topology_upgrade.sql.in

@@ -67,7 +67,7 @@
 */
 #define MAXTILESIZE 1073741824
 
-#define RCSID "$Id: raster2pgsql.h 13497 2015-05-13 18:29:52Z pramsey $"
+#define RCSID "$Id$"
 
 typedef struct raster_loader_config {
 	/* raster filename */

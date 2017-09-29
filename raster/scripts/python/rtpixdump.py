@@ -32,7 +32,7 @@ def logit(msg):
 ###############################################################################
 try:
 
-    prs = OptionParser(version="%prog $Revision: 13496 $",
+    prs = OptionParser(version="%prog $Revision$",
                        usage="%prog -d <DB> -t <TABLE> [-c <COLUMN>]",
                        description="Brute-force dump of all pixel values of WKT Raster dataset")
     prs.add_option("-d", "--db", dest="db", action="store", default=None,

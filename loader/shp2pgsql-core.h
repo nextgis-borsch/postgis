@@ -29,7 +29,7 @@
 
 #include "../liblwgeom/stringbuffer.h"
 
-#define S2P_RCSID "$Id: shp2pgsql-core.h 14869 2016-04-27 14:45:28Z strk $"
+#define S2P_RCSID "$Id$"
 
 /* Number of digits of precision in WKT produced. */
 #define WKT_PRECISION 15

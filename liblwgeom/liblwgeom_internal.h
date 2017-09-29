@@ -305,7 +305,6 @@ double lwtriangle_perimeter_2d(const LWTRIANGLE *triangle);
 /*
 * Segmentization
 */
-LWLINE *lwcircstring_stroke(const LWCIRCSTRING *icurve, uint32_t perQuad);
 LWLINE *lwcompound_stroke(const LWCOMPOUND *icompound, uint32_t perQuad);
 LWPOLY *lwcurvepoly_stroke(const LWCURVEPOLY *curvepoly, uint32_t perQuad);
 
@@ -340,6 +339,11 @@ LWLINE *lwline_clone_deep(const LWLINE *lwgeom);
 LWPOLY *lwpoly_clone_deep(const LWPOLY *lwgeom);
 LWCOLLECTION *lwcollection_clone_deep(const LWCOLLECTION *lwgeom);
 GBOX *gbox_clone(const GBOX *gbox);
+
+/*
+ * Reverse
+ */
+extern void lwcircstring_reverse(LWCIRCSTRING *curve);
 
 /*
 * Startpoint

@@ -225,7 +225,10 @@ ptarray_to_GEOSCoordSeq(const POINTARRAY *pa)
 		dims = 3;
 
 	if ( ! (sq = GEOSCoordSeq_create(pa->npoints, dims)) )
+	{
 		lwerror("Error creating GEOS Coordinate Sequence");
+		return NULL;
+	}
 
 	for ( i=0; i < pa->npoints; i++ )
 	{
@@ -243,7 +246,7 @@ ptarray_to_GEOSCoordSeq(const POINTARRAY *pa)
 
 		GEOSCoordSeq_setX(sq, i, p2d->x);
 		GEOSCoordSeq_setY(sq, i, p2d->y);
-		
+
 		if ( dims == 3 )
 			GEOSCoordSeq_setZ(sq, i, p3d->z);
 	}
@@ -347,17 +350,17 @@ LWGEOM2GEOS(const LWGEOM *lwgeom, int autofix)
 		lwgeom_free(lwgeom_stroked);
 		return g;
 	}
-	
+
 	switch (lwgeom->type)
 	{
 		LWPOINT *lwp = NULL;
 		LWPOLY *lwpoly = NULL;
 		LWLINE *lwl = NULL;
 		LWCOLLECTION *lwc = NULL;
-		
+
 	case POINTTYPE:
 		lwp = (LWPOINT *)lwgeom;
-		
+
 		if ( lwgeom_is_empty(lwgeom) )
 		{
 			g = GEOSGeom_createEmptyPolygon();
@@ -448,14 +451,14 @@ LWGEOM2GEOS(const LWGEOM *lwgeom, int autofix)
 		for (i=0; i<ngeoms; ++i)
 		{
 			GEOSGeometry* g;
-			
+
 			if( lwgeom_is_empty(lwc->geoms[i]) )
 				continue;
-			
+
 			g = LWGEOM2GEOS(lwc->geoms[i], 0);
 			if ( ! g )
 			{
-				while (i) GEOSGeom_destroy(geoms[--i]);
+				while (j) GEOSGeom_destroy(geoms[--j]);
 				free(geoms);
 				return NULL;
 			}
@@ -1244,10 +1247,10 @@ LWGEOM_GEOS_buildArea(const GEOSGeometry* geom_in)
    * We should now have a collection
    */
 #if PARANOIA_LEVEL > 0
-  if ( GEOSGeometryTypeId(geos_result) != COLLECTIONTYPE )
+  if ( GEOSGeomTypeId(geos_result) != COLLECTIONTYPE )
   {
     GEOSGeom_destroy(geos_result);
-    lwerror("Unexpected return from GEOSpolygonize");
+    lwerror("%s [%d] Unexpected return from GEOSpolygonize", __FILE__, __LINE__);
     return 0;
   }
 #endif
@@ -1400,7 +1403,7 @@ lwgeom_buildarea(const LWGEOM *geom)
 	initGEOS(lwnotice, lwgeom_geos_error);
 
 	geos_in = LWGEOM2GEOS(geom, 0);
-	
+
 	if ( 0 == geos_in )   /* exception thrown at construction */
 	{
 		lwerror("First argument geometry could not be converted to GEOS: %s", lwgeom_geos_errmsg);
@@ -1428,7 +1431,7 @@ lwgeom_buildarea(const LWGEOM *geom)
 #if PARANOIA_LEVEL > 0
 	if ( geom_out == NULL )
 	{
-		lwerror("serialization error");
+		lwerror("%s [%s] serialization error", __FILE__, __LINE__);
 		return NULL;
 	}
 
@@ -1493,7 +1496,7 @@ lwgeom_geos_noop(const LWGEOM* geom_in)
 			lwgeom_geos_errmsg);
 	}
 	return geom_out;
-	
+
 }
 
 LWGEOM*
@@ -1646,23 +1649,6 @@ lwgeom_offsetcurve(const LWLINE *lwline, double size, int quadsegs, int joinStyl
 }
 
 
-static void shuffle(void *array, size_t n, size_t size) {
-    char tmp[size];
-    char *arr = array;
-    size_t stride = size;
-
-    if (n > 1) {
-        size_t i;
-        for (i = 0; i < n - 1; ++i) {
-            size_t rnd = (size_t) rand();
-            size_t j = i + rnd / (RAND_MAX / (n - i) + 1);
-
-            memcpy(tmp, arr + j * stride, size);
-            memcpy(arr + j * stride, arr + i * stride, size);
-            memcpy(arr + i * stride, tmp, size);
-        }
-    }
-}
 
 LWMPOINT*
 lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
@@ -1672,7 +1658,7 @@ lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
 	const LWGEOM *lwgeom = (LWGEOM*)lwpoly;
 	int sample_npoints, sample_sqrt, sample_width, sample_height;
 	double sample_cell_size;
-	int i, j;
+	int i, j, n;
 	int iterations = 0;
 	int npoints_generated = 0;
 	int npoints_tested = 0;
@@ -1684,19 +1670,23 @@ lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
 	int srid = lwgeom_get_srid(lwgeom);
 	int done = 0;
 	int *cells;
+	const size_t size = 2*sizeof(int);
+	char tmp[2*sizeof(int)];
+	const size_t stride = 2*sizeof(int);
+
 
 	if (lwgeom_get_type(lwgeom) != POLYGONTYPE)
 	{
 		lwerror("%s: only polygons supported", __func__);
 		return NULL;
 	}
-	
+
 	if (npoints == 0 || lwgeom_is_empty(lwgeom))
 	{
 		return NULL;
 		// return lwmpoint_construct_empty(lwgeom_get_srid(poly), lwgeom_has_z(poly), lwgeom_has_m(poly));
 	}
-	
+
 	if (!lwpoly->bbox)
 	{
 		lwgeom_calculate_gbox(lwgeom, &bbox);
@@ -1715,11 +1705,11 @@ lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
 		lwerror("%s: zero area input polygon, TBD", __func__);
 		return NULL;
 	}
-	
+
 	/* Gross up our test set a bit to increase odds of getting */
 	/* coverage in one pass */
 	sample_npoints = npoints * bbox_area / area;
-	
+
 	/* We're going to generate points using a sample grid */
 	/* as described http://lin-ear-th-inking.blogspot.ca/2010/05/more-random-points-in-jts.html */
 	/* to try and get a more uniform "random" set of points */
@@ -1727,7 +1717,7 @@ lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
 	sample_sqrt = lround(sqrt(sample_npoints));
 	if (sample_sqrt == 0)
 		sample_sqrt = 1;
-	
+
 	/* Calculate the grids we're going to randomize within */
 	if (bbox_width > bbox_height)
 	{
@@ -1741,7 +1731,7 @@ lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
 		sample_width = ceil((double)sample_npoints / (double)sample_height);
 		sample_cell_size = bbox_height / sample_height;
 	}
-	
+
 	/* Prepare the polygon for fast true/false testing */
 	initGEOS(lwnotice, lwgeom_geos_error);
 	g = (GEOSGeometry *)LWGEOM2GEOS(lwgeom, 0);
@@ -1751,10 +1741,10 @@ lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
 		return NULL;
 	}
 	gprep = GEOSPrepare(g);
-	
+
 	/* Get an empty multi-point ready to return */
 	mpt = lwmpoint_construct_empty(srid, 0, 0);
-	
+
 	/* Init random number generator */
 	srand(time(NULL));
 
@@ -1770,8 +1760,23 @@ lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
 			cells[2*(i*sample_height+j)+1] = j;
 		}
 	}
-	shuffle(cells, sample_height*sample_width, 2*sizeof(int));
-	
+
+	/* shuffle */
+	{
+		n = sample_height*sample_width;
+		if (n > 1) {
+			for (i = 0; i < n - 1; ++i) {
+				size_t rnd = (size_t) rand();
+				size_t j = i + rnd / (RAND_MAX / (n - i) + 1);
+
+				memcpy(tmp, (char *)cells + j * stride, size);
+				memcpy((char *)cells + j * stride, (char *)cells + i * stride, size);
+				memcpy((char *)cells + i * stride, tmp, size);
+			}
+		}
+	}
+
+
 	/* Start testing points */
 	while (npoints_generated < npoints)
 	{
@@ -1792,7 +1797,7 @@ lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
 			gpt = GEOSGeom_createPoint(gseq);
 
 			contains = GEOSPreparedIntersects(gprep, gpt);
-			
+
 	        GEOSGeom_destroy(gpt);
 
 			if (contains == 2)
@@ -1812,23 +1817,23 @@ lwpoly_to_points(const LWPOLY *lwpoly, int npoints)
 					break;
 				}
 			}
-			
+
 			/* Short-circuit check for ctrl-c occasionally */
 			npoints_tested++;
 			if (npoints_tested % 10000 == 0)
 			{
 				LW_ON_INTERRUPT(GEOSPreparedGeom_destroy(gprep); GEOSGeom_destroy(g); return NULL);
 			}
-			
+
 			if (done) break;
 		}
 		if (done || iterations > 100) break;
 	}
-	
+
 	GEOSPreparedGeom_destroy(gprep);
 	GEOSGeom_destroy(g);
 	lwfree(cells);
-	
+
 	return mpt;
 }
 
@@ -1844,19 +1849,19 @@ lwmpoly_to_points(const LWMPOLY *lwmpoly, int npoints)
 	double area;
 	int i;
 	LWMPOINT *mpt = NULL;
-	
+
 	if (lwgeom_get_type(lwgeom) != MULTIPOLYGONTYPE)
 	{
 		lwerror("%s: only multipolygons supported", __func__);
-		return NULL;		
+		return NULL;
 	}
 	if (npoints == 0 || lwgeom_is_empty(lwgeom))
 	{
 		return NULL;
 	}
-	
+
 	area = lwgeom_area(lwgeom);
-	
+
 	for (i = 0; i < lwmpoly->ngeoms; i++)
 	{
 		double sub_area = lwpoly_area(lwmpoly->geoms[i]);
@@ -1877,11 +1882,12 @@ lwmpoly_to_points(const LWMPOLY *lwmpoly, int npoints)
 				}
 				/* Just free the shell, leave the underlying lwpoints alone, as they
 				   are now owed by the returning multipoint */
+				lwfree(sub_mpt->geoms);
 				lwgeom_release((LWGEOM*)sub_mpt);
 			}
 		}
 	}
-	
+
 	return mpt;
 }
 
@@ -1897,7 +1903,7 @@ lwgeom_to_points(const LWGEOM *lwgeom, int npoints)
 			return lwpoly_to_points((LWPOLY*)lwgeom, npoints);
 		default:
 			lwerror("%s: unsupported geometry type '%s'", __func__, lwtype_name(lwgeom_get_type(lwgeom)));
-			return NULL;	
+			return NULL;
 	}
 }
 
@@ -2025,7 +2031,7 @@ LWGEOM* lwgeom_delaunay_triangulation(const LWGEOM *lwgeom_in, double tolerance,
 	}
 
 	return lwgeom_result;
-	
+
 #endif /* POSTGIS_GEOS_VERSION < 34 */
 }
 

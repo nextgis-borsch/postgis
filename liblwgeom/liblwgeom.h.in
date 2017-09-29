@@ -651,6 +651,12 @@ extern uint32_t gserialized_get_type(const GSERIALIZED *g);
 extern uint32_t gserialized_max_header_size(void);
 
 /**
+* Returns the size in bytes of the header, from the start of the 
+* object up to the type number.
+*/
+extern uint32_t gserialized_header_size(const GSERIALIZED *gser);
+
+/**
 * Extract the SRID from the serialized form (it is packed into
 * three bytes so this is a handy function).
 */
@@ -701,6 +707,16 @@ extern int gserialized_get_zm(const GSERIALIZED *gser);
 */
 extern int gserialized_ndims(const GSERIALIZED *gser);
 
+/**
+* Return -1 if g1 is "less than" g2, 1 if g1 is "greater than"
+* g2 and 0 if g1 and g2 are the "same". Equality is evaluated
+* with a memcmp and size check. So it is possible that two 
+* identical objects where one lacks a bounding box could be 
+* evaluated as non-equal initially. Greater and less than
+* are evaluated by calculating a sortable key from the center 
+* point of the object bounds.
+*/
+extern int gserialized_cmp(const GSERIALIZED *g1, const GSERIALIZED *g2);
 
 /**
 * Call this function to drop BBOX and SRID
@@ -1056,6 +1072,9 @@ extern LWGEOM *lwgeom_homogenize(const LWGEOM *geom);
  ******************************************************************/
 
 LWGEOM *lwcollection_getsubgeom(LWCOLLECTION *col, int gnum);
+
+/* WARNING: the output will contain references to geometries in the input, */
+/* so the result must be carefully released, not freed. */
 LWCOLLECTION* lwcollection_extract(LWCOLLECTION *col, int type);
 
 
@@ -1218,6 +1237,9 @@ extern void lwgeom_force_clockwise(LWGEOM *lwgeom);
 extern void lwpoly_force_clockwise(LWPOLY *poly);
 extern void lwtriangle_force_clockwise(LWTRIANGLE *triangle);
 
+extern int lwgeom_is_clockwise(LWGEOM *lwgeom);
+extern int lwpoly_is_clockwise(LWPOLY *poly);
+extern int lwtriangle_is_clockwise(LWTRIANGLE *triangle);
 
 extern void interpolate_point4d(POINT4D *A, POINT4D *B, POINT4D *I, double F);
 
@@ -1356,8 +1378,9 @@ extern LWLINE *lwline_addpoint(LWLINE *line, LWPOINT *point, uint32_t where);
 extern LWLINE *lwline_removepoint(LWLINE *line, uint32_t which);
 extern void lwline_setPoint4d(LWLINE *line, uint32_t which, POINT4D *newpoint);
 extern LWPOLY *lwpoly_from_lwlines(const LWLINE *shell, uint32_t nholes, const LWLINE **holes);
-extern LWPOLY* lwpoly_construct_rectangle(char hasz, char hasm, POINT4D *p1, POINT4D *p2, POINT4D *p3, POINT4D *p4);
-extern LWPOLY* lwpoly_construct_circle(int srid, double x, double y, double radius, uint32_t segments_per_quarter, char exterior);
+extern LWPOLY *lwpoly_construct_rectangle(char hasz, char hasm, POINT4D *p1, POINT4D *p2, POINT4D *p3, POINT4D *p4);
+extern LWPOLY *lwpoly_construct_envelope(int srid, double x1, double y1, double x2, double y2);
+extern LWPOLY *lwpoly_construct_circle(int srid, double x, double y, double radius, uint32_t segments_per_quarter, char exterior);
 extern LWTRIANGLE *lwtriangle_from_lwline(const LWLINE *shell);
 extern LWMPOINT *lwmpoint_from_lwgeom(const LWGEOM *g); /* Extract the coordinates of an LWGEOM into an LWMPOINT */
 
@@ -1935,6 +1958,12 @@ extern void gbox_float_round(GBOX *gbox);
 extern int gbox_is_valid(const GBOX *gbox);
 
 /**
+* Return a sortable key based on the center point of the
+* GBOX.
+*/
+extern uint64_t gbox_get_sortable_hash(const GBOX *g);
+
+/**
 * Utility function to get type number from string. For example, a string 'POINTZ'
 * would return type of 1 and z of 1 and m of 0. Valid
 */
@@ -2154,12 +2183,79 @@ extern uint8_t* lwgeom_to_twkb(const LWGEOM *geom, uint8_t variant, int8_t preci
 extern uint8_t* lwgeom_to_twkb_with_idlist(const LWGEOM *geom, int64_t *idlist, uint8_t variant, int8_t precision_xy, int8_t precision_z, int8_t precision_m, size_t *twkb_size);
 
 /*******************************************************************************
- * SQLMM internal functions - TODO: Move into separate header files
+ * SQLMM internal functions
  ******************************************************************************/
 
 int lwgeom_has_arc(const LWGEOM *geom);
 LWGEOM *lwgeom_stroke(const LWGEOM *geom, uint32_t perQuad);
 LWGEOM *lwgeom_unstroke(const LWGEOM *geom);
+
+/**
+ * Semantic of the `tolerance` argument passed to
+ * lwcurve_linearize
+ */
+typedef enum {
+	/**
+	 * Tolerance expresses the number of segments to use
+	 * for each quarter of circle (quadrant). Must be
+	 * an integer.
+	 */
+	LW_LINEARIZE_TOLERANCE_TYPE_SEGS_PER_QUAD = 0,
+	/**
+	 * Tolerance expresses the maximum distance between
+	 * an arbitrary point on the curve and the closest
+	 * point to it on the resulting approximation, in
+	 * cartesian units.
+	 */
+	LW_LINEARIZE_TOLERANCE_TYPE_MAX_DEVIATION = 1,
+	/**
+	 * Tolerance expresses the maximum angle between
+	 * the radii generating approximation line vertices,
+	 * given in radiuses. A value of 1 would result
+	 * in an approximation of a semicircle composed by
+	 * 180 segments
+	 */
+	LW_LINEARIZE_TOLERANCE_TYPE_MAX_ANGLE = 2
+} LW_LINEARIZE_TOLERANCE_TYPE;
+
+typedef enum {
+  /**
+   * Symmetric linearization means that the output
+   * vertices would be the same no matter the order
+   * of the points defining the input curve.
+   */
+	LW_LINEARIZE_FLAG_SYMMETRIC = 1 << 0,
+
+  /**
+   * Retain angle instructs the engine to try its best
+   * to retain the requested angle between generating
+   * radii (where angle can be given explicitly with
+   * LW_LINEARIZE_TOLERANCE_TYPE_MAX_ANGLE or implicitly
+   * with LW_LINEARIZE_TOLERANCE_TYPE_SEGS_PER_QUAD or
+   * LW_LINEARIZE_TOLERANCE_TYPE_MAX_DEVIATION).
+   *
+   * It only makes sense with LW_LINEARIZE_FLAG_SYMMETRIC
+   * which would otherwise reduce the angle as needed to
+   * keep it constant among all radiis so that all
+   * segments are of the same length.
+   *
+   * When this flag is set, the first and last generating
+   * angles (and thus the first and last segments) may
+   * instead be smaller (shorter) than the others.
+   *
+   */
+	LW_LINEARIZE_FLAG_RETAIN_ANGLE = 1 << 1
+} LW_LINEARIZE_FLAGS;
+
+/**
+ * @param geom input geometry
+ * @param tol tolerance, semantic driven by tolerance_type
+ * @param tolerance_type see LW_LINEARIZE_TOLERANCE_TYPE
+ * @param flags bitwise OR of operational flags, see LW_LINEARIZE_FLAGS
+ *
+ * @return a newly allocated LWGEOM
+ */
+extern LWGEOM* lwcurve_linearize(const LWGEOM *geom, double tol, LW_LINEARIZE_TOLERANCE_TYPE type, int flags);
 
 /*******************************************************************************
  * GEOS proxy functions on LWGEOM
