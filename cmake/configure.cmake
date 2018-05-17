@@ -145,6 +145,14 @@ if(UNIX AND NOT OSX_FRAMEWORK)
           CMAKE_FLAGS "-DINCLUDE_DIRECTORIES:STRING=${FLEX_INCLUDE_DIRS}")
 
     endif()
+
+    find_package(Protobuf)
+    if(PROTOBUF_FOUND)
+        if(PROTOBUF_VERSION VERSION_LESS 3.0)
+            set(PROTOBUF_FOUND FALSE FORCE)
+            message(WARNING "Too old protobuf version [${PROTOBUF_VERSION}] - disable it")
+        endif()
+    endif()
 endif(UNIX AND NOT OSX_FRAMEWORK)
 
 if(NOT WIN32)
