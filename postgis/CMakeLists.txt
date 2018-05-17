@@ -140,7 +140,8 @@ endif()
 
 set_property(GLOBAL PROPERTY POSTGIS_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR})
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 set(HHEADERS
@@ -225,21 +226,17 @@ if(PROTOBUF_FOUND)
     add_definitions(-DHAVE_LIBPROTOBUF)
 
     execute_process(
-        COMMAND "protoc-c" --c_out=. vector_tile.proto geobuf.proto
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMAND "protoc-c" --c_out=${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/vector_tile.proto ${CMAKE_CURRENT_SOURCE_DIR}/geobuf.proto
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
     )
 
-    set(CSOURCES
-      ${CSOURCES}
-      vector_tile.pb-c.c
-      geobuf.pb-c.c
+    set(CSOURCES ${CSOURCES}
+      ${CMAKE_CURRENT_BINARY_DIR}/vector_tile.pb-c.c
+      ${CMAKE_CURRENT_BINARY_DIR}/geobuf.pb-c.c
     )
 endif()
 
-add_library(${LIB_NAME} SHARED
-  ${CSOURCES}
-  ${HHEADERS}
-)
+add_library(${LIB_NAME} SHARED ${CSOURCES} ${HHEADERS})
 
 target_link_extlibraries(${LIB_NAME})
 
