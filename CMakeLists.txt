@@ -228,6 +228,8 @@ else()
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -DPIC")
 endif()
 
+message(STATUS "POSTGIS_PGSQL_VERSION: ${POSTGIS_PGSQL_VERSION}")
+
 ################################################################################
 # Configure all subdirectories with any build targets
 ### Object libraries
@@ -273,7 +275,7 @@ if(NOT SUPPRESS_VERBOSE_OUTPUT)
 endif()
 
 # Export package ===============================================================
-# TODO: 
+# TODO:
 # if(REGISTER_PACKAGE)
 #     # Export the package for use from the build-tree
 #     # (this registers the build-tree with a global CMake-registry)
