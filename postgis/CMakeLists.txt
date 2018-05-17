@@ -63,7 +63,7 @@ set(PL_SKIP \$skip)
 set(PL_NEWSRID \${newsrid})
 set(SRID_MAXIMUM ${SRID_MAX})
 set(SRID_USER_MAXIMUM ${SRID_USR_MAX})
-configure_file(${CMAKE_SOURCE_DIR}/utils/postgis_restore.pl.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/postgis_restore.pl)
+configure_file(${CMAKE_SOURCE_DIR}/utils/postgis_restore.pl.in ${CMAKE_CURRENT_BINARY_DIR}/postgis_restore.pl)
 
 execute_process(COMMAND ${PERL_EXECUTABLE}
                     ${CMAKE_SOURCE_DIR}/utils/postgis_proc_set_search_path.pl
@@ -96,7 +96,7 @@ file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/postgis_upgrade.sql "COMMIT;")
 create_undef(postgis)
 create_undef(legacy)
 
-if(POSTGIS_WITH_SFCGAL)    
+if(POSTGIS_WITH_SFCGAL)
     # configure_file(sfcgal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/sfcgal.sql)
     sqlin2sql(sfcgal.sql.in ${CMAKE_CURRENT_BINARY_DIR}/sfcgal.sql)
 
