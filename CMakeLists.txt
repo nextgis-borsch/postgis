@@ -177,8 +177,6 @@ if(UNIX AND NOT OSX_FRAMEWORK)
 
     find_package(Perl)
 
-    find_package(Protobuf)
-
 endif(UNIX AND NOT OSX_FRAMEWORK)
 
 ################################################################################
