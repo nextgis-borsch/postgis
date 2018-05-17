@@ -25,13 +25,14 @@ if(PG_CONFIG)
     ARGS "--version"
     OUTPUT_VARIABLE PG_CONFIG_VERSION)
 
-  if(${PG_CONFIG_VERSION} MATCHES "^[A-Za-z]+[ ](.*)$")
-    string(REGEX REPLACE "^[A-Za-z]+[ ](.*)$" "\\1" POSTGRESQL_VERSION "${PG_CONFIG_VERSION}")
+    # 10.3 (Ubuntu 10.3-1)
+  if(${PG_CONFIG_VERSION} MATCHES "([0-9]+)\\.([0-9]+)")
+    string(REGEX MATCH "([0-9]+)\\.([0-9]+)" POSTGRESQL_VERSION "${PG_CONFIG_VERSION}")
   endif()
 
   exec_program(${PG_CONFIG}
     ARGS "--includedir"
-    OUTPUT_VARIABLE PG_CONFIG_INCLUDEDIR)  
+    OUTPUT_VARIABLE PG_CONFIG_INCLUDEDIR)
 
   exec_program(${PG_CONFIG}
     ARGS "--libdir"
@@ -53,7 +54,7 @@ find_path(POSTGRESQL_INCLUDE_DIR libpq-fe.h
 
 find_library(POSTGRESQL_LIBRARIES NAMES pq libpq
   PATHS
-  ${PG_CONFIG_LIBDIR}  
+  ${PG_CONFIG_LIBDIR}
   /usr/lib
   /usr/local/lib
   /usr/lib/postgresql
@@ -71,17 +72,17 @@ else()
   set(POSTGRESQL_FOUND FALSE)
 endif()
 
-set(POSTGRESQL_VERSION_STRING "${POSTGRESQL_VERSION}")   
+set(POSTGRESQL_VERSION_STRING "${POSTGRESQL_VERSION}")
 
 # Handle the QUIETLY and REQUIRED arguments and set POSTGRESQL_FOUND to TRUE
 # if all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
-find_package_handle_standard_args(PostgreSQL 
-                                  REQUIRED_VARS POSTGRESQL_LIBRARIES POSTGRESQL_INCLUDE_DIR 
+find_package_handle_standard_args(PostgreSQL
+                                  REQUIRED_VARS POSTGRESQL_LIBRARIES POSTGRESQL_INCLUDE_DIR
                                   VERSION_VAR POSTGRESQL_VERSION)
 
 IF(POSTGRESQL_FOUND)
   set(POSTGRESQL_INCLUDE_DIRS ${POSTGRESQL_INCLUDE_DIR})
-ENDIF()  
+ENDIF()
 
 mark_as_advanced(POSTGRESQL_INCLUDE_DIRS POSTGRESQL_LIBRARIES)
