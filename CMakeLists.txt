@@ -117,10 +117,10 @@ if(UNIX AND NOT OSX_FRAMEWORK)
 
     if(POSTGRESQL_VERSION)
         string(REGEX REPLACE
-            "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\1"
+            "([0-9]+)\\.([0-9]+)" "\\1"
             PGSQL_VERSION_MAJOR "${POSTGRESQL_VERSION}")
         string(REGEX REPLACE
-            "([0-9]+)\\.([0-9]+)\\.([0-9]+)" "\\2"
+            "([0-9]+)\\.([0-9]+)" "\\2"
             PGSQL_VERSION_MINOR "${POSTGRESQL_VERSION}")
 
         set(POSTGIS_PGSQL_VERSION ${PGSQL_VERSION_MAJOR}${PGSQL_VERSION_MINOR})
