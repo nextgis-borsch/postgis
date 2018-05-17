@@ -226,8 +226,8 @@ if(PROTOBUF_FOUND)
     add_definitions(-DHAVE_LIBPROTOBUF)
 
     execute_process(
-        COMMAND "protoc-c" --c_out=${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/vector_tile.proto ${CMAKE_CURRENT_SOURCE_DIR}/geobuf.proto
-        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMAND "protoc-c" --c_out=${CMAKE_CURRENT_BINARY_DIR} vector_tile.proto geobuf.proto
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
     set(CSOURCES ${CSOURCES}
