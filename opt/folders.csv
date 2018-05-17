@@ -17,7 +17,7 @@ fuzzers,fuzzers,skip,
 liblwgeom,liblwgeom,,"h,c,in"
 libpgcommon,libpgcommon,,"h,c"
 libpgcommon/cunit,libpgcommon/cunit,skip,
-loader,loader,,"h,c,rc,ico,desktop,i18n,README.pgsql2shp,README.shp2pgsql"
+loader,loader,,"h,c,rc,ico,desktop,i18n,README.pgsql2shp,README.shp2pgsql,1"
 loader/cunit,loader/cunit,skip,
 loader/icons/hicolor/8x8/apps,loader/icons/hicolor/8x8/apps,,png
 loader/icons/hicolor/16x16/apps,loader/icons/hicolor/16x16/apps,,png
