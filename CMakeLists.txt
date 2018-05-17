@@ -226,8 +226,6 @@ else()
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -DPIC")
 endif()
 
-message(STATUS "POSTGIS_PGSQL_VERSION: ${POSTGIS_PGSQL_VERSION}")
-
 ################################################################################
 # Configure all subdirectories with any build targets
 ### Object libraries
