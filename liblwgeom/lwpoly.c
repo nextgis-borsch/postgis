@@ -120,13 +120,13 @@ LWPOLY*
 lwpoly_construct_circle(int srid, double x, double y, double radius, uint32_t segments_per_quarter, char exterior)
 {
 	const int segments = 4*segments_per_quarter;
-	const double theta = 2*M_PI / segments;
+	double theta;
 	LWPOLY *lwpoly;
 	POINTARRAY *pa;
 	POINT4D pt;
 	uint32_t i;
 
-	if (segments_per_quarter < 1)
+	if (segments_per_quarter == 0)
 	{
 		lwerror("Need at least one segment per quarter-circle.");
 		return NULL;
@@ -137,6 +137,8 @@ lwpoly_construct_circle(int srid, double x, double y, double radius, uint32_t se
 		lwerror("Radius must be positive.");
 		return NULL;
 	}
+
+	theta = 2*M_PI / segments;
 
 	lwpoly = lwpoly_construct_empty(srid, LW_FALSE, LW_FALSE);
 	pa = ptarray_construct_empty(LW_FALSE, LW_FALSE, segments + 1);
@@ -248,7 +250,7 @@ lwpoly_add_ring(LWPOLY *poly, POINTARRAY *pa)
 {
 	if( ! poly || ! pa )
 		return LW_FAILURE;
-		
+
 	/* We have used up our storage, add some more. */
 	if( poly->nrings >= poly->maxrings )
 	{
@@ -256,11 +258,11 @@ lwpoly_add_ring(LWPOLY *poly, POINTARRAY *pa)
 		poly->rings = lwrealloc(poly->rings, new_maxrings * sizeof(POINTARRAY*));
 		poly->maxrings = new_maxrings;
 	}
-	
+
 	/* Add the new ring entry. */
 	poly->rings[poly->nrings] = pa;
 	poly->nrings++;
-	
+
 	return LW_SUCCESS;
 }
 
@@ -419,7 +421,7 @@ LWPOLY*
 lwpoly_force_dims(const LWPOLY *poly, int hasz, int hasm)
 {
 	LWPOLY *polyout;
-	
+
 	/* Return 2D empty */
 	if( lwpoly_is_empty(poly) )
 	{
@@ -481,7 +483,7 @@ LWPOLY* lwpoly_simplify(const LWPOLY *ipoly, double dist, int preserve_collapsed
 		/* and this is a shell, we ensure it is kept */
 		if ( preserve_collapsed && i == 0 )
 			minvertices = 4;
-			
+
 		opts = ptarray_simplify(ipoly->rings[i], dist, minvertices);
 
 		LWDEBUGF(3, "ring%d simplified from %d to %d points", i, ipoly->rings[i]->npoints, opts->npoints);
@@ -523,7 +525,7 @@ lwpoly_area(const LWPOLY *poly)
 {
 	double poly_area = 0.0;
 	int i;
-	
+
 	if ( ! poly )
 		lwerror("lwpoly_area called with null polygon pointer!");
 
@@ -535,7 +537,7 @@ lwpoly_area(const LWPOLY *poly)
 		/* Empty or messed-up ring. */
 		if ( ring->npoints < 3 )
 			continue;
-		
+
 		ringarea = fabs(ptarray_signed_area(ring));
 		if ( i == 0 ) /* Outer ring, positive area! */
 			poly_area += ringarea;
@@ -587,10 +589,10 @@ int
 lwpoly_is_closed(const LWPOLY *poly)
 {
 	int i = 0;
-	
+
 	if ( poly->nrings == 0 )
 		return LW_TRUE;
-		
+
 	for ( i = 0; i < poly->nrings; i++ )
 	{
 		if (FLAGS_GET_Z(poly->flags))
@@ -599,12 +601,12 @@ lwpoly_is_closed(const LWPOLY *poly)
 				return LW_FALSE;
 		}
 		else
-		{	
+		{
 			if ( ! ptarray_is_closed_2d(poly->rings[i]) )
 				return LW_FALSE;
 		}
 	}
-	
+
 	return LW_TRUE;
 }
 
@@ -620,13 +622,13 @@ int
 lwpoly_contains_point(const LWPOLY *poly, const POINT2D *pt)
 {
 	int i;
-	
+
 	if ( lwpoly_is_empty(poly) )
 		return LW_FALSE;
-	
+
 	if ( ptarray_contains_point(poly->rings[0], pt) == LW_OUTSIDE )
 		return LW_FALSE;
-	
+
 	for ( i = 1; i < poly->nrings; i++ )
 	{
 		if ( ptarray_contains_point(poly->rings[i], pt) == LW_INSIDE )
@@ -673,7 +675,7 @@ LWPOLY* lwpoly_grid(const LWPOLY *poly, const gridspec *grid)
 			if ( ri ) continue;
 			else break; /* this is the external ring, no need to work on holes */
 		}
-		
+
 		if ( ! lwpoly_add_ring(opoly, newring) )
 		{
 			lwerror("lwpoly_grid, memory error");

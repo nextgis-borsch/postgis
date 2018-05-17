@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
-# Copyright (C) 2016, NextGIS <info@nextgis.com>
+# Copyright (C) 2016-2018, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -23,13 +23,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
-project(rtpostgis C)
+project(rtpostgis)
 
 macro(sqlin2sql sqlin sql)
   execute_process(
     COMMAND "${CMAKE_C_COMPILER}" -w -x c -E ${sqlin} -I ../../postgis
     COMMAND grep -v "^#"
-    COMMAND "${PERL_EXECUTABLE}" -lpe 
+    COMMAND "${PERL_EXECUTABLE}" -lpe
       "s'MODULE_PATHNAME'\$libdir/postgis_topology-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"
     OUTPUT_FILE ${sql}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
@@ -58,25 +58,25 @@ sqlin2sql(rtpostgis_drop.sql.in ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_drop.sql)
 
 # create rtpostgis_upgrade.sql
 file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade.sql "BEGIN;\n")
-append_file(${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade.sql 
+append_file(${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade.sql
             ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade_cleanup.sql)
-execute_process(COMMAND ${PERL_EXECUTABLE} 
+execute_process(COMMAND ${PERL_EXECUTABLE}
                     ${CMAKE_SOURCE_DIR}/utils/postgis_proc_upgrade.pl
-                    ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis.sql "UNUSED" 
+                    ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis.sql "UNUSED"
                 OUTPUT_VARIABLE PG_UPGRADE_OUT)
 
 file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade.sql "${PG_UPGRADE_OUT}\n")
 unset(PG_UPGRADE_OUT)
 
-append_file(${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade.sql 
+append_file(${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade.sql
             ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_drop.sql)
 
 file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_upgrade.sql "COMMIT;")
 
 # create rtpostgis_proc_set_search_path.sql
-execute_process(COMMAND ${PERL_EXECUTABLE} 
+execute_process(COMMAND ${PERL_EXECUTABLE}
                     ${CMAKE_SOURCE_DIR}/utils/postgis_proc_set_search_path.pl
-                    ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis.sql "UNUSED" 
+                    ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis.sql "UNUSED"
                 OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/rtpostgis_proc_set_search_path.sql)
 
 # create uninstall_rtpostgis.sql
@@ -122,7 +122,7 @@ set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIB_NAME} PARENT_SCOPE)
 
 
 if(UNIX)
-    set_target_properties(${LIB_NAME} PROPERTIES 
+    set_target_properties(${LIB_NAME} PROPERTIES
         LINK_FLAGS "-Wl,--exclude-libs,ALL"
         OUTPUT_NAME "${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}"
         PREFIX ""
@@ -132,15 +132,12 @@ elseif(BUILD_SHARED_LIBS AND WIN32)
 endif()
 
 #/usr/lib/postgresql/9.3/lib/postgis-2.1.so
-if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )   
+if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
     install(TARGETS ${LIB_NAME}
-        EXPORT ${LIB_NAME}
         RUNTIME DESTINATION ${PGSQL_PKGBINDIR} COMPONENT libraries
         ARCHIVE DESTINATION ${PGSQL_PKGLIBDIR} COMPONENT libraries
         LIBRARY DESTINATION ${PGSQL_PKGLIBDIR} COMPONENT libraries
     )
-    
+
     install(FILES ${RTPOSTGIS_CONTRIB_FILES} DESTINATION "${PGSQL_SHAREDIR}/contrib/postgis-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}/")
 endif()
-
-

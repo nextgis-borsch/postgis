@@ -326,10 +326,10 @@ Datum BOX3D_to_LWGEOM(PG_FUNCTION_ARGS)
 				   	&points[0], &points[1], &points[2], &points[3]));
 		/* add top polygon */
 		geoms[1] = lwpoly_as_lwgeom(lwpoly_construct_rectangle(LW_TRUE, LW_FALSE,
-				   	&points[4], &points[5], &points[6], &points[7]));
+				   	&points[4], &points[7], &points[6], &points[5]));
 		/* add left polygon */
 		geoms[2] = lwpoly_as_lwgeom(lwpoly_construct_rectangle(LW_TRUE, LW_FALSE,
-				   	&points[0], &points[1], &points[5], &points[4]));
+				   	&points[0], &points[4], &points[5], &points[1]));
 		/* add right polygon */
 		geoms[3] = lwpoly_as_lwgeom(lwpoly_construct_rectangle(LW_TRUE, LW_FALSE,
 				   	&points[3], &points[2], &points[6], &points[7]));
@@ -338,7 +338,7 @@ Datum BOX3D_to_LWGEOM(PG_FUNCTION_ARGS)
 				   	&points[0], &points[3], &points[7], &points[4]));
 		/* add front polygon */
 		geoms[5] = lwpoly_as_lwgeom(lwpoly_construct_rectangle(LW_TRUE, LW_FALSE,
-				   	&points[1], &points[2], &points[6], &points[5]));
+				   	&points[1], &points[5], &points[6], &points[2]));
 
 		geom = (LWGEOM *) lwcollection_construct(POLYHEDRALSURFACETYPE,
 				SRID_UNKNOWN, NULL, ngeoms, geoms);
@@ -420,7 +420,7 @@ Datum LWGEOM_to_BOX3D(PG_FUNCTION_ARGS)
 
 	if ( rv == LW_FAILURE )
 		PG_RETURN_NULL();
-		
+
 	result = box3d_from_gbox(&gbox);
 	result->srid = lwgeom->srid;
 
@@ -554,7 +554,7 @@ Datum BOX3D_combine_BOX3D(PG_FUNCTION_ARGS)
 
 	if (!box1 && !box0)
 		PG_RETURN_NULL();
-	
+
 	result = palloc(sizeof(BOX3D));
 	result->xmax = Max(box0->xmax, box1->xmax);
 	result->ymax = Max(box0->ymax, box1->ymax);
@@ -563,7 +563,7 @@ Datum BOX3D_combine_BOX3D(PG_FUNCTION_ARGS)
 	result->ymin = Min(box0->ymin, box1->ymin);
 	result->zmin = Min(box0->zmin, box1->zmin);
 	result->srid = box0->srid;
-	
+
 	PG_RETURN_POINTER(result);
 }
 

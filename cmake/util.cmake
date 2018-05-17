@@ -3,8 +3,8 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
-# Copyright (C) 2015, NextGIS <info@nextgis.com>
-# Copyright (C) 2012,2013,2014 Dmitry Baryshnikov
+# Copyright (C) 2015-208 NextGIS <info@nextgis.com>
+# Copyright (C) 2012-2018 Dmitry Baryshnikov
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -109,7 +109,7 @@ function(report_version name ver)
     set(BoldYellow  "${Esc}[1;33m")
     set(ColourReset "${Esc}[m")
 
-    message(STATUS "${BoldYellow}${name} version ${ver}${ColourReset}")
+    message("${BoldYellow}${name} version ${ver}${ColourReset}")
 
 endfunction()
 
@@ -136,6 +136,17 @@ function(create_undef name)
                 OUTPUT_FILE ${CMAKE_CURRENT_BINARY_DIR}/uninstall_${name}.sql)
 
 endfunction()
+
+function(warning_msg text)
+    if(NOT SUPPRESS_VERBOSE_OUTPUT)
+    string(ASCII 27 Esc)
+    set(Red         "${Esc}[31m")
+    set(ColourReset "${Esc}[m")
+
+    message(STATUS "${Red}${text}${ColourReset}")
+    endif()
+endfunction()
+
 
 # macro to find packages on the host OS
 macro( find_exthost_package )
@@ -171,3 +182,35 @@ macro( find_exthost_program )
         find_program( ${ARGN} )
     endif()
 endmacro()
+
+
+function(get_cpack_filename ver name)
+    get_compiler_version(COMPILER)
+    if(BUILD_STATIC_LIBS)
+        set(STATIC_PREFIX "static-")
+    endif()
+
+    set(${name} ${PROJECT_NAME}-${STATIC_PREFIX}${ver}-${COMPILER} PARENT_SCOPE)
+endfunction()
+
+function(get_compiler_version ver)
+    ## Limit compiler version to 2 or 1 digits
+    string(REPLACE "." ";" VERSION_LIST ${CMAKE_C_COMPILER_VERSION})
+    list(LENGTH VERSION_LIST VERSION_LIST_LEN)
+    if(VERSION_LIST_LEN GREATER 2 OR VERSION_LIST_LEN EQUAL 2)
+        list(GET VERSION_LIST 0 COMPILER_VERSION_MAJOR)
+        # list(GET VERSION_LIST 1 COMPILER_VERSION_MINOR)
+        set(COMPILER_VERSION_MINOR 0)
+        set(COMPILER ${CMAKE_C_COMPILER_ID}-${COMPILER_VERSION_MAJOR}.${COMPILER_VERSION_MINOR})
+    else()
+        set(COMPILER ${CMAKE_C_COMPILER_ID}-${CMAKE_C_COMPILER_VERSION})
+    endif()
+
+    if(WIN32)
+        if(CMAKE_CL_64)
+            set(COMPILER "${COMPILER}-64bit")
+        endif()
+    endif()
+
+    set(${ver} ${COMPILER} PARENT_SCOPE)
+endfunction()

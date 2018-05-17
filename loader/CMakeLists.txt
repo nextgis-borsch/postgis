@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
-# Copyright (C) 2016, NextGIS <info@nextgis.com>
+# Copyright (C) 2016-2018, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -39,7 +39,7 @@ set(SHPLIB_CSOURCES
 )
 
 set(SHP2PGSQL_HHEADERS
-    shp2pgsql-core.h 
+    shp2pgsql-core.h
     shpcommon.h
 )
 
@@ -47,11 +47,11 @@ set(SHP2PGSQL_CSOURCES ${SHPLIB_CSOURCES}
     shp2pgsql-core.c
     shp2pgsql-cli.c
 )
- 
+
 set(PGSQL2SHP_HHEADERS
     pgsql2shp-core.h
     shpcommon.h
-) 
+)
 
 set(PGSQL2SHP_CSOURCES ${SHPLIB_CSOURCES}
     pgsql2shp-core.c
@@ -66,8 +66,8 @@ set(SHP2PGSQL_GUI_CSOURCES ${SHPLIB_CSOURCES}
 
 
 if(WIN32)
-    set(SHP2PGSQL_GUI_CSOURCES ${SHP2PGSQL_GUI_CSOURCES} 
-        shp2pgsql-gui.rc 
+    set(SHP2PGSQL_GUI_CSOURCES ${SHP2PGSQL_GUI_CSOURCES}
+        shp2pgsql-gui.rc
         shp2pgsql-gui.ico
     )
 endif()
@@ -86,18 +86,18 @@ set(MAN_FILES
 
 find_package(GTK2)
 if(GTK2_FOUND)
-    set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${GTK2_LIBRARIES}) 
+    set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${GTK2_LIBRARIES})
     include_directories(${GTK2_INCLUDE_DIRS})
-    
+
     if(WIN32)
         add_executable(${SHP2PGSQL_GUI} WIN32 ${SHP2PGSQL_GUI_CSOURCES} ${SHP2PGSQL_HHEADERS})
-    else()    
+    else()
         add_executable(${SHP2PGSQL_GUI} ${SHP2PGSQL_GUI_CSOURCES} ${SHP2PGSQL_HHEADERS})
     endif()
 
     target_link_extlibraries(${SHP2PGSQL_GUI})
     set(TARGETS_OUT ${TARGETS_OUT} ${SHP2PGSQL_GUI})
-    set(MAN_FILES ${MAN_FILES} 
+    set(MAN_FILES ${MAN_FILES}
         ${CMAKE_CURRENT_SOURCE_DIR}/shp2pgsql-gui.1
     )
 endif()
@@ -108,6 +108,6 @@ if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
         ARCHIVE DESTINATION ${INSTALL_LIB_DIR} COMPONENT applications
         LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT applications
     )
-    
+
     install(FILES ${MAN_FILES} DESTINATION "${INSTALL_MAN_DIR}/man1")
 endif()

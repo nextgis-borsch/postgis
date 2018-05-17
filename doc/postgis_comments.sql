@@ -31,6 +31,8 @@ COMMENT ON FUNCTION PostGIS_Full_Version() IS 'Reports full postgis version and 
 			
 COMMENT ON FUNCTION PostGIS_GEOS_Version() IS 'Returns the version number of the GEOS library.';
 			
+COMMENT ON FUNCTION PostGIS_Liblwgeom_Version() IS 'Returns the version number of the liblwgeom library. This should match the version of PostGIS.';
+			
 COMMENT ON FUNCTION PostGIS_LibXML_Version() IS 'Returns the version number of the libxml2 library.';
 			
 COMMENT ON FUNCTION PostGIS_Lib_Build_Date() IS 'Returns build date of the PostGIS library.';
@@ -71,9 +73,9 @@ COMMENT ON FUNCTION ST_GeogFromWKB(bytea ) IS 'args: wkb - Creates a geography i
 			
 COMMENT ON FUNCTION ST_GeomFromTWKB(bytea ) IS 'args: twkb - Creates a geometry instance from a TWKB ("Tiny Well-Known Binary") geometry representation.';
 			
-COMMENT ON FUNCTION ST_GeomCollFromText(text , integer ) IS 'args: WKT, srid - Makes a collection Geometry from collection WKT with the given SRID. If SRID is not give, it defaults to 0.';
+COMMENT ON FUNCTION ST_GeomCollFromText(text , integer ) IS 'args: WKT, srid - Makes a collection Geometry from collection WKT with the given SRID. If SRID is not given, it defaults to 0.';
 			
-COMMENT ON FUNCTION ST_GeomCollFromText(text ) IS 'args: WKT - Makes a collection Geometry from collection WKT with the given SRID. If SRID is not give, it defaults to 0.';
+COMMENT ON FUNCTION ST_GeomCollFromText(text ) IS 'args: WKT - Makes a collection Geometry from collection WKT with the given SRID. If SRID is not given, it defaults to 0.';
 			
 COMMENT ON FUNCTION ST_GeomFromEWKB(bytea ) IS 'args: EWKB - Return a specified ST_Geometry value from Extended Well-Known Binary representation (EWKB).';
 			
@@ -149,13 +151,13 @@ COMMENT ON FUNCTION ST_MLineFromText(text , integer ) IS 'args: WKT, srid - Retu
 			
 COMMENT ON FUNCTION ST_MLineFromText(text ) IS 'args: WKT - Return a specified ST_MultiLineString value from WKT representation.';
 			
-COMMENT ON FUNCTION ST_MPointFromText(text , integer ) IS 'args: WKT, srid - Makes a Geometry from WKT with the given SRID. If SRID is not give, it defaults to 0.';
+COMMENT ON FUNCTION ST_MPointFromText(text , integer ) IS 'args: WKT, srid - Makes a Geometry from WKT with the given SRID. If SRID is not given, it defaults to 0.';
 			
-COMMENT ON FUNCTION ST_MPointFromText(text ) IS 'args: WKT - Makes a Geometry from WKT with the given SRID. If SRID is not give, it defaults to 0.';
+COMMENT ON FUNCTION ST_MPointFromText(text ) IS 'args: WKT - Makes a Geometry from WKT with the given SRID. If SRID is not given, it defaults to 0.';
 			
-COMMENT ON FUNCTION ST_MPolyFromText(text , integer ) IS 'args: WKT, srid - Makes a MultiPolygon Geometry from WKT with the given SRID. If SRID is not give, it defaults to 0.';
+COMMENT ON FUNCTION ST_MPolyFromText(text , integer ) IS 'args: WKT, srid - Makes a MultiPolygon Geometry from WKT with the given SRID. If SRID is not given, it defaults to 0.';
 			
-COMMENT ON FUNCTION ST_MPolyFromText(text ) IS 'args: WKT - Makes a MultiPolygon Geometry from WKT with the given SRID. If SRID is not give, it defaults to 0.';
+COMMENT ON FUNCTION ST_MPolyFromText(text ) IS 'args: WKT - Makes a MultiPolygon Geometry from WKT with the given SRID. If SRID is not given, it defaults to 0.';
 			
 COMMENT ON FUNCTION ST_Point(float , float ) IS 'args: x_lon, y_lat - Returns an ST_Point with the given coordinate values. OGC alias for ST_MakePoint.';
 			
@@ -171,9 +173,9 @@ COMMENT ON FUNCTION ST_GeomFromWKB(bytea , integer ) IS 'args: geom, srid - Make
 			
 COMMENT ON FUNCTION ST_Polygon(geometry , integer ) IS 'args: aLineString, srid - Returns a polygon built from the specified linestring and SRID.';
 			
-COMMENT ON FUNCTION ST_PolygonFromText(text ) IS 'args: WKT - Makes a Geometry from WKT with the given SRID. If SRID is not give, it defaults to 0.';
+COMMENT ON FUNCTION ST_PolygonFromText(text ) IS 'args: WKT - Makes a Geometry from WKT with the given SRID. If SRID is not given, it defaults to 0.';
 			
-COMMENT ON FUNCTION ST_PolygonFromText(text , integer ) IS 'args: WKT, srid - Makes a Geometry from WKT with the given SRID. If SRID is not give, it defaults to 0.';
+COMMENT ON FUNCTION ST_PolygonFromText(text , integer ) IS 'args: WKT, srid - Makes a Geometry from WKT with the given SRID. If SRID is not given, it defaults to 0.';
 			
 COMMENT ON FUNCTION ST_WKBToSQL(bytea ) IS 'args: WKB - Return a specified ST_Geometry value from Well-Known Binary representation (WKB). This is an alias name for ST_GeomFromWKB that takes no srid';
 			
@@ -200,6 +202,10 @@ COMMENT ON FUNCTION ST_GeometryN(geometry , integer ) IS 'args: geomA, n - Retur
 COMMENT ON FUNCTION ST_GeometryType(geometry ) IS 'args: g1 - Return the geometry type of the ST_Geometry value.';
 			
 COMMENT ON FUNCTION ST_InteriorRingN(geometry , integer ) IS 'args: a_polygon, n - Return the Nth interior linestring ring of the polygon geometry. Return NULL if the geometry is not a polygon or the given N is out of range.';
+			
+COMMENT ON FUNCTION ST_IsPolygonCCW(geometry) IS 'args: geom - Returns true if all exterior rings are oriented counter-clockwise and all interior rings are oriented clockwise.';
+			
+COMMENT ON FUNCTION ST_IsPolygonCW(geometry) IS 'args: geom - Returns true if all exterior rings are oriented clockwise and all interior rings are oriented counter-clockwise.';
 			
 COMMENT ON FUNCTION ST_IsClosed(geometry ) IS 'args: g - Returns TRUE if the LINESTRINGs start and end points are coincident. For Polyhedral surface is closed (volumetric).';
 			
@@ -293,7 +299,11 @@ COMMENT ON FUNCTION ST_Force3DM(geometry ) IS 'args: geomA - Force the geometrie
 			
 COMMENT ON FUNCTION ST_Force4D(geometry ) IS 'args: geomA - Force the geometries into XYZM mode.';
 			
+COMMENT ON FUNCTION ST_ForcePolygonCCW(geometry) IS 'args: geom - Orients all exterior rings counter-clockwise and all interior rings clockwise.';
+			
 COMMENT ON FUNCTION ST_ForceCollection(geometry ) IS 'args: geomA - Convert the geometry into a GEOMETRYCOLLECTION.';
+			
+COMMENT ON FUNCTION ST_ForcePolygonCW(geometry) IS 'args: geom - Orients all exterior rings clockwise and all interior rings counter-clockwise.';
 			
 COMMENT ON FUNCTION ST_ForceSFS(geometry ) IS 'args: geomA - Force the geometries to use SFS 1.1 geometry types only.';
 			
@@ -431,6 +441,20 @@ COMMENT ON FUNCTION ST_AsX3D(geometry , integer , integer ) IS 'args: g1, maxdec
 			
 COMMENT ON FUNCTION ST_GeoHash(geometry , integer ) IS 'args: geom, maxchars=full_precision_of_point - Return a GeoHash representation of the geometry.';
 			
+COMMENT ON AGGREGATE ST_AsGeobuf(anyelement) IS 'args: row - Return a Geobuf representation of a set of rows.';
+			
+COMMENT ON FUNCTION ST_AsGeobuf(anyelement , text ) IS 'args: row, geom_name - Return a Geobuf representation of a set of rows.';
+			
+COMMENT ON FUNCTION ST_AsMVTGeom(geometry , box2d , integer , integer , boolean ) IS 'args: geom, bounds, extent=4096, buffer=256, clip_geom=true - Transform a geometry into the coordinate space of a Mapbox Vector Tile.';
+			
+COMMENT ON AGGREGATE ST_AsMVT(anyelement) IS 'args: row - Return a Mapbox Vector Tile representation of a set of rows.';
+			
+COMMENT ON FUNCTION ST_AsMVT(anyelement , text ) IS 'args: row, name - Return a Mapbox Vector Tile representation of a set of rows.';
+			
+COMMENT ON FUNCTION ST_AsMVT(anyelement , text , integer ) IS 'args: row, name, extent - Return a Mapbox Vector Tile representation of a set of rows.';
+			
+COMMENT ON FUNCTION ST_AsMVT(anyelement , text , integer , text ) IS 'args: row, name, extent, geom_name - Return a Mapbox Vector Tile representation of a set of rows.';
+			
 COMMENT ON FUNCTION ST_3DClosestPoint(geometry , geometry ) IS 'args: g1, g2 - Returns the 3-dimensional point on g1 that is closest to g2. This is the first point of the 3D shortest line.';
 			
 COMMENT ON FUNCTION ST_3DDistance(geometry , geometry ) IS 'args: g1, g2 - For geometry type Returns the 3-dimensional cartesian minimum distance (based on spatial ref) between two geometries in projected units.';
@@ -456,6 +480,8 @@ COMMENT ON FUNCTION ST_Azimuth(geometry , geometry ) IS 'args: pointA, pointB - 
 COMMENT ON FUNCTION ST_Azimuth(geography , geography ) IS 'args: pointA, pointB - Returns the north-based azimuth as the angle in radians measured clockwise from the vertical on pointA to pointB.';
 			
 COMMENT ON FUNCTION ST_Centroid(geometry ) IS 'args: g1 - Returns the geometric center of a geometry.';
+			
+COMMENT ON FUNCTION ST_Centroid(geography , boolean ) IS 'args: g1, use_spheroid=true - Returns the geometric center of a geometry.';
 			
 COMMENT ON FUNCTION ST_ClosestPoint(geometry , geometry ) IS 'args: g1, g2 - Returns the 2-dimensional point on g1 that is closest to g2. This is the first point of the shortest line.';
 			
@@ -498,6 +524,8 @@ COMMENT ON FUNCTION ST_MinimumClearanceLine(geometry ) IS 'args: g - Returns the
 COMMENT ON FUNCTION ST_HausdorffDistance(geometry , geometry ) IS 'args: g1, g2 - Returns the Hausdorff distance between two geometries. Basically a measure of how similar or dissimilar 2 geometries are. Units are in the units of the spatial reference system of the geometries.';
 			
 COMMENT ON FUNCTION ST_HausdorffDistance(geometry , geometry , float) IS 'args: g1, g2, densifyFrac - Returns the Hausdorff distance between two geometries. Basically a measure of how similar or dissimilar 2 geometries are. Units are in the units of the spatial reference system of the geometries.';
+			
+COMMENT ON FUNCTION ST_FrechetDistance(geometry , geometry , float) IS 'args: g1, g2, densifyFrac = -1 - Returns the Fréchet distance between two geometries. This is a measure of similarity between curves that takes into account the location and ordering of the points along the curves. Units are in the units of the spatial reference system of the geometries.';
 			
 COMMENT ON FUNCTION ST_MaxDistance(geometry , geometry ) IS 'args: g1, g2 - Returns the 2-dimensional largest distance between two geometries in projected units.';
 			
@@ -614,6 +642,8 @@ COMMENT ON FUNCTION ST_ConvexHull(geometry ) IS 'args: geomA - The convex hull o
 COMMENT ON FUNCTION ST_CurveToLine(geometry) IS 'args: curveGeom - Converts a CIRCULARSTRING/CURVEPOLYGON to a LINESTRING/POLYGON';
 			
 COMMENT ON FUNCTION ST_CurveToLine(geometry, integer) IS 'args: curveGeom, segments_per_qtr_circle - Converts a CIRCULARSTRING/CURVEPOLYGON to a LINESTRING/POLYGON';
+			
+COMMENT ON FUNCTION ST_CurveToLine(geometry, float, integer, integer) IS 'args: curveGeom, tolerance, tolerance_type, flags - Converts a CIRCULARSTRING/CURVEPOLYGON to a LINESTRING/POLYGON';
 			
 COMMENT ON FUNCTION ST_DelaunayTriangles(geometry , float , int4 ) IS 'args: g1, tolerance, flags - Return a Delaunay triangulation around the given input points.';
 			
@@ -761,7 +791,7 @@ COMMENT ON FUNCTION Find_SRID(varchar , varchar , varchar ) IS 'args: a_schema_n
 			
 COMMENT ON FUNCTION ST_MemSize(geometry ) IS 'args: geomA - Returns the amount of space (in bytes) the geometry takes.';
 			
-COMMENT ON FUNCTION ST_PointInsideCircle(geometry , float , float , float ) IS 'args: a_point, center_x, center_y, radius - Is the point geometry insert circle defined by center_x, center_y, radius';
+COMMENT ON FUNCTION ST_PointInsideCircle(geometry , float , float , float ) IS 'args: a_point, center_x, center_y, radius - Is the point geometry inside the circle defined by center_x, center_y, radius';
 			
 COMMENT ON FUNCTION PostGIS_AddBBox(geometry ) IS 'args: geomA - Add bounding box to the geometry.';
 			

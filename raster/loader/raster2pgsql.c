@@ -511,7 +511,7 @@ static void
 init_rastinfo(RASTERINFO *info) {
 	info->srid = SRID_UNKNOWN;
 	info->srs = NULL;
-	memset(info->dim, 0, sizeof(double) * 2);
+	memset(info->dim, 0, sizeof(uint32_t) * 2);
 	info->nband_count = 0;
 	info->nband = NULL;
 	info->gdalbandtype = NULL;
@@ -1229,7 +1229,7 @@ add_raster_constraints(
 		(regular_blocking ? "TRUE" : "FALSE"),
 		(max_extent ? "TRUE" : "FALSE")
 	);
-	
+
 	if (_schema != NULL)
 		rtdealloc(_schema);
 	rtdealloc(_table);
@@ -1330,7 +1330,7 @@ add_overview_constraints(
 		_column,
 		factor
 	);
-	
+
 	if (_ovschema != NULL)
 		rtdealloc(_ovschema);
 	rtdealloc(_ovtable);
@@ -2281,7 +2281,7 @@ main(int argc, char **argv) {
 	char *tmp = NULL;
 
 	rt_init_allocators();
-	
+
 #ifdef USE_NLS
 	setlocale (LC_ALL, "");
 	bindtextdomain (PACKAGE, LOCALEDIR);

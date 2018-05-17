@@ -183,7 +183,7 @@ static bool box2df_intersection(const BOX2DF *a, const BOX2DF *b, BOX2DF *n)
 
 	if( a == NULL || b == NULL || n == NULL )
 		return FALSE;
-		
+
 	n->xmax = Min(a->xmax, b->xmax);
 	n->ymax = Min(a->ymax, b->ymax);
 	n->xmin = Max(a->xmin, b->xmin);
@@ -204,7 +204,7 @@ static float box2df_size(const BOX2DF *a)
 
 	if ( a == NULL )
 		return (float)0.0;
-		
+
 	if ( (a->xmax <= a->xmin) || (a->ymax <= a->ymin) )
 	{
 		result =  (float) 0.0;
@@ -236,7 +236,7 @@ static float box2df_union_size(const BOX2DF *a, const BOX2DF *b)
 		elog(ERROR, "box2df_union_size received two null arguments");
 		return 0.0;
 	}
-	
+
 	if ( a == NULL )
 		return box2df_size(b);
 
@@ -263,7 +263,7 @@ static float box2df_union_edge(const BOX2DF *a, const BOX2DF *b)
 		elog(ERROR, "box2df_union_edge received two null arguments");
 		return 0.0;
 	}
-	
+
 	if ( a == NULL )
 		return box2df_edge(b);
 
@@ -593,18 +593,15 @@ gserialized_datum_get_box2df_p(Datum gsdatum, BOX2DF *box2df)
 	POSTGIS_DEBUG(4, "entered function");
 
 	/*
-	** The most info we need is the 8 bytes of serialized header plus the
-	** of floats necessary to hold the bounding box.
+	** Because geometry is declared as "storage = main" anything large
+	** enough to take serious advantage of PG_DETOAST_DATUM_SLICE will have
+	** already been compressed, which means the entire object will be
+	** fetched and decompressed before a slice is taken, thus removing
+	** any efficiencies gained from slicing. We need to move to
+	** "storage = external" and implement our own geometry compressor
+	** before we can take advantage of sliced retrieval.
 	*/
-	if (VARATT_IS_EXTENDED(gsdatum))
-	{
-		gpart = (GSERIALIZED*)PG_DETOAST_DATUM_SLICE(gsdatum, 0, 8 + sizeof(BOX2DF));
-	}
-	else
-	{
-		gpart = (GSERIALIZED*)PG_DETOAST_DATUM(gsdatum);
-	}
-
+	gpart = (GSERIALIZED*)PG_DETOAST_DATUM(gsdatum);
 	flags = gpart->flags;
 
 	POSTGIS_DEBUGF(4, "got flags %d", gpart->flags);
@@ -621,27 +618,21 @@ gserialized_datum_get_box2df_p(Datum gsdatum, BOX2DF *box2df)
 	{
 		/* No, we need to calculate it from the full object. */
 		GBOX gbox;
-		GSERIALIZED *g = (GSERIALIZED*)PG_DETOAST_DATUM(gsdatum);
-
 		gbox_init(&gbox);
 
-		if (gserialized_get_gbox_p(g, &gbox) == LW_FAILURE)
+		result = gserialized_get_gbox_p(gpart, &gbox);
+		if ( result == LW_SUCCESS )
 		{
-			POSTGIS_DEBUG(4, "could not calculate bbox, returning failure");
-			POSTGIS_FREE_IF_COPY_P(gpart, gsdatum);
-			POSTGIS_FREE_IF_COPY_P(g, gsdatum);
-			return LW_FAILURE;
+			result = box2df_from_gbox_p(&gbox, box2df);
 		}
-		POSTGIS_FREE_IF_COPY_P(g, gsdatum);
-		result = box2df_from_gbox_p(&gbox, box2df);
+		else
+		{
+			POSTGIS_DEBUG(4, "could not calculate bbox");
+		}
 	}
 
 	POSTGIS_FREE_IF_COPY_P(gpart, gsdatum);
-
-	if ( result == LW_SUCCESS )
-	{
-		POSTGIS_DEBUGF(4, "got box2df %s", box2df_to_string(box2df));
-	}
+	POSTGIS_DEBUGF(4, "result = %d, got box2df %s", result, result == LW_SUCCESS ? box2df_to_string(box2df) : "NONE");
 
 	return result;
 }
@@ -757,13 +748,13 @@ Datum gserialized_distance_centroid_2d(PG_FUNCTION_ARGS)
 	BOX2DF b1, b2;
 	Datum gs1 = PG_GETARG_DATUM(0);
 	Datum gs2 = PG_GETARG_DATUM(1);
-	
+
 	POSTGIS_DEBUG(3, "entered function");
 
 	/* Must be able to build box for each argument (ie, not empty geometry). */
 	if ( (gserialized_datum_get_box2df_p(gs1, &b1) == LW_SUCCESS) &&
 	     (gserialized_datum_get_box2df_p(gs2, &b2) == LW_SUCCESS) )
-	{	
+	{
 		double distance = box2df_distance_leaf_centroid(&b1, &b2);
 		POSTGIS_DEBUGF(3, "got boxes %s and %s", box2df_to_string(&b1), box2df_to_string(&b2));
 		PG_RETURN_FLOAT8(distance);
@@ -777,13 +768,13 @@ Datum gserialized_distance_box_2d(PG_FUNCTION_ARGS)
 	BOX2DF b1, b2;
 	Datum gs1 = PG_GETARG_DATUM(0);
 	Datum gs2 = PG_GETARG_DATUM(1);
-	
+
 	POSTGIS_DEBUG(3, "entered function");
 
 	/* Must be able to build box for each argument (ie, not empty geometry). */
 	if ( (gserialized_datum_get_box2df_p(gs1, &b1) == LW_SUCCESS) &&
 	     (gserialized_datum_get_box2df_p(gs2, &b2) == LW_SUCCESS) )
-	{	
+	{
 		double distance = box2df_distance(&b1, &b2);
 		POSTGIS_DEBUGF(3, "got boxes %s and %s", box2df_to_string(&b1), box2df_to_string(&b2));
 		PG_RETURN_FLOAT8(distance);
@@ -1023,7 +1014,7 @@ static inline bool gserialized_gist_consistent_leaf_2d(BOX2DF *key, BOX2DF *quer
 	case RTOldContainedByStrategyNumber:
 		retval = (bool) box2df_contains(query, key);
 		break;
-		
+
 	/* To one side */
 	case RTAboveStrategyNumber:
 		retval = (bool) box2df_above(key, query);
@@ -1050,8 +1041,8 @@ static inline bool gserialized_gist_consistent_leaf_2d(BOX2DF *key, BOX2DF *quer
 		break;
 	case RTOverLeftStrategyNumber:
 		retval = (bool) box2df_overleft(key, query);
-		break;		
-		
+		break;
+
 	default:
 		retval = FALSE;
 	}
@@ -1071,7 +1062,7 @@ static inline bool gserialized_gist_consistent_internal_2d(BOX2DF *key, BOX2DF *
 
 	switch (strategy)
 	{
-		
+
 	/* Basic overlaps */
 	case RTOverlapStrategyNumber:
 		retval = (bool) box2df_overlaps(key, query);
@@ -1085,7 +1076,7 @@ static inline bool gserialized_gist_consistent_internal_2d(BOX2DF *key, BOX2DF *
 	case RTOldContainedByStrategyNumber:
 		retval = (bool) box2df_overlaps(key, query);
 		break;
-		
+
 	/* To one side */
 	case RTAboveStrategyNumber:
 		retval = (bool)(!box2df_overbelow(key, query));
@@ -1113,7 +1104,7 @@ static inline bool gserialized_gist_consistent_internal_2d(BOX2DF *key, BOX2DF *
 	case RTOverLeftStrategyNumber:
 		retval = (bool)(!box2df_right(key, query));
 		break;
-		
+
 	default:
 		retval = FALSE;
 	}
@@ -1226,12 +1217,12 @@ Datum gserialized_gist_distance_2d(PG_FUNCTION_ARGS)
 		POSTGIS_DEBUG(4, "[GIST] null query_gbox_index!");
 		PG_RETURN_FLOAT8(FLT_MAX);
 	}
-	
+
 	/* Get the entry box */
 	entry_box = (BOX2DF*)DatumGetPointer(entry->key);
-	
+
 #if POSTGIS_PGSQL_VERSION >= 95
-	
+
 	/* Box-style distance test */
 	if ( strategy == 14 ) /* operator <#> */
 	{
@@ -1272,8 +1263,8 @@ Datum gserialized_gist_distance_2d(PG_FUNCTION_ARGS)
 		/* Calculate distance for internal nodes */
 		distance = (double)box2df_distance_node_centroid(entry_box, &query_box);
 	}
-#endif	
-	
+#endif
+
 	PG_RETURN_FLOAT8(distance);
 }
 
@@ -1335,19 +1326,19 @@ Datum gserialized_gist_penalty_2d(PG_FUNCTION_ARGS)
 	size_union = box2df_union_size(gbox_index_orig, gbox_index_new);
 	size_orig = box2df_size(gbox_index_orig);
 	*result = size_union - size_orig;
-	
+
 	/* REALM 0: No extension is required, volume is zero, return edge */
  	/* REALM 1: No extension is required, return nonzero area */
  	/* REALM 2: Area extension is zero, return nonzero edge extension */
  	/* REALM 3: Area extension is nonzero, return it */
- 
+
  	if( *result == 0 )
  	{
-		if (size_orig > 0) 
+		if (size_orig > 0)
 		{
-			*result = pack_float(size_orig, 1); /* REALM 1 */ 
+			*result = pack_float(size_orig, 1); /* REALM 1 */
 		}
-		else 
+		else
 		{
 			edge_union = box2df_union_edge(gbox_index_orig, gbox_index_new);
 			edge_orig = box2df_edge(gbox_index_orig);
@@ -1638,7 +1629,7 @@ g_box_consider_split(ConsiderSplitContext *context, int dimNum,
 	POSTGIS_DEBUGF(5, "consider split: dimNum = %d, rightLower = %f, "
 		"minLeftCount = %d, leftUpper = %f, maxLeftCount = %d ",
 		dimNum, rightLower, minLeftCount, leftUpper, maxLeftCount);
-	
+
 	/*
 	 * Calculate entries distribution ratio assuming most uniform distribution
 	 * of common entries.
@@ -1811,7 +1802,7 @@ Datum gserialized_gist_picksplit_2d(PG_FUNCTION_ARGS)
 			   *intervalsUpper;
 	CommonEntry *commonEntries;
 	int			nentries;
-	
+
 	POSTGIS_DEBUG(3, "[GIST] 'picksplit' entered");
 
 	memset(&context, 0, sizeof(ConsiderSplitContext));
@@ -1834,7 +1825,7 @@ Datum gserialized_gist_picksplit_2d(PG_FUNCTION_ARGS)
 		else
 			adjustBox(&context.boundingBox, box);
 	}
-	
+
 	POSTGIS_DEBUGF(4, "boundingBox is %s", box2df_to_string(
 														&context.boundingBox));
 
@@ -1999,7 +1990,7 @@ Datum gserialized_gist_picksplit_2d(PG_FUNCTION_ARGS)
 	 */
 
 	POSTGIS_DEBUGF(4, "split direction: %d", context.dim);
-	
+
 	/* Allocate vectors for results */
 	v->spl_left = (OffsetNumber *) palloc(nentries * sizeof(OffsetNumber));
 	v->spl_right = (OffsetNumber *) palloc(nentries * sizeof(OffsetNumber));
@@ -2087,7 +2078,7 @@ Datum gserialized_gist_picksplit_2d(PG_FUNCTION_ARGS)
 			PLACE_RIGHT(box, i);
 		}
 	}
-	
+
 	POSTGIS_DEBUGF(4, "leftBox is %s", box2df_to_string(leftBox));
 	POSTGIS_DEBUGF(4, "rightBox is %s", box2df_to_string(rightBox));
 
@@ -2148,9 +2139,9 @@ Datum gserialized_gist_picksplit_2d(PG_FUNCTION_ARGS)
 	}
 	v->spl_ldatum = PointerGetDatum(leftBox);
 	v->spl_rdatum = PointerGetDatum(rightBox);
-	
+
 	POSTGIS_DEBUG(4, "[GIST] 'picksplit' completed");
-	
+
 	PG_RETURN_POINTER(v);
 }
 
@@ -2359,7 +2350,7 @@ Datum gserialized_gist_picksplit_2d(PG_FUNCTION_ARGS)
 	{
 		float sizeLR, sizeBT;
 		BOX2DF interLR, interBT;
-		
+
 		if ( box2df_intersection(unionL, unionR, &interLR) == FALSE )
 			sizeLR = 0.0;
 		else
@@ -2369,7 +2360,7 @@ Datum gserialized_gist_picksplit_2d(PG_FUNCTION_ARGS)
 			sizeBT = 0.0;
 		else
 			sizeBT = box2df_size(&interBT);
-		
+
 		if (sizeLR < sizeBT)
 			direction = 'x';
 		else
@@ -2406,9 +2397,9 @@ Datum gserialized_gist_picksplit_2d(PG_FUNCTION_ARGS)
 		v->spl_ldatum = PointerGetDatum(unionB);
 		v->spl_rdatum = PointerGetDatum(unionT);
 	}
-	
+
 	POSTGIS_DEBUG(4, "[GIST] 'picksplit' completed");
-	
+
 	PG_RETURN_POINTER(v);
 }
 

@@ -51,7 +51,7 @@ Datum ST_AsMVTGeom(PG_FUNCTION_ARGS)
 	int extent, buffer;
 	bool clip_geom;
 	if (PG_ARGISNULL(0))
-		elog(ERROR, "ST_AsMVTGeom: geom cannot be null");
+		PG_RETURN_NULL();
 	geom_in = PG_GETARG_GSERIALIZED_P(0);
 	lwgeom_in = lwgeom_from_gserialized(geom_in);
 	if (PG_ARGISNULL(1))
@@ -130,7 +130,11 @@ Datum pgis_asmvt_finalfn(PG_FUNCTION_ARGS)
 		elog(ERROR, "pgis_asmvt_finalfn called in non-aggregate context");
 
 	if (PG_ARGISNULL(0))
-		PG_RETURN_NULL();
+	{
+		bytea *emptybuf = palloc(VARHDRSZ);
+		SET_VARSIZE(emptybuf, VARHDRSZ);
+		PG_RETURN_BYTEA_P(emptybuf);
+	}
 
 	ctx = (struct mvt_agg_context *) PG_GETARG_POINTER(0);
 	buf = mvt_agg_finalfn(ctx);

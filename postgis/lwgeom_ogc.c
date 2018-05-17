@@ -189,7 +189,7 @@ Datum geometry_geometrytype(PG_FUNCTION_ARGS)
 	/* Build up the output string */
 	strncat(type_str, "ST_", type_str_len);
 	strncat(type_str, lwtype_name(gserialized_get_type(gser)), type_str_len - 3);
-	
+
 	/* Build a text type to store things in */
 	type_text = cstring2text(type_str);
 
@@ -210,7 +210,7 @@ Datum LWGEOM_numpoints_linestring(PG_FUNCTION_ARGS)
 	LWGEOM *lwgeom = lwgeom_from_gserialized(geom);
 	int count = -1;
 	int type = lwgeom->type;
-	
+
 	if ( type == LINETYPE || type == CIRCSTRINGTYPE || type == COMPOUNDTYPE )
 		count = lwgeom_count_vertices(lwgeom);
 
@@ -308,7 +308,7 @@ Datum LWGEOM_dimension(PG_FUNCTION_ARGS)
 	dimension = lwgeom_dimension(lwgeom);
 	lwgeom_free(lwgeom);
 	PG_FREE_IF_COPY(geom, 0);
-	
+
 	if ( dimension < 0 )
 	{
 		elog(NOTICE, "Could not compute geometry dimensions");
@@ -341,12 +341,11 @@ Datum LWGEOM_exteriorring_polygon(PG_FUNCTION_ARGS)
 	     (type != CURVEPOLYTYPE) &&
 	     (type != TRIANGLETYPE))
 	{
-		elog(ERROR, "ExteriorRing: geom is not a polygon");
 		PG_RETURN_NULL();
 	}
-	
+
 	lwgeom = lwgeom_from_gserialized(geom);
-	
+
 	if( lwgeom_is_empty(lwgeom) )
 	{
 		line = lwline_construct_empty(lwgeom->srid,
@@ -354,7 +353,7 @@ Datum LWGEOM_exteriorring_polygon(PG_FUNCTION_ARGS)
 		                              lwgeom_has_m(lwgeom));
 		result = geometry_serialize(lwline_as_lwgeom(line));
 	}
-	else if ( lwgeom->type == POLYGONTYPE )
+	else if ( type == POLYGONTYPE )
 	{
 		LWPOLY *poly = lwgeom_as_lwpoly(lwgeom);
 
@@ -374,7 +373,7 @@ Datum LWGEOM_exteriorring_polygon(PG_FUNCTION_ARGS)
 
 		lwgeom_release((LWGEOM *)line);
 	}
-	else if ( lwgeom->type == TRIANGLETYPE )
+	else if ( type == TRIANGLETYPE )
 	{
 		LWTRIANGLE *triangle = lwgeom_as_lwtriangle(lwgeom);
 
@@ -412,38 +411,31 @@ PG_FUNCTION_INFO_V1(LWGEOM_numinteriorrings_polygon);
 Datum LWGEOM_numinteriorrings_polygon(PG_FUNCTION_ARGS)
 {
 	GSERIALIZED *geom = PG_GETARG_GSERIALIZED_P(0);
-	LWGEOM *lwgeom = lwgeom_from_gserialized(geom);
-
+	int type = gserialized_get_type(geom);
+	LWGEOM *lwgeom;
 	int result = -1;
 
-	if ( lwgeom->type == POLYGONTYPE )
+	if ( (type != POLYGONTYPE) &&
+	     (type != CURVEPOLYTYPE) &&
+	     (type != TRIANGLETYPE))
 	{
-		if (lwgeom_is_empty(lwgeom))
-		{
-			result = 0;
-		}
-		else
-		{
-			const LWPOLY *poly = lwgeom_as_lwpoly(lwgeom);
-			result = poly->nrings - 1;
-		}
+		PG_RETURN_NULL();
 	}
-	else if ( lwgeom->type == CURVEPOLYTYPE )
+
+	lwgeom = lwgeom_from_gserialized(geom);
+	if ( lwgeom_is_empty(lwgeom) )
 	{
-		if (lwgeom_is_empty(lwgeom))
-		{
-			result = 0;
-		}
-		else
-		{
-			const LWCURVEPOLY *curvepoly = lwgeom_as_lwcurvepoly(lwgeom);
-			result = curvepoly->nrings - 1;
-		}
+		result = 0;
 	}
-	
+	else
+	{
+		const LWPOLY *poly = (LWPOLY*)lwgeom;
+		result = poly->nrings - 1;
+	}
+
 	lwgeom_free(lwgeom);
 	PG_FREE_IF_COPY(geom, 0);
-	
+
 	if ( result < 0 )
 		PG_RETURN_NULL();
 
@@ -470,12 +462,11 @@ Datum LWGEOM_interiorringn_polygon(PG_FUNCTION_ARGS)
 	GBOX *bbox = NULL;
 	int type;
 
-	POSTGIS_DEBUG(2, "LWGEOM_interierringn_polygon called.");
+	POSTGIS_DEBUG(2, "LWGEOM_interiorringn_polygon called.");
 
 	wanted_index = PG_GETARG_INT32(1);
 	if ( wanted_index < 1 )
 	{
-		/* elog(ERROR, "InteriorRingN: ring number is 1-based"); */
 		PG_RETURN_NULL(); /* index out of range */
 	}
 
@@ -484,11 +475,10 @@ Datum LWGEOM_interiorringn_polygon(PG_FUNCTION_ARGS)
 
 	if ( (type != POLYGONTYPE) && (type != CURVEPOLYTYPE) )
 	{
-		elog(ERROR, "InteriorRingN: geom is not a polygon");
 		PG_FREE_IF_COPY(geom, 0);
 		PG_RETURN_NULL();
 	}
-	
+
 	lwgeom = lwgeom_from_gserialized(geom);
 	if( lwgeom_is_empty(lwgeom) )
 	{
@@ -496,7 +486,7 @@ Datum LWGEOM_interiorringn_polygon(PG_FUNCTION_ARGS)
 		PG_FREE_IF_COPY(geom, 0);
 		PG_RETURN_NULL();
 	}
-	
+
 	if ( type == POLYGONTYPE)
 	{
 		poly = lwgeom_as_lwpoly(lwgeom_from_gserialized(geom));
@@ -574,7 +564,7 @@ Datum LWGEOM_pointn_linestring(PG_FUNCTION_ARGS)
 		if (where < 1)
 			PG_RETURN_NULL();
 	}
-	
+
 	if ( type == LINETYPE || type == CIRCSTRINGTYPE )
 	{
 		/* OGC index starts at one, so we substract first. */
@@ -583,7 +573,7 @@ Datum LWGEOM_pointn_linestring(PG_FUNCTION_ARGS)
 	else if ( type == COMPOUNDTYPE )
 	{
 		lwpoint = lwcompound_get_lwpoint((LWCOMPOUND*)lwgeom, where - 1);
-	}	
+	}
 
 	lwgeom_free(lwgeom);
 	PG_FREE_IF_COPY(geom, 0);
@@ -613,7 +603,7 @@ Datum LWGEOM_x_point(PG_FUNCTION_ARGS)
 
 	lwgeom = lwgeom_from_gserialized(geom);
 	point = lwgeom_as_lwpoint(lwgeom);
-	
+
 	if ( lwgeom_is_empty(lwgeom) )
 		PG_RETURN_NULL();
 
@@ -642,7 +632,7 @@ Datum LWGEOM_y_point(PG_FUNCTION_ARGS)
 
 	lwgeom = lwgeom_from_gserialized(geom);
 	point = lwgeom_as_lwpoint(lwgeom);
-	
+
 	if ( lwgeom_is_empty(lwgeom) )
 		PG_RETURN_NULL();
 
@@ -673,7 +663,7 @@ Datum LWGEOM_z_point(PG_FUNCTION_ARGS)
 
 	lwgeom = lwgeom_from_gserialized(geom);
 	point = lwgeom_as_lwpoint(lwgeom);
-	
+
 	if ( lwgeom_is_empty(lwgeom) )
 		PG_RETURN_NULL();
 
@@ -706,7 +696,7 @@ Datum LWGEOM_m_point(PG_FUNCTION_ARGS)
 
 	lwgeom = lwgeom_from_gserialized(geom);
 	point = lwgeom_as_lwpoint(lwgeom);
-	
+
 	if ( lwgeom_is_empty(lwgeom) )
 		PG_RETURN_NULL();
 
@@ -839,21 +829,21 @@ Datum LWGEOM_from_WKB(PG_FUNCTION_ARGS)
 	GSERIALIZED *geom;
 	LWGEOM *lwgeom;
 	uint8_t *wkb = (uint8_t*)VARDATA(bytea_wkb);
-	
+
 	lwgeom = lwgeom_from_wkb(wkb, VARSIZE(bytea_wkb)-VARHDRSZ, LW_PARSER_CHECK_ALL);
-	
+
 	if ( lwgeom_needs_bbox(lwgeom) )
 		lwgeom_add_bbox(lwgeom);
-	
+
 	geom = geometry_serialize(lwgeom);
 	lwgeom_free(lwgeom);
 	PG_FREE_IF_COPY(bytea_wkb, 0);
-	
+
 	if ( gserialized_get_srid(geom) != SRID_UNKNOWN )
 	{
 		elog(WARNING, "OGC WKB expected, EWKB provided - use GeometryFromEWKB() for this");
 	}
-	
+
 	if ( PG_NARGS() > 1 )
 	{
 		srid = PG_GETARG_INT32(1);
@@ -924,7 +914,7 @@ Datum LWGEOM_asBinary(PG_FUNCTION_ARGS)
 			variant = variant | WKB_NDR;
 		}
 	}
-	
+
 	/* Write to WKB and free the geometry */
 	wkb = lwgeom_to_wkb(lwgeom, variant, &wkb_size);
 	lwgeom_free(lwgeom);
@@ -954,8 +944,8 @@ Datum LWGEOM_isclosed(PG_FUNCTION_ARGS)
 	GSERIALIZED *geom = PG_GETARG_GSERIALIZED_P(0);
 	LWGEOM *lwgeom = lwgeom_from_gserialized(geom);
 	int closed = lwgeom_is_closed(lwgeom);
-	
+
 	lwgeom_free(lwgeom);
 	PG_FREE_IF_COPY(geom, 0);
 	PG_RETURN_BOOL(closed);
-}	
+}

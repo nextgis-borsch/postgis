@@ -30,6 +30,11 @@
 #include "utils/jsonb.h"
 #endif
 
+#if POSTGIS_PGSQL_VERSION < 110
+/* See trac ticket #3867 */
+# define DatumGetJsonbP DatumGetJsonb
+#endif
+
 #include "uthash.h"
 
 #define FEATURES_CAPACITY_INITIAL 50
@@ -302,7 +307,9 @@ static void parse_column_keys(struct mvt_agg_context *ctx)
 	int natts = tupdesc->natts;
 	uint32_t i;
 	bool geom_found = false;
+	char *key;
 	POSTGIS_DEBUG(2, "parse_column_keys called");
+
 	for (i = 0; i < natts; i++) {
 #if POSTGIS_PGSQL_VERSION < 110
 		Oid typoid = getBaseType(tupdesc->attrs[i]->atttypid);
@@ -315,18 +322,17 @@ static void parse_column_keys(struct mvt_agg_context *ctx)
 		if (typoid == JSONBOID)
 			continue;
 #endif
-		char *key = palloc(strlen(tkey) + 1);
-		strcpy(key, tkey);
+		key = pstrdup(tkey);
 		if (ctx->geom_name == NULL) {
 			if (!geom_found && typoid == TypenameGetTypid("geometry")) {
 				ctx->geom_index = i;
-				geom_found = 1;
+				geom_found = true;
 				continue;
 			}
 		} else {
 			if (!geom_found && strcmp(key, ctx->geom_name) == 0) {
 				ctx->geom_index = i;
-				geom_found = 1;
+				geom_found = true;
 				continue;
 			}
 		}
@@ -472,7 +478,6 @@ static void add_value_as_string(struct mvt_agg_context *ctx,
 static void parse_datum_as_string(struct mvt_agg_context *ctx, Oid typoid,
 	Datum datum, uint32_t *tags, uint32_t k)
 {
-	struct mvt_kv_string_value *kv;
 	Oid foutoid;
 	bool typisvarlena;
 	char *value;
@@ -586,7 +591,7 @@ static void parse_values(struct mvt_agg_context *ctx)
 		if (k == -1 && typoid != JSONBOID)
 			elog(ERROR, "parse_values: unexpectedly could not find parsed key name '%s'", key);
 		if (typoid == JSONBOID) {
-			tags = parse_jsonb(ctx, DatumGetJsonb(datum), tags);
+			tags = parse_jsonb(ctx, DatumGetJsonbP(datum), tags);
 			continue;
 		}
 #else
@@ -631,7 +636,7 @@ static void parse_values(struct mvt_agg_context *ctx)
 	ctx->feature->n_tags = ctx->c * 2;
 	ctx->feature->tags = tags;
 
-	POSTGIS_DEBUGF(3, "parse_values n_tags %d", ctx->feature->n_tags);
+	POSTGIS_DEBUGF(3, "parse_values n_tags %zd", ctx->feature->n_tags);
 }
 static int max_type(LWCOLLECTION *lwcoll)
 {
@@ -652,7 +657,7 @@ static int max_type(LWCOLLECTION *lwcoll)
  * Makes best effort to keep validity. Might collapse geometry into lower
  * dimension.
  */
-LWGEOM *mvt_geom(LWGEOM *lwgeom, GBOX *gbox, uint32_t extent, uint32_t buffer,
+LWGEOM *mvt_geom(const LWGEOM *lwgeom, const GBOX *gbox, uint32_t extent, uint32_t buffer,
 	bool clip_geom)
 {
 	AFFINE affine;
@@ -661,14 +666,17 @@ LWGEOM *mvt_geom(LWGEOM *lwgeom, GBOX *gbox, uint32_t extent, uint32_t buffer,
 	double width = gbox->xmax - gbox->xmin;
 	double height = gbox->ymax - gbox->ymin;
 	double resx = width / extent;
-	double resy = height / extent;
 	double fx = extent / width;
 	double fy = -(extent / height);
 	double buffer_map_xunits = resx * buffer;
-	double buffer_map_yunits = resy * buffer;
-	const GBOX *ggbox = lwgeom_get_bbox(lwgeom);
+	const GBOX *ggbox;
 	POSTGIS_DEBUG(2, "mvt_geom called");
 
+	/* Short circuit out on EMPTY */
+	if (lwgeom_is_empty(lwgeom))
+		return NULL;
+
+	ggbox = lwgeom_get_bbox(lwgeom);
 	if (width == 0 || height == 0)
 		elog(ERROR, "mvt_geom: bounds width or height cannot be 0");
 
@@ -700,40 +708,44 @@ LWGEOM *mvt_geom(LWGEOM *lwgeom, GBOX *gbox, uint32_t extent, uint32_t buffer,
 		}
 	}
 
+	/* if no clip output deep clone original to avoid mutation */
 	if (lwgeom_out == NULL)
 		lwgeom_out = lwgeom_clone_deep(lwgeom);
 
+	/* transform to tile coordinate space */
 	memset(&affine, 0, sizeof(affine));
 	affine.afac = fx;
 	affine.efac = fy;
 	affine.ifac = 1;
 	affine.xoff = -gbox->xmin * fx;
 	affine.yoff = -gbox->ymax * fy;
-
 	lwgeom_affine(lwgeom_out, &affine);
 
+	/* snap to integer precision, removing duplicate points */
 	memset(&grid, 0, sizeof(gridspec));
 	grid.ipx = 0;
 	grid.ipy = 0;
 	grid.xsize = 1;
 	grid.ysize = 1;
-
 	lwgeom_out = lwgeom_grid(lwgeom_out, &grid);
 
 	if (lwgeom_out == NULL || lwgeom_is_empty(lwgeom_out))
 		return NULL;
 
+	/* if polygon(s) make valid and force clockwise as per MVT spec */
 	if (lwgeom_out->type == POLYGONTYPE ||
 		lwgeom_out->type == MULTIPOLYGONTYPE) {
 		lwgeom_out = lwgeom_make_valid(lwgeom_out);
 		lwgeom_force_clockwise(lwgeom_out);
 	}
 
+	/* if geometry collection extract highest dimensional geometry type */
 	if (lwgeom_out->type == COLLECTIONTYPE) {
 		LWCOLLECTION *lwcoll = lwgeom_as_lwcollection(lwgeom_out);
 		lwgeom_out = lwcollection_as_lwgeom(
 			lwcollection_extract(lwcoll, max_type(lwcoll)));
 		lwgeom_out = lwgeom_homogenize(lwgeom_out);
+		/* if polygon(s) make valid and force clockwise as per MVT spec */
 		if (lwgeom_out->type == POLYGONTYPE ||
 			lwgeom_out->type == MULTIPOLYGONTYPE) {
 			lwgeom_out = lwgeom_make_valid(lwgeom_out);
@@ -791,13 +803,12 @@ void mvt_agg_init_context(struct mvt_agg_context *ctx)
  */
 void mvt_agg_transfn(struct mvt_agg_context *ctx)
 {
-	bool isnull;
+	bool isnull = false;
 	Datum datum;
 	GSERIALIZED *gs;
 	LWGEOM *lwgeom;
 	VectorTile__Tile__Feature *feature;
 	VectorTile__Tile__Layer *layer = ctx->layer;
-	VectorTile__Tile__Feature **features = layer->features;
 	POSTGIS_DEBUG(2, "mvt_agg_transfn called");
 
 	if (layer->n_features >= ctx->features_capacity) {
@@ -805,24 +816,31 @@ void mvt_agg_transfn(struct mvt_agg_context *ctx)
 		layer->features = repalloc(layer->features, new_capacity *
 			sizeof(*layer->features));
 		ctx->features_capacity = new_capacity;
-		POSTGIS_DEBUGF(3, "mvt_agg_transfn new_capacity: %d", new_capacity);
+		POSTGIS_DEBUGF(3, "mvt_agg_transfn new_capacity: %zd", new_capacity);
+	}
+
+	if (layer->n_features == 0)
+		parse_column_keys(ctx);
+
+	datum = GetAttributeByNum(ctx->row, ctx->geom_index + 1, &isnull);
+	POSTGIS_DEBUGF(3, "mvt_agg_transfn ctx->geom_index: %d", ctx->geom_index);
+	POSTGIS_DEBUGF(3, "mvt_agg_transfn isnull: %u", isnull);
+	POSTGIS_DEBUGF(3, "mvt_agg_transfn datum: %lu", datum);
+	if (isnull) /* Skip rows that have null geometry */
+	{
+		POSTGIS_DEBUG(3, "mvt_agg_transfn got null geom");
+		return;
 	}
 
 	feature = palloc(sizeof(*feature));
 	vector_tile__tile__feature__init(feature);
 
 	ctx->feature = feature;
-	if (layer->n_features == 0)
-		parse_column_keys(ctx);
 
-	datum = GetAttributeByNum(ctx->row, ctx->geom_index + 1, &isnull);
-	if (!datum)
-		elog(ERROR, "mvt_agg_transfn: geometry column cannot be null");
 	gs = (GSERIALIZED *) PG_DETOAST_DATUM(datum);
 	lwgeom = lwgeom_from_gserialized(gs);
 
-	POSTGIS_DEBUGF(3, "mvt_agg_transfn encoded feature count: %d",
-		layer->n_features);
+	POSTGIS_DEBUGF(3, "mvt_agg_transfn encoded feature count: %zd", layer->n_features);
 	layer->features[layer->n_features++] = feature;
 
 	encode_geometry(ctx, lwgeom);
@@ -845,6 +863,15 @@ uint8_t *mvt_agg_finalfn(struct mvt_agg_context *ctx)
 	uint8_t *buf;
 
 	POSTGIS_DEBUG(2, "mvt_agg_finalfn called");
+	POSTGIS_DEBUGF(2, "mvt_agg_finalfn n_features == %zd", ctx->layer->n_features);
+
+	/* Zero features => empty bytea output */
+	if (ctx->layer->n_features == 0)
+	{
+		buf = palloc(VARHDRSZ);
+		SET_VARSIZE(buf, VARHDRSZ);
+		return buf;
+	}
 
 	encode_keys(ctx);
 	encode_values(ctx);

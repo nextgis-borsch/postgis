@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
-# Copyright (C) 2016, NextGIS <info@nextgis.com>
+# Copyright (C) 2016-2018, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -38,4 +38,3 @@ get_property(LIBRTPOSTGIS_INCLUDE_DIRS GLOBAL PROPERTY LIBRTPOSTGIS_INCLUDE_DIRS
 include_directories(${LIBRTPOSTGIS_INCLUDE_DIRS})
 
 add_subdirectory(loader)
-

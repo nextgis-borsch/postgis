@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
-# Copyright (C) 2016, NextGIS <info@nextgis.com>
+# Copyright (C) 2016-2018, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -23,7 +23,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
-project(rtcore C)
+project(rtcore)
 
 set_property(GLOBAL PROPERTY LIBRTCORE_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}
@@ -58,4 +58,3 @@ add_library(${LIB_NAME} STATIC ${CSOURCES} ${HHEADERS}) #always static
 target_link_extlibraries(${LIB_NAME})
 set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${LIB_NAME} PARENT_SCOPE)
 set(DEPENDENCY_LIB ${DEPENDENCY_LIB} ${LIB_NAME} PARENT_SCOPE)
-

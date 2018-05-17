@@ -18,6 +18,7 @@
 #include "postgres.h"
 #include "utils/geo_decls.h"
 #include "fmgr.h"
+#include "utils/lsyscache.h"
 
 #include "liblwgeom.h"
 #include "pgsql_compat.h"
@@ -49,7 +50,7 @@ void pg_install_lwgeom_handlers(void);
         } while (0);
 
 #else /* POSTGIS_DEBUG_LEVEL */
-	
+
 /* Empty prototype that can be optimised away by the compiler for non-debug builds */
 #define POSTGIS_DEBUG(level, msg) \
         ((void) 0)
@@ -141,6 +142,13 @@ char* text2cstring(const text *textptr);
  */
 #if POSTGIS_PGSQL_VERSION >= 85
 	#define STATRELATT STATRELATTINH
+#endif
+
+#if POSTGIS_PGSQL_VERSION >= 110
+#ifndef FALSE
+#define FALSE 0
+#define TRUE 1
+#endif
 #endif
 
 /* PG-exposed */

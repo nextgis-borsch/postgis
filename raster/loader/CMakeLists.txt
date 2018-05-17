@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
-# Copyright (C) 2016, NextGIS <info@nextgis.com>
+# Copyright (C) 2016-2018, NextGIS <info@nextgis.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
 # copy of this software and associated documentation files (the "Software"),
@@ -49,6 +49,6 @@ if(NOT SKIP_INSTALL_LIBRARIES AND NOT SKIP_INSTALL_ALL )
         ARCHIVE DESTINATION ${INSTALL_LIB_DIR} COMPONENT applications
         LIBRARY DESTINATION ${INSTALL_LIB_DIR} COMPONENT applications
     )
-    
+
     install(FILES ${MAN_FILES} DESTINATION "${INSTALL_MAN_DIR}/man1")
 endif()

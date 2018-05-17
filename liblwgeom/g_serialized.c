@@ -19,6 +19,7 @@
  **********************************************************************
  *
  * Copyright 2009 Paul Ramsey <pramsey@cleverelephant.ca>
+ * Copyright 2017 Darafei Praliaskouski <me@komzpa.net>
  *
  **********************************************************************/
 
@@ -30,6 +31,11 @@
 /***********************************************************************
 * GSERIALIZED metadata utility functions.
 */
+/* handle missaligned uint32_t data */
+static inline uint32_t gserialized_get_uint32_t(const uint8_t *loc)
+{
+	return *((uint32_t*)loc);
+}
 
 int gserialized_has_bbox(const GSERIALIZED *gser)
 {
@@ -71,7 +77,7 @@ uint32_t gserialized_header_size(const GSERIALIZED *gser)
 {
 	uint32_t sz = 8; /* varsize (4) + srid(3) + flags (1) */
 
-	if (gserialized_has_bbox(gser)) 
+	if (gserialized_has_bbox(gser))
 		sz += gbox_serialized_size(gser->flags);
 
 	return sz;
@@ -80,7 +86,6 @@ uint32_t gserialized_header_size(const GSERIALIZED *gser)
 uint32_t gserialized_get_type(const GSERIALIZED *s)
 {
 	uint32_t *ptr;
-	assert(s);
 	ptr = (uint32_t*)(s->data);
 	LWDEBUG(4,"entered");
 	if ( FLAGS_GET_BBOX(s->flags) )
@@ -100,12 +105,12 @@ int32_t gserialized_get_srid(const GSERIALIZED *s)
 	/* Only the first 21 bits are set. Slide up and back to pull
 	   the negative bits down, if we need them. */
 	srid = (srid<<11)>>11;
-	
+
 	/* 0 is our internal unknown value. We'll map back and forth here for now */
 	if ( srid == 0 )
 		return SRID_UNKNOWN;
 	else
-		return clamp_srid(srid);
+		return srid;
 }
 
 void gserialized_set_srid(GSERIALIZED *s, int32_t srid)
@@ -118,10 +123,19 @@ void gserialized_set_srid(GSERIALIZED *s, int32_t srid)
 	 * We'll map back and forth here for now */
 	if ( srid == SRID_UNKNOWN )
 		srid = 0;
-		
+
 	s->srid[0] = (srid & 0x001F0000) >> 16;
 	s->srid[1] = (srid & 0x0000FF00) >> 8;
 	s->srid[2] = (srid & 0x000000FF);
+}
+
+inline static int gserialized_cmp_srid(const GSERIALIZED *s1, const GSERIALIZED *s2)
+{
+	return (
+		s1->srid[0] == s2->srid[0] &&
+		s1->srid[1] == s2->srid[1] &&
+		s1->srid[2] == s2->srid[2]
+	) ? 0 : 1;
 }
 
 GSERIALIZED* gserialized_copy(const GSERIALIZED *g)
@@ -141,7 +155,7 @@ static size_t gserialized_is_empty_recurse(const uint8_t *p, int *isempty)
 
 	memcpy(&type, p, 4);
 	memcpy(&num, p+4, 4);
-	
+
 	if ( lwtype_is_collection(type) )
 	{
 		size_t lz = 8;
@@ -181,9 +195,9 @@ char* gserialized_to_string(const GSERIALIZED *g)
 }
 
 /* Unfortunately including advanced instructions is something that
-only helps a small sliver of users who can build their own 
+only helps a small sliver of users who can build their own
 knowing the target system they will be running on. Packagers
-have to aim for the lowest common demoninator. So this is 
+have to aim for the lowest common demoninator. So this is
 dead code for the forseeable future. */
 #define HAVE_PDEP 0
 #if HAVE_PDEP
@@ -216,13 +230,13 @@ static uint64_t uint32_interleave_2(uint32_t u1, uint32_t u2)
     uint64_t y = u2;
     int i;
 
-    static uint64_t B[5] = 
-    { 
-        0x5555555555555555, 
-        0x3333333333333333, 
-        0x0F0F0F0F0F0F0F0F, 
-        0x00FF00FF00FF00FF, 
-        0x0000FFFF0000FFFF 
+    static uint64_t B[5] =
+    {
+        0x5555555555555555,
+        0x3333333333333333,
+        0x0F0F0F0F0F0F0F0F,
+        0x00FF00FF00FF00FF,
+        0x0000FFFF0000FFFF
     };
     static uint64_t S[5] = { 1, 2, 4, 8, 16 };
 
@@ -236,13 +250,16 @@ static uint64_t uint32_interleave_2(uint32_t u1, uint32_t u2)
 }
 #endif
 
+union floatuint {
+	uint32_t u;
+	float f;
+};
 
 uint64_t gbox_get_sortable_hash(const GBOX *g)
 {
-	uint32_t ux, uy;
-	float fx, fy;
+	union floatuint x, y;
 
-	/* 
+	/*
 	* Since in theory the bitwise representation of an IEEE
 	* float is sortable (exponents come before mantissa, etc)
 	* we just copy the bits directly into an int and then
@@ -257,27 +274,63 @@ uint64_t gbox_get_sortable_hash(const GBOX *g)
 		p.z = (g->zmax + g->zmin) / 2.0;
 		normalize(&p);
 		cart2geog(&p, &gpt);
-		fx = gpt.lon;
-		fy = gpt.lat;
-		memcpy(&ux, &fx, sizeof(uint32_t));
-		memcpy(&uy, &fy, sizeof(uint32_t));
+		x.f = gpt.lon;
+		y.f = gpt.lat;
 	}
 	else
 	{
-		fx = (g->xmax + g->xmin) / 2.0;
-		fy = (g->ymax + g->ymin) / 2.0;
-		memcpy(&ux, &fx, sizeof(uint32_t));
-		memcpy(&uy, &fy, sizeof(uint32_t));
+		/*
+		* Here we'd like to get two ordinates from 4 in the box.
+		* Since it's just a sortable bit representation we can omit division from (A+B)/2.
+		* All it should do is subtract 1 from exponent anyways.
+		*/
+		x.f = g->xmax + g->xmin;
+		y.f = g->ymax + g->ymin;
 	}
-	return uint32_interleave_2(ux, uy);
+	return uint32_interleave_2(x.u, y.u);
 }
 
 int gserialized_cmp(const GSERIALIZED *g1, const GSERIALIZED *g2)
 {
 	int g1_is_empty, g2_is_empty, cmp;
 	GBOX box1, box2;
+	uint64_t hash1, hash2;
 	size_t sz1 = SIZE_GET(g1->size);
 	size_t sz2 = SIZE_GET(g2->size);
+	union floatuint x, y;
+
+	/*
+	* For two non-same planar points, we can skip a lot of machinery.
+	*/
+	if (
+		sz1 > 16 && // 16 is size of EMPTY, if it's larger - it has coordinates
+		sz2 > 16 &&
+		*(uint32_t*)(g1->data) == POINTTYPE &&
+		*(uint32_t*)(g2->data) == POINTTYPE &&
+		!FLAGS_GET_BBOX(g1->flags) &&
+		!FLAGS_GET_GEODETIC(g1->flags) &&
+		!FLAGS_GET_BBOX(g2->flags) &&
+		!FLAGS_GET_GEODETIC(g2->flags)
+	)
+	{
+		double *dptr = (double*)(g1->data);
+		x.f = 2.0 * dptr[1];
+		y.f = 2.0 * dptr[2];
+		hash1 = uint32_interleave_2(x.u, y.u);
+
+		dptr = (double*)(g2->data);
+		x.f = 2.0 * dptr[1];
+		y.f = 2.0 * dptr[2];
+		hash2 = uint32_interleave_2(x.u, y.u);
+
+		if ( hash1 > hash2 )
+			return 1;
+		if ( hash1 < hash2 )
+			return -1;
+
+		// if hashes happen to be the same, go to full compare.
+	}
+
 	size_t hsz1 = gserialized_header_size(g1);
 	size_t hsz2 = gserialized_header_size(g2);
 
@@ -286,46 +339,46 @@ int gserialized_cmp(const GSERIALIZED *g1, const GSERIALIZED *g2)
 	size_t bsz1 = sz1 - hsz1;
 	size_t bsz2 = sz2 - hsz2;
 	size_t bsz = bsz1 < bsz2 ? bsz1 : bsz2;
-	
-	uint64_t hash1, hash2;
-	int32_t srid1 = gserialized_get_srid(g1);
-	int32_t srid2 = gserialized_get_srid(g2);
-	
+
+	int cmp_srid = gserialized_cmp_srid(g1, g2);
+
 	g1_is_empty = (gserialized_get_gbox_p(g1, &box1) == LW_FAILURE);
 	g2_is_empty = (gserialized_get_gbox_p(g2, &box2) == LW_FAILURE);
-	
+
 	/* Empty == Empty */
 	if (g1_is_empty && g2_is_empty)
-    {
-        /* POINT EMPTY == POINT EMPTY */
-        /* POINT EMPTY < LINESTRING EMPTY */
-        uint32_t t1 = gserialized_get_type(g1);
-        uint32_t t2 = gserialized_get_type(g2);
+	{
+		/* POINT EMPTY == POINT EMPTY */
+		/* POINT EMPTY < LINESTRING EMPTY */
+		uint32_t t1 = gserialized_get_type(g1);
+		uint32_t t2 = gserialized_get_type(g2);
 		return t1 == t2 ? 0 : (t1 < t2 ? -1 : 1);
-    }
-	
+	}
+
 	/* Empty < Non-empty */
 	if (g1_is_empty)
 		return -1;
-	
+
 	/* Non-empty > Empty */
 	if (g2_is_empty)
 		return 1;
 
 	/* Return equality for perfect equality only */
 	cmp = memcmp(b1, b2, bsz);
-	if ( bsz1 == bsz2 && srid1 == srid2 && cmp == 0 )
+	if ( bsz1 == bsz2 && cmp_srid == 0 && cmp == 0 )
 		return 0;
-	
-	/* using the centroids, and preferring the X axis */
+
+	/* Using the centroids, calculate somewhat sortable */
+	/* hash key. The key doesn't provide good locality over */
+	/* the +/- boundary, but otherwise is pretty OK */
 	hash1 = gbox_get_sortable_hash(&box1);
 	hash2 = gbox_get_sortable_hash(&box2);
 
 	if ( hash1 > hash2 )
 		return 1;
-	else if ( hash1 < hash2 ) 
+	else if ( hash1 < hash2 )
 		return -1;
-	
+
 	/* What, the hashes are equal? OK... sort on the */
 	/* box minima */
 	if (box1.xmin < box2.xmin)
@@ -349,13 +402,13 @@ int gserialized_cmp(const GSERIALIZED *g1, const GSERIALIZED *g2)
 	else if (box1.ymax > box2.ymax)
 		return 1;
 
-	/* How about object size? Sort on that... */
+	/* Geeze! How about object size? Sort on that... */
 	if (hsz1 < hsz2)
 		return -1;
 	else if (hsz1 > hsz2)
 		return 1;
-	
-	/* Well, they aren't memcmp equal, so we'll sort on the memcmp */
+
+	/* OK fine, we'll sort on the memcmp just to be done with this */
 	return cmp == 0 ? 0 : (cmp > 0 ? 1 : -1);
 }
 
@@ -415,7 +468,7 @@ static int gserialized_peek_gbox_p(const GSERIALIZED *g, GBOX *gbox)
 	{
 		return LW_FAILURE;
 	}
-	
+
 	/* Boxes of points are easy peasy */
 	if ( type == POINTTYPE )
 	{
@@ -451,22 +504,22 @@ static int gserialized_peek_gbox_p(const GSERIALIZED *g, GBOX *gbox)
 		double *dptr = (double*)(g->data);
 		int *iptr = (int*)(g->data);
 		int npoints = iptr[1]; /* Read the npoints */
-	
+
 		/* This only works with 2-point lines */
 		if ( npoints != 2 )
 			return LW_FAILURE;
-		
+
 		/* Advance to X */
 		/* Past <linetype><npoints> */
 		i++;
 		gbox->xmin = FP_MIN(dptr[i], dptr[i+ndims]);
 		gbox->xmax = FP_MAX(dptr[i], dptr[i+ndims]);
-	
+
 		/* Advance to Y */
 		i++;
 		gbox->ymin = FP_MIN(dptr[i], dptr[i+ndims]);
 		gbox->ymax = FP_MAX(dptr[i], dptr[i+ndims]);
-	
+
 		gbox->flags = g->flags;
 		if ( FLAGS_GET_Z(g->flags) )
 		{
@@ -553,12 +606,12 @@ static int gserialized_peek_gbox_p(const GSERIALIZED *g, GBOX *gbox)
 		i += 2;
 		gbox->xmin = FP_MIN(dptr[i], dptr[i+ndims]);
 		gbox->xmax = FP_MAX(dptr[i], dptr[i+ndims]);
-	
+
 		/* Advance to Y */
 		i++;
 		gbox->ymin = FP_MIN(dptr[i], dptr[i+ndims]);
 		gbox->ymax = FP_MAX(dptr[i], dptr[i+ndims]);
-	
+
 		gbox->flags = g->flags;
 		if ( FLAGS_GET_Z(g->flags) )
 		{
@@ -577,7 +630,7 @@ static int gserialized_peek_gbox_p(const GSERIALIZED *g, GBOX *gbox)
 		gbox_float_round(gbox);
 		return LW_SUCCESS;
 	}
-	
+
 	return LW_FAILURE;
 }
 
@@ -757,13 +810,13 @@ size_t gserialized_from_lwgeom_size(const LWGEOM *geom)
 {
 	size_t size = 8; /* Header overhead. */
 	assert(geom);
-	
+
 	if ( geom->bbox )
-		size += gbox_serialized_size(geom->flags);	
-		
+		size += gbox_serialized_size(geom->flags);
+
 	size += gserialized_from_any_size(geom);
 	LWDEBUGF(3, "g_serialize size = %d", size);
-	
+
 	return size;
 }
 
@@ -1136,7 +1189,7 @@ GSERIALIZED* gserialized_from_lwgeom(LWGEOM *geom, size_t *size)
 	{
 		lwgeom_add_bbox(geom);
 	}
-	
+
 	/*
 	** Harmonize the flags to the state of the lwgeom
 	*/
@@ -1207,7 +1260,7 @@ static LWPOINT* lwpoint_from_gserialized_buffer(uint8_t *data_ptr, uint8_t g_fla
 	point->flags = g_flags;
 
 	data_ptr += 4; /* Skip past the type. */
-	npoints = lw_get_uint32_t(data_ptr); /* Zero => empty geometry */
+	npoints = gserialized_get_uint32_t(data_ptr); /* Zero => empty geometry */
 	data_ptr += 4; /* Skip past the npoints. */
 
 	if ( npoints > 0 )
@@ -1238,12 +1291,12 @@ static LWLINE* lwline_from_gserialized_buffer(uint8_t *data_ptr, uint8_t g_flags
 	line->flags = g_flags;
 
 	data_ptr += 4; /* Skip past the type. */
-	npoints = lw_get_uint32_t(data_ptr); /* Zero => empty geometry */
+	npoints = gserialized_get_uint32_t(data_ptr); /* Zero => empty geometry */
 	data_ptr += 4; /* Skip past the npoints. */
 
 	if ( npoints > 0 )
 		line->points = ptarray_construct_reference_data(FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), npoints, data_ptr);
-		
+
 	else
 		line->points = ptarray_construct(FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), 0); /* Empty linestring */
 
@@ -1272,7 +1325,7 @@ static LWPOLY* lwpoly_from_gserialized_buffer(uint8_t *data_ptr, uint8_t g_flags
 	poly->flags = g_flags;
 
 	data_ptr += 4; /* Skip past the polygontype. */
-	nrings = lw_get_uint32_t(data_ptr); /* Zero => empty geometry */
+	nrings = gserialized_get_uint32_t(data_ptr); /* Zero => empty geometry */
 	poly->nrings = nrings;
 	LWDEBUGF(4, "nrings = %d", nrings);
 	data_ptr += 4; /* Skip past the nrings. */
@@ -1295,12 +1348,12 @@ static LWPOLY* lwpoly_from_gserialized_buffer(uint8_t *data_ptr, uint8_t g_flags
 		uint32_t npoints = 0;
 
 		/* Read in the number of points. */
-		npoints = lw_get_uint32_t(data_ptr);
+		npoints = gserialized_get_uint32_t(data_ptr);
 		data_ptr += 4;
 
 		/* Make a point array for the ring, and move the ordinate pointer past the ring ordinates. */
 		poly->rings[i] = ptarray_construct_reference_data(FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), npoints, ordinate_ptr);
-		
+
 		ordinate_ptr += sizeof(double) * FLAGS_NDIMS(g_flags) * npoints;
 	}
 
@@ -1325,11 +1378,11 @@ static LWTRIANGLE* lwtriangle_from_gserialized_buffer(uint8_t *data_ptr, uint8_t
 	triangle->flags = g_flags;
 
 	data_ptr += 4; /* Skip past the type. */
-	npoints = lw_get_uint32_t(data_ptr); /* Zero => empty geometry */
+	npoints = gserialized_get_uint32_t(data_ptr); /* Zero => empty geometry */
 	data_ptr += 4; /* Skip past the npoints. */
 
 	if ( npoints > 0 )
-		triangle->points = ptarray_construct_reference_data(FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), npoints, data_ptr);		
+		triangle->points = ptarray_construct_reference_data(FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), npoints, data_ptr);
 	else
 		triangle->points = ptarray_construct(FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), 0); /* Empty triangle */
 
@@ -1356,11 +1409,11 @@ static LWCIRCSTRING* lwcircstring_from_gserialized_buffer(uint8_t *data_ptr, uin
 	circstring->flags = g_flags;
 
 	data_ptr += 4; /* Skip past the circstringtype. */
-	npoints = lw_get_uint32_t(data_ptr); /* Zero => empty geometry */
+	npoints = gserialized_get_uint32_t(data_ptr); /* Zero => empty geometry */
 	data_ptr += 4; /* Skip past the npoints. */
 
 	if ( npoints > 0 )
-		circstring->points = ptarray_construct_reference_data(FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), npoints, data_ptr);		
+		circstring->points = ptarray_construct_reference_data(FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), npoints, data_ptr);
 	else
 		circstring->points = ptarray_construct(FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), 0); /* Empty circularstring */
 
@@ -1382,7 +1435,7 @@ static LWCOLLECTION* lwcollection_from_gserialized_buffer(uint8_t *data_ptr, uin
 
 	assert(data_ptr);
 
-	type = lw_get_uint32_t(data_ptr);
+	type = gserialized_get_uint32_t(data_ptr);
 	data_ptr += 4; /* Skip past the type. */
 
 	collection = (LWCOLLECTION*)lwalloc(sizeof(LWCOLLECTION));
@@ -1391,7 +1444,7 @@ static LWCOLLECTION* lwcollection_from_gserialized_buffer(uint8_t *data_ptr, uin
 	collection->type = type;
 	collection->flags = g_flags;
 
-	ngeoms = lw_get_uint32_t(data_ptr);
+	ngeoms = gserialized_get_uint32_t(data_ptr);
 	collection->ngeoms = ngeoms; /* Zero => empty geometry */
 	data_ptr += 4; /* Skip past the ngeoms. */
 
@@ -1405,7 +1458,7 @@ static LWCOLLECTION* lwcollection_from_gserialized_buffer(uint8_t *data_ptr, uin
 
 	for ( i = 0; i < ngeoms; i++ )
 	{
-		uint32_t subtype = lw_get_uint32_t(data_ptr);
+		uint32_t subtype = gserialized_get_uint32_t(data_ptr);
 		size_t subsize = 0;
 
 		if ( ! lwcollection_allows_subtype(type, subtype) )
@@ -1430,7 +1483,7 @@ LWGEOM* lwgeom_from_gserialized_buffer(uint8_t *data_ptr, uint8_t g_flags, size_
 
 	assert(data_ptr);
 
-	type = lw_get_uint32_t(data_ptr);
+	type = gserialized_get_uint32_t(data_ptr);
 
 	LWDEBUGF(2, "Got type %d (%s), hasz=%d hasm=%d geodetic=%d hasbox=%d", type, lwtype_name(type),
 		FLAGS_GET_Z(g_flags), FLAGS_GET_M(g_flags), FLAGS_GET_GEODETIC(g_flags), FLAGS_GET_BBOX(g_flags));

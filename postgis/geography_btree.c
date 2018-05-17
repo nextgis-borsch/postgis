@@ -41,19 +41,6 @@ Datum geography_ge(PG_FUNCTION_ARGS);
 Datum geography_gt(PG_FUNCTION_ARGS);
 Datum geography_cmp(PG_FUNCTION_ARGS);
 
-
-/*
-** Utility function to return the center point of a
-** geocentric bounding box. We don't divide by two
-** because we're only using the values for comparison.
-*/
-static void geography_gidx_center(const GIDX *gidx, POINT3D *p)
-{
-	p->x = GIDX_GET_MIN(gidx, 0) + GIDX_GET_MAX(gidx, 0);
-	p->y = GIDX_GET_MIN(gidx, 1) + GIDX_GET_MAX(gidx, 1);
-	p->z = GIDX_GET_MIN(gidx, 2) + GIDX_GET_MAX(gidx, 2);
-}
-
 /*
 ** BTree support function. Based on two geographies return true if
 ** they are "less than" and false otherwise.
@@ -64,10 +51,12 @@ Datum geography_lt(PG_FUNCTION_ARGS)
 	GSERIALIZED *g1 = PG_GETARG_GSERIALIZED_P(0);
 	GSERIALIZED *g2 = PG_GETARG_GSERIALIZED_P(1);
 	int cmp = gserialized_cmp(g1, g2);
+	PG_FREE_IF_COPY(g1, 0);
+	PG_FREE_IF_COPY(g2, 1);
 	if (cmp < 0)
 		PG_RETURN_BOOL(TRUE);
 	else
-		PG_RETURN_BOOL(FALSE);	
+		PG_RETURN_BOOL(FALSE);
 }
 
 /*
@@ -80,10 +69,12 @@ Datum geography_le(PG_FUNCTION_ARGS)
 	GSERIALIZED *g1 = PG_GETARG_GSERIALIZED_P(0);
 	GSERIALIZED *g2 = PG_GETARG_GSERIALIZED_P(1);
 	int cmp = gserialized_cmp(g1, g2);
+	PG_FREE_IF_COPY(g1, 0);
+	PG_FREE_IF_COPY(g2, 1);
 	if (cmp <= 0)
 		PG_RETURN_BOOL(TRUE);
 	else
-		PG_RETURN_BOOL(FALSE);	
+		PG_RETURN_BOOL(FALSE);
 }
 
 /*
@@ -96,10 +87,12 @@ Datum geography_gt(PG_FUNCTION_ARGS)
 	GSERIALIZED *g1 = PG_GETARG_GSERIALIZED_P(0);
 	GSERIALIZED *g2 = PG_GETARG_GSERIALIZED_P(1);
 	int cmp = gserialized_cmp(g1, g2);
+	PG_FREE_IF_COPY(g1, 0);
+	PG_FREE_IF_COPY(g2, 1);
 	if (cmp > 0)
 		PG_RETURN_BOOL(TRUE);
 	else
-		PG_RETURN_BOOL(FALSE);	
+		PG_RETURN_BOOL(FALSE);
 }
 
 /*
@@ -112,10 +105,12 @@ Datum geography_ge(PG_FUNCTION_ARGS)
 	GSERIALIZED *g1 = PG_GETARG_GSERIALIZED_P(0);
 	GSERIALIZED *g2 = PG_GETARG_GSERIALIZED_P(1);
 	int cmp = gserialized_cmp(g1, g2);
+	PG_FREE_IF_COPY(g1, 0);
+	PG_FREE_IF_COPY(g2, 1);
 	if (cmp >= 0)
 		PG_RETURN_BOOL(TRUE);
 	else
-		PG_RETURN_BOOL(FALSE);	
+		PG_RETURN_BOOL(FALSE);
 }
 
 /*
@@ -128,10 +123,12 @@ Datum geography_eq(PG_FUNCTION_ARGS)
 	GSERIALIZED *g1 = PG_GETARG_GSERIALIZED_P(0);
 	GSERIALIZED *g2 = PG_GETARG_GSERIALIZED_P(1);
 	int cmp = gserialized_cmp(g1, g2);
+	PG_FREE_IF_COPY(g1, 0);
+	PG_FREE_IF_COPY(g2, 1);
 	if (cmp == 0)
 		PG_RETURN_BOOL(TRUE);
 	else
-		PG_RETURN_BOOL(FALSE);	
+		PG_RETURN_BOOL(FALSE);
 }
 
 /*
@@ -143,5 +140,8 @@ Datum geography_cmp(PG_FUNCTION_ARGS)
 {
 	GSERIALIZED *g1 = PG_GETARG_GSERIALIZED_P(0);
 	GSERIALIZED *g2 = PG_GETARG_GSERIALIZED_P(1);
-	PG_RETURN_INT32(gserialized_cmp(g1, g2));
+	int ret = gserialized_cmp(g1, g2);
+	PG_FREE_IF_COPY(g1, 0);
+	PG_FREE_IF_COPY(g2, 1);
+	PG_RETURN_INT32(ret);
 }

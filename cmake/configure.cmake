@@ -64,13 +64,13 @@ endif()
 if(GDAL_FOUND)
     if(WITH_GDAL_EXTERNAL)
         set(GDALFPOLYGONIZE 1)
-    else()    
+    else()
         set(CMAKE_REQUIRED_INCLUDES ${GDAL_INCLUDE_DIR})
         set(CMAKE_REQUIRED_LIBRARIES ${GDAL_LIBRARY})
         check_function_exists(GDALFPolygonize GDALFPOLYGONIZE)
         unset(CMAKE_REQUIRED_INCLUDES)
         unset(CMAKE_REQUIRED_LIBRARIES)
-    endif()    
+    endif()
 endif()
 
 check_function_exists(CFLocaleCopyCurrent HAVE_CFLOCALECOPYCURRENT)
@@ -122,28 +122,30 @@ endif ()
 
 check_include_file("strings.h" HAVE_STRINGS_H)
 check_include_file("string.h" HAVE_STRING_H)
-check_include_file("sys/stat.h" HAVE_SYS_STAT_H) 
+check_include_file("sys/stat.h" HAVE_SYS_STAT_H)
 check_include_file("sys/types.h" HAVE_SYS_TYPES_H)
 check_include_file("unistd.h" HAVE_UNISTD_H)
 
 if(NOT HAVE_UNISTD_H)
     set(YY_NO_UNISTD_H 1)
-endif()    
-
-find_package(BISON)
-find_package(FLEX)
-if(FLEX_FOUND)  
-    execute_process(COMMAND ${FLEX_EXECUTABLE} -o ${CMAKE_BINARY_DIR}/lexyy.c 
-                            ${CMAKE_SOURCE_DIR}/cmake/lex_test.l)    
-    
-    try_compile(YYTEXT_POINTER
-      ${CMAKE_BINARY_DIR}
-      ${CMAKE_BINARY_DIR}/lexyy.c
-      LINK_LIBRARIES ${FLEX_LIBRARIES}
-      COMPILE_DEFINITIONS  "-DYYTEXT_POINTER=1"
-      CMAKE_FLAGS "-DINCLUDE_DIRECTORIES:STRING=${FLEX_INCLUDE_DIRS}")
- 
 endif()
+
+if(UNIX AND NOT OSX_FRAMEWORK)
+    find_package(BISON)
+    find_package(FLEX)
+    if(FLEX_FOUND)
+        execute_process(COMMAND ${FLEX_EXECUTABLE} -o ${CMAKE_BINARY_DIR}/lexyy.c
+                                ${CMAKE_SOURCE_DIR}/cmake/lex_test.l)
+
+        try_compile(YYTEXT_POINTER
+          ${CMAKE_BINARY_DIR}
+          ${CMAKE_BINARY_DIR}/lexyy.c
+          LINK_LIBRARIES ${FLEX_LIBRARIES}
+          COMPILE_DEFINITIONS  "-DYYTEXT_POINTER=1"
+          CMAKE_FLAGS "-DINCLUDE_DIRECTORIES:STRING=${FLEX_INCLUDE_DIRS}")
+
+    endif()
+endif(UNIX AND NOT OSX_FRAMEWORK)
 
 if(NOT WIN32)
     find_library(M_LIBRARY
@@ -157,14 +159,12 @@ else()
   # not needed on windows
   set(M_LIBRARY "")
 endif()
-        
+
 set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${M_LIBRARY})
 
 ################################################################################
 # Generate config header
 configure_file(${CMAKE_SOURCE_DIR}/postgis_config.h.cmake.in
     ${CMAKE_BINARY_DIR}/postgis_config.h)
-configure_file(${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in 
+configure_file(${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in
     ${CMAKE_BINARY_DIR}/cmake_uninstall.cmake IMMEDIATE @ONLY)
-
-    

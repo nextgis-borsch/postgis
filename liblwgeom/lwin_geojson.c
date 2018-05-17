@@ -31,12 +31,18 @@
 
 #if defined(HAVE_LIBJSON) || defined(HAVE_LIBJSON_C) /* --{ */
 
+#define JSON_C_VERSION_013 (13 << 8)
+
 #ifdef HAVE_LIBJSON_C
 #include <json-c/json.h>
+#if !defined(JSON_C_VERSION_NUM) || JSON_C_VERSION_NUM < JSON_C_VERSION_013
 #include <json-c/json_object_private.h>
+#endif
 #else
 #include <json/json.h>
+#if !defined(JSON_C_VERSION_NUM) || JSON_C_VERSION_NUM < JSON_C_VERSION_013
 #include <json/json_object_private.h>
+#endif
 #endif
 
 #ifndef JSON_C_VERSION
@@ -112,7 +118,7 @@ parse_geojson_coord(json_object *poObj, int *hasz, POINTARRAY *pa)
 			geojson_lwerror("Too few ordinates in GeoJSON", 4);
 			return LW_FAILURE;
 		}
-		
+
 		/* Read X coordinate */
 		poObjCoord = json_object_array_get_idx( poObj, 0 );
 		pt.x = json_object_get_double( poObjCoord );
@@ -171,7 +177,7 @@ parse_geojson_point(json_object *geojson, int *hasz, int root_srid)
 		geojson_lwerror("Unable to find 'coordinates' in GeoJSON string", 4);
 		return NULL;
 	}
-	
+
 	pa = ptarray_construct_empty(1, 0, 1);
 	parse_geojson_coord(coords, hasz, pa);
 
@@ -245,7 +251,7 @@ parse_geojson_polygon(json_object *geojson, int *hasz, int root_srid)
 	{
 		return (LWGEOM *)lwpoly_construct_empty(root_srid, 0, 0);
 	}
-	
+
 	for ( i = 0; i < nRings; i++ )
 	{
 		points = json_object_array_get_idx(rings, i);
@@ -255,13 +261,13 @@ parse_geojson_polygon(json_object *geojson, int *hasz, int root_srid)
 			return NULL;
 		}
 		nPoints = json_object_array_length(points);
-		
+
 		/* Skip empty rings */
 		if ( nPoints == 0 ) continue;
-		
+
 		if ( ! ppa )
 			ppa = (POINTARRAY**)lwalloc(sizeof(POINTARRAY*) * nRings);
-		
+
 		ppa[i] = ptarray_construct_empty(1, 0, 1);
 		for ( j = 0; j < nPoints; j++ )
 		{
@@ -269,12 +275,12 @@ parse_geojson_polygon(json_object *geojson, int *hasz, int root_srid)
 			coords = json_object_array_get_idx( points, j );
 			parse_geojson_coord(coords, hasz, ppa[i]);
 		}
-	}	
-	
+	}
+
 	/* All the rings were empty! */
 	if ( ! ppa )
 		return (LWGEOM *)lwpoly_construct_empty(root_srid, 0, 0);
-	
+
 	return (LWGEOM *) lwpoly_construct(root_srid, NULL, nRings, ppa);
 }
 
@@ -401,18 +407,18 @@ parse_geojson_multipolygon(json_object *geojson, int *hasz, int root_srid)
 		const int nPolys = json_object_array_length( poObjPolys );
 
 		for(i = 0; i < nPolys; ++i)
-		{			
+		{
 			json_object* poObjPoly = json_object_array_get_idx( poObjPolys, i );
 
 			if( json_type_array == json_object_get_type( poObjPoly ) )
 			{
 				LWPOLY *lwpoly = lwpoly_construct_empty(geom->srid, lwgeom_has_z(geom), lwgeom_has_m(geom));
 				int nRings = json_object_array_length( poObjPoly );
-				
+
 				for(j = 0; j < nRings; ++j)
 				{
 					json_object* points = json_object_array_get_idx( poObjPoly, j );
-					
+
 					if( json_type_array == json_object_get_type( points ) )
 					{
 
@@ -424,7 +430,7 @@ parse_geojson_multipolygon(json_object *geojson, int *hasz, int root_srid)
 							json_object* coords = json_object_array_get_idx( points, k );
 							parse_geojson_coord(coords, hasz, pa);
 						}
-						
+
 						lwpoly_add_ring(lwpoly, pa);
 					}
 				}

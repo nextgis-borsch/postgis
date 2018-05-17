@@ -3,7 +3,7 @@
 # Purpose:  CMake build scripts
 # Author:   Dmitry Baryshnikov, polimax@mail.ru
 ################################################################################
-# Copyright (C) 2016, NextGIS <info@nextgis.com>
+# Copyright (C) 2016-2018, NextGIS <info@nextgis.com>
 # Copyright (C) 2012 Mateusz Loskot <mateusz@loskot.net>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,7 +24,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 ################################################################################
-project(pgcommon C)
+project(pgcommon)
 
 set_property(GLOBAL PROPERTY LIBPGCOMMON_INCLUDE_DIRS
   ${CMAKE_CURRENT_BINARY_DIR}

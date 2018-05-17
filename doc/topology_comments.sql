@@ -63,11 +63,13 @@ COMMENT ON FUNCTION topology.ST_ModEdgeHeal(varchar , integer , integer ) IS 'ar
 			
 COMMENT ON FUNCTION topology.ST_NewEdgeHeal(varchar , integer , integer ) IS 'args: atopology, anedge, anotheredge - Heal two edges by deleting the node connecting them, deleting both edges,and replacing them with an edge whose direction is the same as the firstedge provided.';
 			
-COMMENT ON FUNCTION topology.ST_MoveIsoNode(varchar , integer , geometry ) IS 'args: atopology, anedge, apoint - Moves an isolated node in a topology from one point to another. If new apoint geometry exists as a node an error is thrown. REturns description of move.';
+COMMENT ON FUNCTION topology.ST_MoveIsoNode(varchar , integer , geometry ) IS 'args: atopology, anedge, apoint - Moves an isolated node in a topology from one point to another. If new apoint geometry exists as a node an error is thrown. Returns description of move.';
 			
 COMMENT ON FUNCTION topology.ST_NewEdgesSplit(varchar , integer , geometry ) IS 'args: atopology, anedge, apoint - Split an edge by creating a new node along an existing edge, deleting the original edge and replacing it with two new edges. Returns the id of the new node created that joins the new edges.';
 			
 COMMENT ON FUNCTION topology.ST_RemoveIsoNode(varchar , integer ) IS 'args: atopology, anode - Removes an isolated node and returns description of action. If the node is not isolated (is start or end of an edge), then an exception is thrown.';
+			
+COMMENT ON FUNCTION topology.ST_RemoveIsoEdge(varchar , integer ) IS 'args: atopology, anedge - Removes an isolated edge and returns description of action. If the edge is not isolated, then an exception is thrown.';
 			
 COMMENT ON FUNCTION topology.GetEdgeByPoint(varchar , geometry , float8 ) IS 'args: atopology, apoint, tol - Find the edge-id of an edge that intersects a given point';
 			

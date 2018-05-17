@@ -440,7 +440,8 @@ static Data__Geometry *encode_geometry(struct geobuf_agg_context *ctx,
 
 static void analyze_val(struct geobuf_agg_context *ctx, double val)
 {
-	if (ceil(val * ctx->e) / ctx->e != val && ctx->e < MAX_PRECISION)
+	if (fabs((round(val * ctx->e) / ctx->e) - val) >= EPSILON &&
+		ctx->e < MAX_PRECISION)
 		ctx->e *= 10;
 }
 
@@ -454,7 +455,7 @@ static void analyze_pa(struct geobuf_agg_context *ctx, POINTARRAY *pa)
 		analyze_val(ctx, pt.y);
 		if (ctx->dimensions == 3)
 			analyze_val(ctx, pt.z);
-		else if (ctx->dimensions == 4)
+		if (ctx->dimensions == 4)
 			analyze_val(ctx, pt.m);
 	}
 }
@@ -560,10 +561,9 @@ void geobuf_agg_init_context(struct geobuf_agg_context *ctx)
 void geobuf_agg_transfn(struct geobuf_agg_context *ctx)
 {
 	LWGEOM *lwgeom;
-	bool isnull;
+	bool isnull = false;
 	Datum datum;
 	Data__FeatureCollection *fc = ctx->data->feature_collection;
-	Data__Feature **features = fc->features;
 	Data__Feature *feature;
 	GSERIALIZED *gs;
 	if (fc->n_features >= ctx->features_capacity) {
@@ -580,8 +580,9 @@ void geobuf_agg_transfn(struct geobuf_agg_context *ctx)
 		encode_keys(ctx);
 
 	datum = GetAttributeByNum(ctx->row, ctx->geom_index + 1, &isnull);
-	if (!datum)
-		elog(ERROR, "geobuf_agg_transfn: geometry column cannot be null");
+	if (isnull)
+		return;
+
 	gs = (GSERIALIZED *) PG_DETOAST_DATUM_COPY(datum);
 	lwgeom = lwgeom_from_gserialized(gs);
 
