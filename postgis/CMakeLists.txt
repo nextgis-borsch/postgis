@@ -221,12 +221,13 @@ if(NOT POSTGIS_PGSQL_VERSION LESS 95)
 endif()
 
 
-if(PROTOBUF_FOUND)
+if(PROTOBUF-C_FOUND)
 
     add_definitions(-DHAVE_LIBPROTOBUF)
+    include_directories(${PROTOBUF-C_INCLUDE_DIRS})
 
     execute_process(
-        COMMAND "protoc-c" --c_out=${CMAKE_CURRENT_BINARY_DIR} vector_tile.proto geobuf.proto
+        COMMAND ${PROTOBUF-C_COMPILER} --c_out=${CMAKE_CURRENT_BINARY_DIR} vector_tile.proto geobuf.proto
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     )
 
@@ -234,6 +235,8 @@ if(PROTOBUF_FOUND)
       ${CMAKE_CURRENT_BINARY_DIR}/vector_tile.pb-c.c
       ${CMAKE_CURRENT_BINARY_DIR}/geobuf.pb-c.c
     )
+
+    set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${PROTOBUF-C_LIBRARIES})
 endif()
 
 add_library(${LIB_NAME} SHARED ${CSOURCES} ${HHEADERS})

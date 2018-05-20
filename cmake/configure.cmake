@@ -146,12 +146,7 @@ if(UNIX AND NOT OSX_FRAMEWORK)
 
     endif()
 
-    find_package(Protobuf)
-    # Hack to trusty
-    if(PROTOBUF_FOUND AND POSTGIS_PGSQL_VERSION LESS 95)
-        set(PROTOBUF_FOUND FALSE FORCE)
-        message(WARNING "Too old protobuf version - disable it")
-    endif()
+    find_package(Protobuf-c REQUIRED)
 endif(UNIX AND NOT OSX_FRAMEWORK)
 
 if(NOT WIN32)
