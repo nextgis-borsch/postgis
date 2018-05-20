@@ -1,5 +1,5 @@
 ###############################################################################
-# CMake module to search for PROJ.4 library
+# CMake module to search for protobuf-c library
 #
 # On success, the macro sets the following variables:
 # PROTOBUF-C_FOUND       = if the library found
@@ -19,10 +19,11 @@ find_path(PROTOBUF-C_INCLUDE_DIRS protobuf-c.h
     DOC "Path to protobuf-c library include directory"
 )
 
-SET(PROTOBUF-C_NAMES ${PROJ4_NAMES} protobuf-c protobuf-c_i)
+SET(PROTOBUF-C_NAMES protobuf-c protobuf-c_i)
 find_library(PROTOBUF-C_LIBRARIES
     NAMES ${PROTOBUF-C_NAMES}
-    DOC "Path to PROJ.4 library file")
+    DOC "Path to protobuf-c library file"
+)
 
 if(PROTOBUF-C_INCLUDE_DIRS)
     set(PROTOBUF-C_VERSION "0.0.0")
@@ -30,7 +31,7 @@ if(PROTOBUF-C_INCLUDE_DIRS)
     set(VERSION_FILE "${PROTOBUF-C_INCLUDE_DIRS}/protobuf-c.h")
     if(EXISTS ${VERSION_FILE})
         file(READ ${VERSION_FILE} _H_CONTENTS)
-        string(REGEX MATCH "\"([0-9]+).([0-9]+).([0-9]+)\""
+        string(REGEX MATCH "\"([0-9]+)\\.([0-9]+)\\.([0-9]+)\""
           PROTOBUF-C_VERSION ${_H_CONTENTS})
 
         unset(_H_CONTENTS)
