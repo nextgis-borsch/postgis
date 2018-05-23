@@ -170,3 +170,4 @@ configure_file(${CMAKE_SOURCE_DIR}/postgis_config.h.cmake.in
     ${CMAKE_BINARY_DIR}/postgis_config.h)
 configure_file(${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in
     ${CMAKE_BINARY_DIR}/cmake_uninstall.cmake IMMEDIATE @ONLY)
+configure_file(postgis/sqldefines.h.in ${CMAKE_CURRENT_SOURCE_DIR}/postgis/sqldefines.h)    

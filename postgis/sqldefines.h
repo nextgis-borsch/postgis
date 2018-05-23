@@ -6,9 +6,9 @@
 /*
  * Define just the version numbers; otherwise we get some strange substitutions in postgis.sql.in
  */
-#define POSTGIS_PGSQL_VERSION 96
+#define POSTGIS_PGSQL_VERSION 93
 #define POSTGIS_GEOS_VERSION 36
-#define POSTGIS_PROJ_VERSION 50
+#define POSTGIS_PROJ_VERSION 49
 #define POSTGIS_LIB_VERSION '2.4.4'
 #define POSTGIS_LIBXML2_VERSION 2.9.4
 #define POSTGIS_SFCGAL_VERSION 13
@@ -37,5 +37,3 @@
 #define SRID_USR_MAX 998999
 
 #endif /* _LWPGIS_DEFINES */
-
-
