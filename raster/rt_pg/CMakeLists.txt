@@ -30,7 +30,7 @@ macro(sqlin2sql sqlin sql)
     COMMAND "${CMAKE_C_COMPILER}" -w -x c -E -I ../../postgis ${sqlin}
     COMMAND grep -v "^#"
     COMMAND "${PERL_EXECUTABLE}" -lpe
-      "s'MODULE_PATHNAME'\$libdir/postgis_topology-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"
+      "s'MODULE_PATHNAME'\$libdir/rtpostgis-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"
     OUTPUT_FILE ${sql}
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
   )

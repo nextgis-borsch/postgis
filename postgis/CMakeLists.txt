@@ -27,8 +27,6 @@
 set(LIB_NAME ${PROJECT_NAME})
 set(MODULE_PATHNAME "\$libdir/${LIB_NAME}-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}")
 
-configure_file(sqldefines.h.in ${CMAKE_CURRENT_SOURCE_DIR}/sqldefines.h) # +
-
 macro(sqlin2sql sqlin sql)
   execute_process(
     COMMAND "${CMAKE_C_COMPILER}" -w -x c -E -I ../libpgcommon ${sqlin}
