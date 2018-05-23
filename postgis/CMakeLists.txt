@@ -33,7 +33,7 @@ configure_file(sqldefines.h.in ${CMAKE_CURRENT_SOURCE_DIR}/sqldefines.h) # +
 
 macro(sqlin2sql sqlin sql)
   execute_process(
-    COMMAND "${CMAKE_C_COMPILER}" -w -x c -E ${sqlin} -I ../libpgcommon
+    COMMAND "${CMAKE_C_COMPILER}" -w -x c -E -I ../libpgcommon ${sqlin}
     COMMAND grep -v "^#"
     COMMAND "${PERL_EXECUTABLE}" -lpe
       "s'MODULE_PATHNAME'\$libdir/postgis-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"
@@ -42,19 +42,7 @@ macro(sqlin2sql sqlin sql)
   )
 endmacro()
 
-#configure_file(long_xact.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql)
-sqlin2sql(long_xact.sql.in ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql)
-file(READ ${CMAKE_CURRENT_BINARY_DIR}/long_xact.sql LONG_XACT_SQL) # use in *.cmake.in
-# configure_file(geography.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/geography.sql)
-sqlin2sql(geography.sql.in ${CMAKE_CURRENT_BINARY_DIR}/geography.sql)
-file(READ ${CMAKE_CURRENT_BINARY_DIR}/geography.sql GEOGRAPHY_SQL)  # use in *.cmake.in
-
-# configure_file(postgis.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql)
 sqlin2sql(postgis.sql.in ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql)
-
-#configure_file(legacy_minimal.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql)
-#configure_file(legacy.sql.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/legacy.sql)
-#configure_file(legacy_gist.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_gist.sql)
 sqlin2sql(legacy_minimal.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_minimal.sql)
 sqlin2sql(legacy.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy.sql)
 sqlin2sql(legacy_gist.sql.in ${CMAKE_CURRENT_BINARY_DIR}/legacy_gist.sql)
@@ -114,10 +102,6 @@ if(POSTGIS_WITH_SFCGAL)
 
     create_undef(sfcgal)
 endif()
-
-unset (LONG_XACT_SQL) # use in *.cmake.in
-unset (GEOGRAPHY_SQL) # use in *.cmake.in
-
 
 set(POSTGIS_CONTRIB_FILES
     ${CMAKE_CURRENT_BINARY_DIR}/postgis.sql

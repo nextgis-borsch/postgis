@@ -27,7 +27,7 @@ project(rtpostgis)
 
 macro(sqlin2sql sqlin sql)
   execute_process(
-    COMMAND "${CMAKE_C_COMPILER}" -w -x c -E ${sqlin} -I ../../postgis
+    COMMAND "${CMAKE_C_COMPILER}" -w -x c -E -I ../../postgis ${sqlin}
     COMMAND grep -v "^#"
     COMMAND "${PERL_EXECUTABLE}" -lpe
       "s'MODULE_PATHNAME'\$libdir/postgis_topology-${POSTGIS_MAJOR_VERSION}.${POSTGIS_MINOR_VERSION}'g"

@@ -104,7 +104,7 @@ endif()
 # Dependency (required): PostgreSQL
 
 if(UNIX AND NOT OSX_FRAMEWORK)
-    find_package(PostgreSQL 9.1) # version 9.1 support extensions
+    find_package(PostgreSQL 9.3) # version 9.3 support extensions
     if(POSTGRESQL_FOUND)
         set(WITH_POSTGRESQL ${POSTGRESQL_FOUND})
     endif()

@@ -31,7 +31,7 @@ if(PROTOBUF-C_INCLUDE_DIRS)
     set(VERSION_FILE "${PROTOBUF-C_INCLUDE_DIRS}/protobuf-c.h")
     if(EXISTS ${VERSION_FILE})
         file(READ ${VERSION_FILE} _H_CONTENTS)
-        string(REGEX MATCH "\"([0-9]+)\\.([0-9]+)\\.([0-9]+)\""
+        string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)"
           PROTOBUF-C_VERSION ${_H_CONTENTS})
 
         unset(_H_CONTENTS)
@@ -42,7 +42,7 @@ find_program(PROTOBUF-C_COMPILER protoc-c
     DOC "Protobuf-c compiler program"
 )
 
-# Handle the QUIETLY and REQUIRED arguments and set SPATIALINDEX_FOUND to TRUE
+# Handle the QUIETLY and REQUIRED arguments and set PROTOBUF-C_FOUND to TRUE
 # if all listed variables are TRUE
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PROTOBUF-C
