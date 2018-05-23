@@ -240,8 +240,6 @@ if(UNIX AND NOT OSX_FRAMEWORK)
     get_property(LIBPGCOMMON_INCLUDE_DIRS GLOBAL PROPERTY LIBPGCOMMON_INCLUDE_DIRS)
     include_directories(${LIBPGCOMMON_INCLUDE_DIRS})
 
-    add_subdirectory(postgis)
-
     if(POSTGIS_WITH_RASTER)
         add_subdirectory(raster)
     endif()
@@ -256,6 +254,7 @@ if(UNIX AND NOT OSX_FRAMEWORK)
     endif()
 
     ### Shared libraries
+    add_subdirectory(postgis)
     add_subdirectory(extensions)
 
     set(TARGET_LINK_LIB ${TARGET_LINK_LIB} ${PostgreSQL_LIBRARIES})
