@@ -42,3 +42,7 @@ If you would like to contribute to this project, please refer to our
 ## Project Home Page and Manuals
 Project homepage: http://postgis.net/
 PostGIS Manuals: http://postgis.net/documentation
+
+# Version
+
+2.2.4+11
