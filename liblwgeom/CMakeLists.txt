@@ -38,7 +38,7 @@ find_anyproject(JSONC REQUIRED
     NAMES json-c jsonc json_c
 )
 if(JSONC_FOUND)
-    add_definitions(-DHAVE_LIBJSON_C)
+    add_definitions(-DHAVE_LIBJSON_C -DHAVE_LIBJSON)
 endif()
 
 configure_file(liblwgeom.h.in ${CMAKE_CURRENT_BINARY_DIR}/liblwgeom.h)
