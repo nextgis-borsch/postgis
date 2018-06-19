@@ -203,6 +203,16 @@ if(GEOS_FOUND)
     set(POSTGIS_GEOS_VERSION ${GEOS_MAJOR}${GEOS_MINOR})
 endif()
 
+################################################################################
+# Dependency (optional, default on) JSON-C
+
+find_anyproject(JSONC DEFAULT ON
+    NAMES json-c jsonc json_c
+)
+if(JSONC_FOUND)
+    add_definitions(-DHAVE_LIBJSON_C -DHAVE_LIBJSON)
+endif()
+
 # Determine build date and time
 string(TIMESTAMP POSTGIS_BUILD_DATE "%Y-%m-%d %H:%M:%S" UTC)
 string(TIMESTAMP POSTGIS_RASTER_BUILD_DATE "%Y-%m-%d %H:%M:%S" UTC)
