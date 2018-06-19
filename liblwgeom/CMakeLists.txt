@@ -34,6 +34,13 @@ else()
     set(INSTALL_CMAKECONF_DIR ${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}/CMake CACHE INTERNAL "Installation directory for cmake config files" FORCE)
 endif()
 
+find_anyproject(JSONC REQUIRED
+    NAMES json-c jsonc json_c
+)
+if(JSONC_FOUND)
+    add_definitions(-DHAVE_LIBJSON_C)
+endif()
+
 configure_file(liblwgeom.h.in ${CMAKE_CURRENT_BINARY_DIR}/liblwgeom.h)
 
 set_property(GLOBAL PROPERTY LIBLWGEOM_INCLUDE_DIRS
