@@ -45,4 +45,4 @@ PostGIS Manuals: http://postgis.net/documentation
 
 # Version
 
-2.2.4+11
+2.2.4+15
