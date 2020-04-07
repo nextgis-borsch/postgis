@@ -54,6 +54,7 @@
 
 #include "postgres.h"
 #include "executor/spi.h"
+#include "utils/builtins.h"
 
 #include "../postgis_config.h"
 #include "lwgeom_pg.h"
@@ -62,12 +63,12 @@
 
 
 Datum geom_from_gml(PG_FUNCTION_ARGS);
-static LWGEOM* lwgeom_from_gml(const char *wkt);
+static LWGEOM *lwgeom_from_gml(const char *wkt, int xml_size);
 static LWGEOM* parse_gml(xmlNodePtr xnode, bool *hasz, int *root_srid);
 
 typedef struct struct_gmlSrs
 {
-	int srid;
+	int32_t srid;
 	bool reverse_axis;
 }
 gmlSrs;
@@ -78,7 +79,7 @@ gmlSrs;
 
 
 
-static void gml_lwpgerror(char *msg, int error_code)
+static void gml_lwpgerror(char *msg, __attribute__((__unused__)) int error_code)
 {
         POSTGIS_DEBUGF(3, "ST_GeomFromGML ERROR %i", error_code);
         lwpgerror("%s", msg);
@@ -101,17 +102,18 @@ Datum geom_from_gml(PG_FUNCTION_ARGS)
 	LWGEOM *lwgeom;
 	char *xml;
 	int root_srid=SRID_UNKNOWN;
-
+	int xml_size;
 
 	/* Get the GML stream */
 	if (PG_ARGISNULL(0)) PG_RETURN_NULL();
 	xml_input = PG_GETARG_TEXT_P(0);
-	xml = text2cstring(xml_input);
+	xml = text_to_cstring(xml_input);
+	xml_size = VARSIZE_ANY_EXHDR(xml_input);
 
 	/* Zero for undefined */
 	root_srid = PG_GETARG_INT32(1);
 
-	lwgeom = lwgeom_from_gml(xml);
+	lwgeom = lwgeom_from_gml(xml, xml_size);
 	if ( root_srid != SRID_UNKNOWN )
 		lwgeom->srid = root_srid;
 
@@ -168,7 +170,7 @@ static bool is_gml_namespace(xmlNodePtr xnode, bool is_strict)
 
 
 /**
- * Retrieve a GML propertie from a node or NULL otherwise
+ * Retrieve a GML property from a node or NULL otherwise
  * Respect namespaces if presents in the node element
  */
 static xmlChar *gmlGetProp(xmlNodePtr xnode, xmlChar *prop)
@@ -290,43 +292,96 @@ static xmlNodePtr get_xlink_node(xmlNodePtr xnode)
 }
 
 
+
 /**
- * Use Proj4 to reproject a given POINTARRAY
+ * Use Proj to reproject a given POINTARRAY
  */
-static POINTARRAY* gml_reproject_pa(POINTARRAY *pa, int srid_in, int srid_out)
+
+#if POSTGIS_PROJ_VERSION < 60
+
+static POINTARRAY *
+gml_reproject_pa(POINTARRAY *pa, int32_t srid_in, int32_t srid_out)
 {
-	projPJ in_pj, out_pj;
+	PJ pj;
 	char *text_in, *text_out;
 
 	if (srid_in == SRID_UNKNOWN) return pa; /* nothing to do */
 	if (srid_out == SRID_UNKNOWN) gml_lwpgerror("invalid GML representation", 3);
 
-	text_in = GetProj4StringSPI(srid_in);
-	text_out = GetProj4StringSPI(srid_out);
+	text_in = GetProj4String(srid_in);
+	text_out = GetProj4String(srid_out);
 
-	in_pj = lwproj_from_string(text_in);
-	out_pj = lwproj_from_string(text_out);
+	pj.pj_from = projpj_from_string(text_in);
+	pj.pj_to = projpj_from_string(text_out);
 
 	lwfree(text_in);
 	lwfree(text_out);
 
-	if ( ptarray_transform(pa, in_pj, out_pj) == LW_FAILURE )
+	if ( ptarray_transform(pa, &pj) == LW_FAILURE )
 	{
 		elog(ERROR, "gml_reproject_pa: reprojection failed");
 	}
 
-	pj_free(in_pj);
-	pj_free(out_pj);
+	pj_free(pj.pj_from);
+	pj_free(pj.pj_to);
 
 	return pa;
 }
+#else
+/*
+ * TODO: rework GML projection handling to skip the spatial_ref_sys
+ * lookups, and use the Proj 6+ EPSG catalogue and built-in SRID
+ * lookups directly. Drop this ugly hack.
+ */
+static POINTARRAY *
+gml_reproject_pa(POINTARRAY *pa, int32_t epsg_in, int32_t epsg_out)
+{
+	PJ *pj;
+	LWPROJ *lwp;
+	char text_in[16];
+	char text_out[16];
+
+	if (epsg_in == SRID_UNKNOWN)
+		return pa; /* nothing to do */
+
+	if (epsg_out == SRID_UNKNOWN)
+	{
+		gml_lwpgerror("invalid GML representation", 3);
+		return NULL;
+	}
+
+	snprintf(text_in, 16, "EPSG:%d", epsg_in);
+	snprintf(text_out, 16, "EPSG:%d", epsg_out);
+	pj = proj_create_crs_to_crs(NULL, text_in, text_out, NULL);
+
+	lwp = lwproj_from_PJ(pj, LW_FALSE);
+	if (!lwp)
+	{
+		proj_destroy(pj);
+		gml_lwpgerror("Could not create LWPROJ*", 57);
+		return NULL;
+	}
+
+	if (ptarray_transform(pa, lwp) == LW_FAILURE)
+	{
+		proj_destroy(pj);
+		elog(ERROR, "gml_reproject_pa: reprojection failed");
+		return NULL;
+	}
+	proj_destroy(pj);
+	pfree(lwp);
+
+	return pa;
+}
+#endif /* POSTGIS_PROJ_VERSION */
 
 
 /**
  * Return 1 if given srid is planar (0 otherwise, i.e geocentric srid)
  * Return -1 if srid is not in spatial_ref_sys
  */
-static int gml_is_srid_planar(int srid)
+static int
+gml_is_srid_planar(int32_t srid)
 {
 	char *result;
 	char query[256];
@@ -681,7 +736,6 @@ static POINTARRAY* parse_gml_coord(xmlNodePtr xnode, bool *hasz)
 	if (!z) *hasz = false;
 
 	ptarray_append_point(dpa, &p, LW_FALSE);
-	x = y = z = false;
 
 	return dpa; /* ptarray_clone_deep(dpa); */
 }
@@ -1027,7 +1081,7 @@ static LWGEOM* parse_gml_curve(xmlNodePtr xnode, bool *hasz, int *root_srid)
 		if (!is_gml_namespace(xa, false)) continue;
 		if (strcmp((char *) xa->name, "LineStringSegment")) continue;
 
-		/* GML SF is resticted to linear interpolation  */
+		/* GML SF is restricted to linear interpolation  */
 		interpolation = gmlGetProp(xa, (xmlChar *) "interpolation");
 		if (interpolation != NULL)
 		{
@@ -1056,7 +1110,7 @@ static LWGEOM* parse_gml_curve(xmlNodePtr xnode, bool *hasz, int *root_srid)
 	 *  segment"  from  ISO 19107:2003 -> 6.3.16.1 (p43)
 	 *
 	 * So we must aggregate all the segments into a single one and avoid
-	 * to copy the redundants points
+	 * to copy the redundant points
 	 */
 	if (lss > 1)
 	{
@@ -1231,7 +1285,7 @@ static LWGEOM* parse_gml_triangle(xmlNodePtr xnode, bool *hasz, int *root_srid)
 	if (xnode->children == NULL)
 		return lwtriangle_as_lwgeom(lwtriangle_construct_empty(*root_srid, 0, 0));
 
-	/* GML SF is resticted to planar interpolation
+	/* GML SF is restricted to planar interpolation
 	       NOTA: I know Triangle is not part of SF, but
 	       we have to be consistent with other surfaces */
 	interpolation = gmlGetProp(xnode, (xmlChar *) "interpolation");
@@ -1298,7 +1352,7 @@ static LWGEOM* parse_gml_patch(xmlNodePtr xnode, bool *hasz, int *root_srid)
 	if (strcmp((char *) xnode->name, "PolygonPatch"))
 		gml_lwpgerror("invalid GML representation", 48);
 
-	/* GML SF is resticted to planar interpolation  */
+	/* GML SF is restricted to planar interpolation  */
 	interpolation = gmlGetProp(xnode, (xmlChar *) "interpolation");
 	if (interpolation != NULL)
 	{
@@ -1514,9 +1568,9 @@ static LWGEOM* parse_gml_mpoint(xmlNodePtr xnode, bool *hasz, int *root_srid)
 		{
 			for (xb = xa->children ; xb != NULL ; xb = xb->next)
 			{
-				if (xb != NULL)
-					geom = (LWGEOM*)lwmpoint_add_lwpoint((LWMPOINT*)geom,
-				                                         (LWPOINT*)parse_gml(xb, hasz, root_srid));
+				geom = (LWGEOM*)lwmpoint_add_lwpoint(
+				    (LWMPOINT*)geom,
+				    (LWPOINT*)parse_gml(xb, hasz, root_srid));
 			}
 		}
 		else if (!strcmp((char *) xa->name, "pointMember"))
@@ -1791,23 +1845,33 @@ static LWGEOM* parse_gml_coll(xmlNodePtr xnode, bool *hasz, int *root_srid)
 /**
  * Read GML
  */
-static LWGEOM* lwgeom_from_gml(const char* xml)
+static LWGEOM *
+lwgeom_from_gml(const char *xml, int xml_size)
 {
 	xmlDocPtr xmldoc;
 	xmlNodePtr xmlroot=NULL;
-	int xml_size = strlen(xml);
-	LWGEOM *lwgeom;
+	LWGEOM *lwgeom = NULL;
 	bool hasz=true;
 	int root_srid=SRID_UNKNOWN;
 
 	/* Begin to Parse XML doc */
 	xmlInitParser();
-        xmldoc = xmlReadMemory(xml, xml_size, NULL, NULL, XML_PARSE_SAX1);
-	if (!xmldoc || (xmlroot = xmlDocGetRootElement(xmldoc)) == NULL)
+
+	xmldoc = xmlReadMemory(xml, xml_size, NULL, NULL, XML_PARSE_SAX1);
+	if (!xmldoc)
+	{
+		xmlCleanupParser();
+		gml_lwpgerror("invalid GML representation", 1);
+		return NULL;
+	}
+
+	xmlroot = xmlDocGetRootElement(xmldoc);
+	if (!xmlroot)
 	{
 		xmlFreeDoc(xmldoc);
 		xmlCleanupParser();
 		gml_lwpgerror("invalid GML representation", 1);
+		return NULL;
 	}
 
 	lwgeom = parse_gml(xmlroot, &hasz, &root_srid);
@@ -1815,7 +1879,6 @@ static LWGEOM* lwgeom_from_gml(const char* xml)
 	xmlFreeDoc(xmldoc);
 	xmlCleanupParser();
 	/* shouldn't we be releasing xmldoc too here ? */
-
 
 	if ( root_srid != SRID_UNKNOWN )
 		lwgeom->srid = root_srid;

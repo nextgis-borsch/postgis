@@ -96,7 +96,7 @@ static void DeletePrepGeomHashEntry(MemoryContext mcxt);
 
 
 static void
-#if POSTGIS_PGSQL_VERSION < 110
+#if POSTGIS_PGSQL_VERSION < 96
 PreparedCacheDelete(MemoryContext context)
 {
 #else
@@ -111,7 +111,7 @@ PreparedCacheDelete(void *ptr)
 	pghe = GetPrepGeomHashEntry(context);
 
 	if (!pghe)
-		elog(ERROR, "%s: Trying to delete non-existant hash entry object with MemoryContext key (%p)", __func__, (void *)context);
+		elog(ERROR, "PreparedCacheDelete: Trying to delete non-existent hash entry object with MemoryContext key (%p)", (void *)context);
 
 	POSTGIS_DEBUGF(3, "deleting geom object (%p) and prepared geom object (%p) with MemoryContext key (%p)", pghe->geom, pghe->prepared_geom, context);
 
@@ -125,8 +125,7 @@ PreparedCacheDelete(void *ptr)
 	DeletePrepGeomHashEntry(context);
 }
 
-
-#if POSTGIS_PGSQL_VERSION < 110
+#if POSTGIS_PGSQL_VERSION < 96
 static void
 PreparedCacheInit(MemoryContext context)
 {
@@ -152,22 +151,17 @@ PreparedCacheIsEmpty(MemoryContext context)
 	 * Always return false since this call is mandatory according to tgl
 	 * (see postgis-devel archives July 2007)
 	 */
-	return false;
+	return LW_FALSE;
 }
 
 static void
-#if POSTGIS_PGSQL_VERSION >= 96
-PreparedCacheStats(MemoryContext context, int level, bool print, MemoryContextCounters *totals)
-#else
 PreparedCacheStats(MemoryContext context, int level)
-#endif
 {
 	/*
 	 * Simple stats display function - we must supply a function since this call is mandatory according to tgl
 	 * (see postgis-devel archives July 2007)
 	   fprintf(stderr, "%s: Prepared context\n", context->name);
 	 */
-
 }
 
 #ifdef MEMORY_CONTEXT_CHECKING
@@ -179,8 +173,7 @@ PreparedCacheCheck(MemoryContext context)
 	 * with MEMORY_CONTEXT_CHECKING defined
 	 */
 }
-#endif /* MEMORY_CONTEXT_CHECKING */
-
+#endif
 
 /* Memory context definition must match the current version of PostgreSQL */
 static MemoryContextMethods PreparedCacheContextMethods =
@@ -199,7 +192,8 @@ static MemoryContextMethods PreparedCacheContextMethods =
 #endif
 };
 
-#endif /* POSTGIS_PGSQL_VERSION < 110 */
+#endif /* POSTGIS_PGSQL_VERSION < 96 */
+
 
 
 /* TODO: put this in common are for both transform and prepared
@@ -319,13 +313,14 @@ PrepGeomCacheBuilder(const LWGEOM *lwgeom, GeomCache *cache)
 	if ( ! prepcache->context_callback )
 	{
 		PrepGeomHashEntry pghe;
-#if POSTGIS_PGSQL_VERSION < 110
+#if POSTGIS_PGSQL_VERSION < 96
 		prepcache->context_callback = MemoryContextCreate(T_AllocSetContext, 8192,
 		                             &PreparedCacheContextMethods,
 		                             prepcache->context_statement,
 		                             "PostGIS Prepared Geometry Context");
 
 #else
+		MemoryContextCallback *callback;
 		prepcache->context_callback = AllocSetContextCreate(prepcache->context_statement,
 	                                   "PostGIS Prepared Geometry Context",
 	                                   ALLOCSET_SMALL_SIZES);
@@ -333,11 +328,12 @@ PrepGeomCacheBuilder(const LWGEOM *lwgeom, GeomCache *cache)
 		/* PgSQL comments suggest allocating callback in the context */
 		/* being managed, so that the callback object gets cleaned along with */
 		/* the context */
-		MemoryContextCallback *callback = MemoryContextAlloc(prepcache->context_callback, sizeof(MemoryContextCallback));
+		callback = MemoryContextAlloc(prepcache->context_callback, sizeof(MemoryContextCallback));
 		callback->arg = (void*)(prepcache->context_callback);
 		callback->func = PreparedCacheDelete;
 		MemoryContextRegisterResetCallback(prepcache->context_callback, callback);
 #endif
+
 		pghe.context = prepcache->context_callback;
 		pghe.geom = 0;
 		pghe.prepared_geom = 0;
@@ -348,27 +344,17 @@ PrepGeomCacheBuilder(const LWGEOM *lwgeom, GeomCache *cache)
 	* Hum, we shouldn't be asked to build a new cache on top of
 	* an existing one. Error.
 	*/
-	if ( prepcache->argnum || prepcache->geom || prepcache->prepared_geom )
+	if ( prepcache->gcache.argnum || prepcache->geom || prepcache->prepared_geom )
 	{
 		lwpgerror("PrepGeomCacheBuilder asked to build new prepcache where one already exists.");
 		return LW_FAILURE;
     }
 
-	/*
-	 * Avoid creating a PreparedPoint around a Point or a MultiPoint.
-	 * Consider changing this behavior in the future if supported GEOS
-	 * versions correctly handle prepared points and multipoints and
-	 * provide a performance benefit.
-	 * See https://trac.osgeo.org/postgis/ticket/3437
-	 */
-	if (lwgeom_get_type(lwgeom) == POINTTYPE || lwgeom_get_type(lwgeom) == MULTIPOINTTYPE)
-		return LW_FAILURE;
-
 	prepcache->geom = LWGEOM2GEOS( lwgeom , 0);
 	if ( ! prepcache->geom ) return LW_FAILURE;
 	prepcache->prepared_geom = GEOSPrepare( prepcache->geom );
 	if ( ! prepcache->prepared_geom ) return LW_FAILURE;
-	prepcache->argnum = cache->argnum;
+	prepcache->gcache.argnum = cache->argnum;
 
 	/*
 	* In order to find the objects we need to destroy, we keep
@@ -422,10 +408,10 @@ PrepGeomCacheCleaner(GeomCache *cache)
 	/*
 	* Free the GEOS objects and free the index tree
 	*/
-	POSTGIS_DEBUGF(3, "PrepGeomCacheFreeer: freeing %p argnum %d", prepcache, prepcache->argnum);
+	POSTGIS_DEBUGF(3, "PrepGeomCacheFreeer: freeing %p argnum %d", prepcache, prepcache->gcache.argnum);
 	GEOSPreparedGeom_destroy( prepcache->prepared_geom );
 	GEOSGeom_destroy( (GEOSGeometry *)prepcache->geom );
-	prepcache->argnum = 0;
+	prepcache->gcache.argnum = 0;
 	prepcache->prepared_geom = 0;
 	prepcache->geom	= 0;
 
@@ -438,7 +424,7 @@ PrepGeomCacheAllocator()
 	PrepGeomCache* prepcache = palloc(sizeof(PrepGeomCache));
 	memset(prepcache, 0, sizeof(PrepGeomCache));
 	prepcache->context_statement = CurrentMemoryContext;
-	prepcache->type = PREP_CACHE_ENTRY;
+	prepcache->gcache.type = PREP_CACHE_ENTRY;
 	return (GeomCache*)prepcache;
 }
 
@@ -462,8 +448,8 @@ static GeomCacheMethods PrepGeomCacheMethods =
 * and freeing the GEOS PreparedGeometry structures
 * we need for this particular caching strategy.
 */
-PrepGeomCache*
-GetPrepGeomCache(FunctionCallInfoData* fcinfo, GSERIALIZED* g1, GSERIALIZED* g2)
+PrepGeomCache *
+GetPrepGeomCache(FunctionCallInfo fcinfo, GSERIALIZED *g1, GSERIALIZED *g2)
 {
 	return (PrepGeomCache*)GetGeomCache(fcinfo, &PrepGeomCacheMethods, g1, g2);
 }

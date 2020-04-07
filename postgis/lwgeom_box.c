@@ -39,8 +39,6 @@
 #include <float.h>
 #include <string.h>
 #include <stdio.h>
-#include <errno.h>
-
 
 /* forward defs */
 Datum BOX2D_in(PG_FUNCTION_ARGS);
@@ -72,7 +70,7 @@ Datum BOX2D_in(PG_FUNCTION_ARGS)
 	nitems = sscanf(str,"box(%lf %lf,%lf %lf)", &box.xmin, &box.ymin, &box.xmax, &box.ymax);
 	if (nitems != 4)
 	{
-		elog(ERROR,"box2d parser - couldnt parse.  It should look like: BOX(xmin ymin,xmax ymax)");
+		elog(ERROR,"box2d parser - couldn't parse.  It should look like: BOX(xmin ymin,xmax ymax)");
 		PG_RETURN_NULL();
 	}
 
@@ -95,13 +93,21 @@ Datum BOX2D_in(PG_FUNCTION_ARGS)
 PG_FUNCTION_INFO_V1(BOX2D_out);
 Datum BOX2D_out(PG_FUNCTION_ARGS)
 {
-	GBOX *box = (GBOX *) PG_GETARG_POINTER(0);
 	char tmp[500]; /* big enough */
 	char *result;
 	int size;
 
-	size  = sprintf(tmp,"BOX(%.15g %.15g,%.15g %.15g)",
-	                box->xmin, box->ymin, box->xmax, box->ymax);
+	GBOX *box = (GBOX *)PG_GETARG_POINTER(0);
+	/* Avoid unaligned access to the gbox struct */
+	GBOX box_aligned;
+	memcpy(&box_aligned, box, sizeof(GBOX));
+
+	size = sprintf(tmp,
+		       "BOX(%.15g %.15g,%.15g %.15g)",
+		       box_aligned.xmin,
+		       box_aligned.ymin,
+		       box_aligned.xmax,
+		       box_aligned.ymax);
 
 	result= palloc(size+1); /* +1= null term */
 	memcpy(result,tmp,size+1);
@@ -508,10 +514,10 @@ Datum BOX2D_to_LWGEOM(PG_FUNCTION_ARGS)
 		LWPOLY *poly;
 
 		/* Initialize the 4 vertices of the polygon */
-		points[0] = (POINT4D) { box->xmin, box->ymin };
-		points[1] = (POINT4D) { box->xmin, box->ymax };
-		points[2] = (POINT4D) { box->xmax, box->ymax };
-		points[3] = (POINT4D) { box->xmax, box->ymin };
+		points[0] = (POINT4D) { box->xmin, box->ymin, 0.0, 0.0 };
+		points[1] = (POINT4D) { box->xmin, box->ymax, 0.0, 0.0 };
+		points[2] = (POINT4D) { box->xmax, box->ymax, 0.0, 0.0 };
+		points[3] = (POINT4D) { box->xmax, box->ymin, 0.0, 0.0 };
 
 		/* Construct polygon */
 		poly = lwpoly_construct_rectangle(LW_FALSE, LW_FALSE, &points[0], &points[1],
@@ -531,19 +537,23 @@ Datum BOX2D_construct(PG_FUNCTION_ARGS)
 	GBOX *result;
 	LWPOINT *minpoint, *maxpoint;
 	double min, max, tmp;
+	gserialized_error_if_srid_mismatch(pgmin, pgmax, __func__);
 
 	minpoint = (LWPOINT*)lwgeom_from_gserialized(pgmin);
 	maxpoint = (LWPOINT*)lwgeom_from_gserialized(pgmax);
 
 	if ( (minpoint->type != POINTTYPE) || (maxpoint->type != POINTTYPE) )
 	{
-		elog(ERROR, "GBOX_construct: arguments must be points");
+		elog(ERROR, "BOX2D_construct: arguments must be points");
 		PG_RETURN_NULL();
 	}
 
-	error_if_srid_mismatch(minpoint->srid, maxpoint->srid);
+	if (lwpoint_is_empty(minpoint) || lwpoint_is_empty(maxpoint) ){
+		elog(ERROR, "BOX2D_construct: args can not be empty points");
+		PG_RETURN_NULL();
+	}
 
-	result = gbox_new(gflags(0, 0, 0));
+	result = gbox_new(lwflags(0, 0, 0));
 
 	/* Process X min/max */
 	min = lwpoint_get_x(minpoint);

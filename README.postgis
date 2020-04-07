@@ -1,9 +1,9 @@
 PostGIS - Geographic Information Systems Extensions to PostgreSQL
 =================================================================
 
-:Version: 2.4.4
-:Date: 2017-04-08
-:Website: http://postgis.net
+:Version: 3.0.1
+:Date: 2020-02-20
+:Website: https://postgis.net
 
 This distribution contains a module which implements GIS simple features, ties
 the features to R-tree indexing, and provides many spatial functions for
@@ -12,10 +12,12 @@ accessing and analyzing geographic data.
 Directory structure::
 
   ./            Build scripts and install directions
+  ./deps        Extra dependencies
   ./doc         PostGIS Documentation
   ./extensions  Support for the PostgreSQL Extensions framework
   ./extras      Various pieces that didn't belong to mainstream
-                (package management specfiles, WFS_locks, sample WKB parser)
+                (package management specfiles, WFS_locks
+                  , sample WKB parser, postgis_tiger_geocoder)
   ./liblwgeom   LWGEOM geometry library
   ./libpgcommon PostGIS library to bridge LWGEOM to PostgreSQL
   ./loader      A program to convert ESRI Shape files into SQL text suitable
@@ -31,20 +33,19 @@ Directory structure::
 REQUIREMENTS
 ------------
 
-PostGIS is compatible with PostgreSQL 9.3 and above.
+PostGIS is compatible with PostgreSQL 9.5 and above.
 
 You *must* have the full PostgreSQL - including server headers - installed for
 this to work.
 
-* PROJ4 (Required, Version 4.6.0 or higher):
+* PROJ4 (Required, Version 4.9.0 or higher):
 
   The PROJ4 catographic projection library is required if you want to use the
   ST_Transform() function to reproject features within the database.
 
     http://trac.osgeo.org/proj/
 
-* GEOS (Required, Version 3.4 or higher)
-  - 3.6+ is strongly recommended to expose most GEOS features
+* GEOS (Required, Version 3.6 or higher)
   - 3.7+ is needed just for the ST_FrechetDistance function
 
   The GEOS library provides support for exact topological tests such as
@@ -79,10 +80,10 @@ this to work.
 * GDAL (Optional, Version 1.8.0 or higher 1.9+ is strongly recommended)
 
   GDAL (http://gdal.org) is *required* if you want to compile PostGIS
-  with raster or extension support. To compile without raster support you
-  must ``./configure --without-raster`` (also disables extension)
+  with raster support. To compile without raster support you
+  must ``./configure --without-raster``
 
-* CGAL 4.1+ and SFCGAL (Optional) needed for advanced 3D support
+* CGAL 4.1+ and SFCGAL 1.3.1+ (Optional) needed for advanced 3D support
 
   https://github.com/Oslandia/SFCGAL
 
@@ -202,7 +203,7 @@ UPGRADING EXISTING SPATIAL DATABASES
 
 Upgrade PostGIS using the "ALTER EXTENSION" facility.
 
-  ALTER EXTENSION postgis UPDATE;
+  ALTER EXTENSION postgis UPDATE TO '2.2.0';
 
 
 USAGE

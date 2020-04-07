@@ -85,7 +85,7 @@ Datum ST_LocateAlong(PG_FUNCTION_ARGS)
 	GSERIALIZED *gout;
 	LWGEOM *lwin = NULL, *lwout = NULL;
 	double measure = PG_GETARG_FLOAT8(1);
-	double offset = PG_GETARG_FLOAT8(2);;
+	double offset = PG_GETARG_FLOAT8(2);
 
 	lwin = lwgeom_from_gserialized(gin);
 	lwout = lwgeom_locate_along(lwin, measure, offset);
@@ -160,7 +160,7 @@ Datum ST_LocateBetweenElevations(PG_FUNCTION_ARGS)
 
 	if ( ! gserialized_has_z(geom_in) )
 	{
-		elog(ERROR,"This function only accepts LINESTRING or MULTILINESTRING with Z dimensions.");
+		elog(ERROR, "This function only accepts geometries with Z dimensions.");
 		PG_RETURN_NULL();
 	}
 
@@ -199,7 +199,7 @@ Datum ST_InterpolatePoint(PG_FUNCTION_ARGS)
 		PG_RETURN_NULL();
 	}
 
-	error_if_srid_mismatch(gserialized_get_srid(gser_line), gserialized_get_srid(gser_point));
+	gserialized_error_if_srid_mismatch(gser_line, gser_point, __func__);
 
 	if ( ! gserialized_has_m(gser_line) )
 	{
@@ -237,7 +237,7 @@ Datum LWGEOM_line_locate_point(PG_FUNCTION_ARGS)
 		PG_RETURN_NULL();
 	}
 
-	error_if_srid_mismatch(gserialized_get_srid(geom1), gserialized_get_srid(geom2));
+	gserialized_error_if_srid_mismatch(geom1, geom2, __func__);
 
 	lwline = lwgeom_as_lwline(lwgeom_from_gserialized(geom1));
 	lwpoint = lwgeom_as_lwpoint(lwgeom_from_gserialized(geom2));
@@ -437,7 +437,7 @@ ptarray_locate_between_m(POINTARRAY *ipa, double m0, double m1)
 {
 	POINTARRAYSET ret;
 	POINTARRAY *dpa=NULL;
-	int i;
+	uint32_t i;
 
 	ret.nptarrays=0;
 
@@ -527,7 +527,7 @@ lwpoint_locate_between_m(LWPOINT *lwpoint, double m0, double m1)
 	{
 		POSTGIS_DEBUG(3, " lwpoint... returning a clone of input");
 
-		return (LWGEOM *)lwpoint_clone(lwpoint);
+		return lwgeom_clone((LWGEOM *)lwpoint);
 	}
 	else
 	{
@@ -628,7 +628,7 @@ lwline_locate_between_m(LWLINE *lwline_in, double m0, double m1)
 static LWGEOM *
 lwcollection_locate_between_m(LWCOLLECTION *lwcoll, double m0, double m1)
 {
-	int i;
+	uint32_t i;
 	int ngeoms=0;
 	LWGEOM **geoms;
 
@@ -685,7 +685,7 @@ lwgeom_locate_between_m(LWGEOM *lwin, double m0, double m1)
 		return NULL;
 	}
 
-	lwpgerror("Unkonwn geometry type (%s:%d)", __FILE__, __LINE__);
+	lwpgerror("Unknown geometry type (%s:%d)", __FILE__, __LINE__);
 	return NULL;
 }
 

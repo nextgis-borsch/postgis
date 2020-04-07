@@ -77,7 +77,9 @@ rt_util_clamp_to_32BUI(double value) {
 
 float
 rt_util_clamp_to_32F(double value) {
-    return (float)fmin(fmax((value), -FLT_MAX), FLT_MAX);
+	if (isnan(value))
+		return value;
+	return (float)fmin(fmax((value), -FLT_MAX), FLT_MAX);
 }
 
 /**
@@ -285,8 +287,10 @@ rt_util_gdal_sr_auth_info(GDALDatasetH hds, char **authname, char **authcode) {
 			const char* pszAuthorityCode = OSRGetAuthorityCode(hSRS, NULL);
 
 			if (pszAuthorityName != NULL && pszAuthorityCode != NULL) {
-				*authname = rtalloc(sizeof(char) * (strlen(pszAuthorityName) + 1));
-				*authcode = rtalloc(sizeof(char) * (strlen(pszAuthorityCode) + 1));
+				size_t authorityName_len = strlen(pszAuthorityName) +1;
+				size_t authorityCode_len = strlen(pszAuthorityCode) + 1;
+				*authname = rtalloc(sizeof(char) * authorityName_len);
+				*authcode = rtalloc(sizeof(char) * authorityCode_len);
 
 				if (*authname == NULL || *authcode == NULL) {
 					rterror("rt_util_gdal_sr_auth_info: Could not allocate memory for auth name and code");
@@ -296,8 +300,8 @@ rt_util_gdal_sr_auth_info(GDALDatasetH hds, char **authname, char **authcode) {
 					return ES_ERROR;
 				}
 
-				strncpy(*authname, pszAuthorityName, strlen(pszAuthorityName) + 1);
-				strncpy(*authcode, pszAuthorityCode, strlen(pszAuthorityCode) + 1);
+				strncpy(*authname, pszAuthorityName, authorityName_len);
+				strncpy(*authcode, pszAuthorityCode, authorityCode_len);
 			}
 		}
 
@@ -648,7 +652,8 @@ rt_util_dbl_trunc_warning(
 #endif
 				result = 1;
 			}
-			else if (FLT_NEQ(checkvalint, initialvalue)) {
+			else if (checkvalint != initialvalue)
+			{
 #if POSTGIS_RASTER_WARN_ON_TRUNCATION > 0
 				rtwarn("Value set for %s band got truncated from %f to %d",
 					rt_pixtype_name(pixtype),
@@ -669,7 +674,8 @@ rt_util_dbl_trunc_warning(
 #endif
 				result = 1;
 			}
-			else if (FLT_NEQ(checkvaluint, initialvalue)) {
+			else if (checkvaluint != initialvalue)
+			{
 #if POSTGIS_RASTER_WARN_ON_TRUNCATION > 0
 				rtwarn("Value set for %s band got truncated from %f to %u",
 					rt_pixtype_name(pixtype),

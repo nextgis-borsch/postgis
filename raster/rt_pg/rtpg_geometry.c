@@ -37,10 +37,7 @@
 
 #include "../../postgis_config.h"
 
-#if POSTGIS_PGSQL_VERSION > 92
 #include "access/htup_details.h" /* for heap_form_tuple() */
-#endif
-
 #include "lwgeom_pg.h"
 
 #include "rtpostgis.h"
@@ -188,6 +185,8 @@ Datum RASTER_convex_hull(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(gser);
 }
 
+#define VALUES_LENGTH 2
+
 PG_FUNCTION_INFO_V1(RASTER_dumpAsPolygons);
 Datum RASTER_dumpAsPolygons(PG_FUNCTION_ARGS) {
 	FuncCallContext *funcctx;
@@ -309,9 +308,8 @@ Datum RASTER_dumpAsPolygons(PG_FUNCTION_ARGS) {
 
 	/* do when there is more left to send */
 	if (call_cntr < max_calls) {
-		int values_length = 2;
-		Datum values[values_length];
-		bool nulls[values_length];
+		Datum values[VALUES_LENGTH];
+		bool nulls[VALUES_LENGTH];
 		HeapTuple    tuple;
 		Datum        result;
 
@@ -320,7 +318,7 @@ Datum RASTER_dumpAsPolygons(PG_FUNCTION_ARGS) {
 
 		POSTGIS_RT_DEBUGF(3, "call number %d", call_cntr);
 
-		memset(nulls, FALSE, sizeof(bool) * values_length);
+		memset(nulls, FALSE, sizeof(bool) * VALUES_LENGTH);
 
 		/* convert LWGEOM to GSERIALIZED */
 		gser = gserialized_from_lwgeom(lwpoly_as_lwgeom(geomval2[call_cntr].geom), &gser_size);
@@ -343,6 +341,9 @@ Datum RASTER_dumpAsPolygons(PG_FUNCTION_ARGS) {
 		SRF_RETURN_DONE(funcctx);
 	}
 }
+
+#undef VALUES_LENGTH
+#define VALUES_LENGTH 4
 
 /**
  * Return the geographical shape of all pixels
@@ -611,9 +612,8 @@ Datum RASTER_getPixelPolygons(PG_FUNCTION_ARGS)
 
 	/* do when there is more left to send */
 	if (call_cntr < max_calls) {
-		int values_length = 4;
-		Datum values[values_length];
-		bool nulls[values_length];
+		Datum values[VALUES_LENGTH];
+		bool nulls[VALUES_LENGTH];
 		HeapTuple tuple;
 		Datum result;
 
@@ -622,7 +622,7 @@ Datum RASTER_getPixelPolygons(PG_FUNCTION_ARGS)
 
 		POSTGIS_RT_DEBUGF(3, "call number %d", call_cntr);
 
-		memset(nulls, FALSE, sizeof(bool) * values_length);
+		memset(nulls, FALSE, sizeof(bool) * VALUES_LENGTH);
 
 		/* convert LWGEOM to GSERIALIZED */
 		gser = gserialized_from_lwgeom(pix2[call_cntr].geom, &gser_size);
@@ -756,14 +756,14 @@ Datum RASTER_asRaster(PG_FUNCTION_ARGS)
 	char *pixeltype = NULL;
 	rt_pixtype pixtype = PT_END;
 	rt_pixtype *pixtypes = NULL;
-	int pixtypes_len = 0;
+	uint32_t pixtypes_len = 0;
 
 	double *values = NULL;
-	int values_len = 0;
+	uint32_t values_len = 0;
 
 	uint8_t *hasnodatas = NULL;
 	double *nodatavals = NULL;
-	int nodatavals_len = 0;
+	uint32_t nodatavals_len = 0;
 
 	double ulw[2] = {0};
 	double *ul_xw = NULL;
@@ -782,7 +782,7 @@ Datum RASTER_asRaster(PG_FUNCTION_ARGS)
 
 	uint32_t num_bands = 0;
 
-	int srid = SRID_UNKNOWN;
+	int32_t srid = SRID_UNKNOWN;
 	char *srs = NULL;
 
 	POSTGIS_RT_DEBUG(3, "RASTER_asRaster: Starting");
@@ -826,13 +826,15 @@ Datum RASTER_asRaster(PG_FUNCTION_ARGS)
 	/* scale x */
 	if (!PG_ARGISNULL(1)) {
 		scale[0] = PG_GETARG_FLOAT8(1);
-		if (FLT_NEQ(scale[0], 0)) scale_x = &scale[0];
+		if (FLT_NEQ(scale[0], 0.0))
+			scale_x = &scale[0];
 	}
 
 	/* scale y */
 	if (!PG_ARGISNULL(2)) {
 		scale[1] = PG_GETARG_FLOAT8(2);
-		if (FLT_NEQ(scale[1], 0)) scale_y = &scale[1];
+		if (FLT_NEQ(scale[1], 0.0))
+			scale_y = &scale[1];
 	}
 	POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: scale (x, y) = %f, %f", scale[0], scale[1]);
 
@@ -926,8 +928,8 @@ Datum RASTER_asRaster(PG_FUNCTION_ARGS)
 		}
 	}
 #if POSTGIS_DEBUG_LEVEL > 0
-	for (i = 0; i < pixtypes_len; i++)
-		POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: pixtypes[%d] = %d", i, (int) pixtypes[i]);
+	for (uint32_t u = 0; u < pixtypes_len; u++)
+		POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: pixtypes[%u] = %u", i, pixtypes[i]);
 #endif
 
 	/* value */
@@ -989,8 +991,8 @@ Datum RASTER_asRaster(PG_FUNCTION_ARGS)
 		}
 	}
 #if POSTGIS_DEBUG_LEVEL > 0
-	for (i = 0; i < values_len; i++)
-		POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: values[%d] = %f", i, values[i]);
+	for (uint32_t u = 0; u < values_len; u++)
+		POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: values[%u] = %f", i, values[i]);
 #endif
 
 	/* nodataval */
@@ -1061,9 +1063,10 @@ Datum RASTER_asRaster(PG_FUNCTION_ARGS)
 		}
 	}
 #if POSTGIS_DEBUG_LEVEL > 0
-	for (i = 0; i < nodatavals_len; i++) {
-		POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: hasnodatas[%d] = %d", i, hasnodatas[i]);
-		POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: nodatavals[%d] = %f", i, nodatavals[i]);
+	for (uint32_t u = 0; u < nodatavals_len; u++)
+	{
+		POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: hasnodatas[%u] = %d", u, hasnodatas[u]);
+		POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: nodatavals[%u] = %f", u, nodatavals[u]);
 	}
 #endif
 
@@ -1187,19 +1190,21 @@ Datum RASTER_asRaster(PG_FUNCTION_ARGS)
 	/* skewx */
 	if (!PG_ARGISNULL(12)) {
 		skew[0] = PG_GETARG_FLOAT8(12);
-		if (FLT_NEQ(skew[0], 0)) skew_x = &skew[0];
+		if (FLT_NEQ(skew[0], 0.0))
+			skew_x = &skew[0];
 	}
 
 	/* skewy */
 	if (!PG_ARGISNULL(13)) {
 		skew[1] = PG_GETARG_FLOAT8(13);
-		if (FLT_NEQ(skew[1], 0)) skew_y = &skew[1];
+		if (FLT_NEQ(skew[1], 0.0))
+			skew_y = &skew[1];
 	}
 	POSTGIS_RT_DEBUGF(3, "RASTER_asRaster: skew (x, y) = %f, %f", skew[0], skew[1]);
 
 	/* all touched */
 	if (!PG_ARGISNULL(14) && PG_GETARG_BOOL(14) == TRUE) {
-		if (options_len < 1) {
+		if (options_len == 0) {
 			options_len = 1;
 			options = (char **) palloc(sizeof(char *) * options_len);
 		}
@@ -1209,7 +1214,7 @@ Datum RASTER_asRaster(PG_FUNCTION_ARGS)
 		}
 
 		options[options_len - 1] = palloc(sizeof(char*) * (strlen("ALL_TOUCHED=TRUE") + 1));
-		options[options_len - 1] = "ALL_TOUCHED=TRUE";
+		strcpy(options[options_len - 1], "ALL_TOUCHED=TRUE");
 	}
 
 	if (options_len) {

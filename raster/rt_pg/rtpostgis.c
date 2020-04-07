@@ -246,7 +246,7 @@ rt_pg_debug(const char *fmt, va_list ap)
 
 static char *gdal_datapath = NULL;
 extern char *gdal_enabled_drivers;
-extern char enable_outdb_rasters;
+extern bool enable_outdb_rasters;
 
 /* ---------------------------------------------------------------- */
 /*  Useful variables                                                */
@@ -280,7 +280,7 @@ rtpg_assignHookGDALEnabledDrivers(const char *enabled_drivers, void *extra) {
 	int disable_all = 0;
 
 	char **enabled_drivers_array = NULL;
-	int enabled_drivers_count = 0;
+	uint32_t enabled_drivers_count = 0;
 	bool *enabled_drivers_found = NULL;
 	char *gdal_skip = NULL;
 
@@ -468,7 +468,8 @@ _PG_init(void) {
 		if (strcmp(env, "1") == 0)
 			boot_postgis_enable_outdb_rasters = true;
 
-		pfree(env);
+		if (env != env_postgis_enable_outdb_rasters)
+			pfree(env);
 	}
 	POSTGIS_RT_DEBUGF(
 		4,

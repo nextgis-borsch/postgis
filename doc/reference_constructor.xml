@@ -1,0 +1,808 @@
+<?xml version="1.0" encoding="UTF-8"?>
+  <sect1 id="Geometry_Constructors">
+	  <title>Geometry Constructors</title>
+
+	<refentry id="ST_Collect">
+	  <refnamediv>
+		<refname>ST_Collect</refname>
+		<refpurpose>Creates a GeometryCollection or Multi* geometry from a set of geometries.</refpurpose>
+	  </refnamediv>
+
+	  <refsynopsisdiv>
+		<funcsynopsis>
+			<funcprototype>
+				<funcdef>geometry <function>ST_Collect</function></funcdef>
+					<paramdef><type>geometry</type> <parameter>g1</parameter></paramdef>
+					<paramdef><type>geometry</type> <parameter>g2</parameter></paramdef>
+			</funcprototype>
+			<funcprototype>
+				<funcdef>geometry <function>ST_Collect</function></funcdef>
+					<paramdef><type>geometry[]</type> <parameter>g1_array</parameter></paramdef>
+			</funcprototype>
+			<funcprototype>
+				<funcdef>geometry <function>ST_Collect</function></funcdef>
+					<paramdef><type>geometry set</type> <parameter>g1field</parameter></paramdef>
+			</funcprototype>
+		</funcsynopsis>
+	  </refsynopsisdiv>
+
+	  <refsection>
+		<title>Description</title>
+		<para> Collects geometries into a geometry collection.
+			The result is either a Multi* or a
+			GeometryCollection, depending on whether the input geometries have the same or different types
+			(homogeneous or heterogeneous).
+			The input geometries are left unchanged within the collection.
+			</para>
+
+		<para><emphasis role="bold">Variant 1:</emphasis> accepts two input geometries</para>
+		<para><emphasis role="bold">Variant 2:</emphasis> accepts an array of geometries</para>
+		<para><emphasis role="bold">Variant 3:</emphasis> aggregate function accepting a rowset of geometries.</para>
+
+		<note><para>
+		If any of the input geometries are collections (Multi* or GeometryCollection)
+		ST_Collect returns a GeometryCollection (since that is the only type
+		which can contain nested collections).
+		To prevent this, use <xref linkend="ST_Dump" /> in a subquery to expand the
+		input collections to their atomic elements (see example below).
+		</para></note>
+
+		<note><para>ST_Collect and <xref linkend="ST_Union" /> appear similar, but in fact operate quite differently.
+		ST_Collect aggregates geometries into a collection without changing them in any way.
+		ST_Union geometrically merges geometries where they overlap,
+		and splits linestrings at intersections.
+		It may return single geometries when it dissolves boundaries.
+		</para></note>
+
+		<para>Availability: 1.4.0 -  ST_Collect(geomarray) was introduced. ST_Collect was enhanced to handle more geometries faster.</para>
+		<para>&Z_support;</para>
+		<para>&curve_support;</para>
+	  </refsection>
+
+	  <refsection>
+		<title>Examples - Two-input variant</title>
+		<para>Collect 2D points.</para>
+<programlisting>
+SELECT ST_AsText( ST_Collect( ST_GeomFromText('POINT(1 2)'),
+	ST_GeomFromText('POINT(-2 3)') ));
+
+st_astext
+----------
+MULTIPOINT(1 2,-2 3)
+</programlisting>
+
+<para>Collect 3D points.</para>
+<programlisting>
+SELECT ST_AsEWKT( ST_Collect( ST_GeomFromEWKT('POINT(1 2 3)'),
+		ST_GeomFromEWKT('POINT(1 2 4)') ) );
+
+		st_asewkt
+-------------------------
+ MULTIPOINT(1 2 3,1 2 4)
+ </programlisting>
+
+<para>Collect curves.</para>
+ <programlisting>
+SELECT ST_AsText( ST_Collect( 'CIRCULARSTRING(220268 150415,220227 150505,220227 150406)',
+		'CIRCULARSTRING(220227 150406,2220227 150407,220227 150406)'));
+
+		st_astext
+------------------------------------------------------------------------------------
+MULTICURVE(CIRCULARSTRING(220268 150415,220227 150505,220227 150406),
+ CIRCULARSTRING(220227 150406,2220227 150407,220227 150406))
+</programlisting>
+		</refsection>
+		<refsection>
+<title>Examples - Array variant</title>
+<para>Using an array constructor for a subquery.</para>
+<programlisting>
+SELECT ST_Collect( ARRAY( SELECT the_geom FROM sometable ) );
+</programlisting>
+<para>Using an array constructor for values.</para>
+<programlisting>
+SELECT ST_AsText(  ST_Collect(
+		ARRAY[ ST_GeomFromText('LINESTRING(1 2, 3 4)'),
+			ST_GeomFromText('LINESTRING(3 4, 4 5)') ] )) As wktcollect;
+
+--wkt collect --
+MULTILINESTRING((1 2,3 4),(3 4,4 5))
+</programlisting>
+		</refsection>
+		<refsection>
+		<title>Examples - Aggregate variant</title>
+		<para>Creating multiple collections by grouping geometries in a table.</para>
+<programlisting>
+SELECT stusps, ST_Collect(f.the_geom) as geom
+	 FROM (SELECT stusps, (ST_Dump(the_geom)).geom As the_geom
+				FROM
+				somestatetable ) As f
+	GROUP BY stusps
+</programlisting>
+
+	  </refsection>
+	  <refsection>
+		<title>See Also</title>
+		<para><xref linkend="ST_Dump" />, <xref linkend="ST_Union" /></para>
+	  </refsection>
+	</refentry>
+
+	<refentry id="ST_LineFromMultiPoint">
+	  <refnamediv>
+		<refname>ST_LineFromMultiPoint</refname>
+
+		<refpurpose>Creates a LineString from a MultiPoint geometry.</refpurpose>
+	  </refnamediv>
+
+	  <refsynopsisdiv>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_LineFromMultiPoint</function></funcdef>
+			<paramdef><type>geometry </type> <parameter>aMultiPoint</parameter></paramdef>
+		  </funcprototype>
+		</funcsynopsis>
+	  </refsynopsisdiv>
+
+	  <refsection>
+		<title>Description</title>
+
+		<para>Creates a LineString from a MultiPoint geometry.</para>
+
+		<para>Use <xref linkend="ST_MakeLine" /> to create lines from Point or LineString inputs.</para>
+
+		<para>&Z_support;</para>
+
+	  </refsection>
+
+	  <refsection>
+		<title>Examples</title>
+		<para>Create a 3D line string from a 3D MultiPoint</para>
+		<programlisting>
+SELECT ST_AsEWKT(  ST_LineFromMultiPoint('MULTIPOINT(1 2 3, 4 5 6, 7 8 9)')  ));
+
+--result--
+LINESTRING(1 2 3,4 5 6,7 8 9)
+</programlisting>
+	  </refsection>
+
+	  <!-- Optionally add a "See Also" section -->
+	  <refsection>
+		<title>See Also</title>
+
+		<para><xref linkend="ST_AsEWKT" />, <xref linkend="ST_MakeLine" /></para>
+	  </refsection>
+	</refentry>
+
+	<refentry id="ST_MakeEnvelope">
+		<refnamediv>
+		<refname>ST_MakeEnvelope</refname>
+
+		<refpurpose>Creates a rectangular Polygon from minimum and maximum coordinates.</refpurpose>
+		</refnamediv>
+
+		<refsynopsisdiv>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_MakeEnvelope</function></funcdef>
+			<paramdef><type>float</type> <parameter>xmin</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>ymin</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>xmax</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>ymax</parameter></paramdef>
+			<paramdef choice="opt"><type>integer</type> <parameter>srid=unknown</parameter></paramdef>
+		  </funcprototype>
+		 </funcsynopsis>
+		</refsynopsisdiv>
+
+		<refsection>
+			<title>Description</title>
+
+			<para>Creates a rectangular Polygon from the minimum and maximum values for X and Y.
+			Input values must be in the spatial reference system specified by the SRID.
+			If no SRID is specified the unknown spatial reference system (SRID 0) is used.</para>
+
+			<para>Availability: 1.5</para>
+			<para>Enhanced: 2.0: Ability to specify an envelope without specifying an SRID was introduced.</para>
+
+		</refsection>
+
+		<refsection>
+		<title>Example: Building a bounding box polygon</title>
+		 <programlisting>
+SELECT ST_AsText( ST_MakeEnvelope(10, 10, 11, 11, 4326) );
+
+st_asewkt
+-----------
+POLYGON((10 10, 10 11, 11 11, 11 10, 10 10))
+</programlisting>
+		</refsection>
+		<refsection>
+			<title>See Also</title>
+			<para><xref linkend="ST_MakePoint" />, <xref linkend="ST_MakeLine" />, <xref linkend="ST_MakePolygon" />, <xref linkend="ST_TileEnvelope" /></para>
+		</refsection>
+	</refentry>
+
+	<refentry id="ST_MakeLine">
+		<refnamediv>
+		<refname>ST_MakeLine</refname>
+
+		<refpurpose>Creates a Linestring from Point, MultiPoint, or LineString geometries.</refpurpose>
+		</refnamediv>
+
+		<refsynopsisdiv>
+		<funcsynopsis>
+			<funcprototype>
+				<funcdef>geometry <function>ST_MakeLine</function></funcdef>
+				<paramdef><type>geometry</type> <parameter>geom1</parameter></paramdef>
+				<paramdef><type>geometry</type> <parameter>geom2</parameter></paramdef>
+			</funcprototype>
+
+			<funcprototype>
+				<funcdef>geometry <function>ST_MakeLine</function></funcdef>
+				<paramdef><type>geometry[]</type> <parameter>geoms_array</parameter></paramdef>
+			</funcprototype>
+
+			<funcprototype>
+				<funcdef>geometry <function>ST_MakeLine</function></funcdef>
+				<paramdef><type>geometry set</type> <parameter>geoms</parameter></paramdef>
+			</funcprototype>
+		</funcsynopsis>
+		</refsynopsisdiv>
+
+		<refsection>
+		<title>Description</title>
+
+		<para>Creates a LineString containing the points of Point, MultiPoint, or LineString geometries.
+		Other geometry types cause an error.
+		</para>
+		<para><emphasis role="bold">Variant 1:</emphasis> accepts two input geometries</para>
+		<para><emphasis role="bold">Variant 2:</emphasis> accepts an array of geometries</para>
+		<para><emphasis role="bold">Variant 3:</emphasis> aggregate function accepting a rowset of geometries.
+		To ensure the order of the input geometries use <varname>ORDER BY</varname> in the function call,
+		or a subquery with an <varname>ORDER BY</varname> clause.</para>
+
+		<para>
+		Repeated nodes at the beginning of input LineStrings are collapsed to a single point.
+		Repeated points in Point and MultiPoint inputs are not collapsed.
+		<xref linkend="ST_RemoveRepeatedPoints" /> can be used to collapse repeated points from the output LineString.
+		</para>
+
+		<para>&Z_support;</para>
+
+		<para>Availability: 2.3.0 -  Support for multipoint input elements was introduced</para>
+		<para>Availability: 2.0.0 -  Support for linestring input elements was introduced</para>
+		<para>Availability: 1.4.0 -  ST_MakeLine(geomarray) was introduced. ST_MakeLine aggregate functions was enhanced to handle more points faster.</para>
+
+		</refsection>
+
+		<refsection>
+			<title>Examples: Two-input variant</title>
+
+<para>Create a line composed of two points.</para>
+<programlisting>
+SELECT ST_AsText( ST_MakeLine(ST_MakePoint(1,2), ST_MakePoint(3,4)) );
+
+	  st_astext
+---------------------
+ LINESTRING(1 2,3 4)
+</programlisting>
+
+<para>Create a 3D line from two 3D points.</para>
+<programlisting>
+SELECT ST_AsEWKT( ST_MakeLine(ST_MakePoint(1,2,3), ST_MakePoint(3,4,5) ));
+
+		st_asewkt
+-------------------------
+ LINESTRING(1 2 3,3 4 5)
+</programlisting>
+
+<para>Create a line from two disjoint LineStrings.</para>
+<programlisting>
+ select ST_AsText( ST_MakeLine( 'LINESTRING(0 0, 1 1)', 'LINESTRING(2 2, 3 3)' ) );
+
+          st_astext
+-----------------------------
+ LINESTRING(0 0,1 1,2 2,3 3)
+</programlisting>
+		</refsection>
+
+		<refsection>
+			<title>Examples: Array variant</title>
+
+		<para>Create a line from an array formed by a subquery with ordering.</para>
+<programlisting>
+SELECT ST_MakeLine( ARRAY( SELECT ST_Centroid(the_geom) FROM visit_locations ORDER BY visit_time) );
+</programlisting>
+
+		<para>Create a 3D line from an array of 3D points</para>
+<programlisting>
+SELECT ST_AsEWKT( ST_MakeLine(
+          ARRAY[ ST_MakePoint(1,2,3), ST_MakePoint(3,4,5), ST_MakePoint(6,6,6) ]  ));
+
+		st_asewkt
+-------------------------
+LINESTRING(1 2 3,3 4 5,6 6 6)
+</programlisting>
+		</refsection>
+
+		<refsection>
+		<title>Examples: Aggregate variant</title>
+		<para>This example queries time-based sequences of GPS points from a set of tracks
+		and creates one record for each track.
+		The result geometries are LineStrings composed of the GPS track points in the order of travel.</para>
+
+<para>Using aggregate <varname>ORDER BY</varname> provides a correctly-ordered linestring.</para>
+		<programlisting>
+SELECT gps.track_id, ST_MakeLine(gps.geom ORDER BY gps_time) As geom
+	FROM gps_points As gps
+	GROUP BY track_id;</programlisting>
+
+<para>Prior to PostgreSQL 9, ordering in a subquery can be used.
+However, sometimes the query plan may not respect the order of the subquery.</para>
+		<programlisting>
+SELECT gps.track_id, ST_MakeLine(gps.geom) As geom
+	FROM ( SELECT track_id, gps_time, geom
+			FROM gps_points ORDER BY track_id, gps_time ) As gps
+	GROUP BY track_id;</programlisting>
+		</refsection>
+
+		<refsection>
+			<title>See Also</title>
+			<para><xref linkend="ST_RemoveRepeatedPoints" />, <xref linkend="ST_AsEWKT" />, <xref linkend="ST_AsText" />, <xref linkend="ST_GeomFromText" />, <xref linkend="ST_MakePoint" /></para>
+		</refsection>
+	</refentry>
+
+
+	<refentry id="ST_MakePoint">
+		<refnamediv>
+		<refname>ST_MakePoint</refname>
+
+		<refpurpose>Creates a 2D, 3DZ or 4D Point.</refpurpose>
+		</refnamediv>
+
+		<refsynopsisdiv>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_MakePoint</function></funcdef>
+			<paramdef><type>float</type> <parameter>x</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>y</parameter></paramdef>
+		  </funcprototype>
+		</funcsynopsis>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_MakePoint</function></funcdef>
+			<paramdef><type>float</type> <parameter>x</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>y</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>z</parameter></paramdef>
+		  </funcprototype>
+		</funcsynopsis>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_MakePoint</function></funcdef>
+			<paramdef><type>float</type> <parameter>x</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>y</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>z</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>m</parameter></paramdef>
+		  </funcprototype>
+		</funcsynopsis>
+		</refsynopsisdiv>
+
+		<refsection>
+			<title>Description</title>
+
+			<para>Creates a 2D, 3D Z or 4D ZM Point geometry.</para>
+
+			<para>Use <xref linkend="ST_MakePointM" /> to make points with XYM coordinates.</para>
+
+			<para>
+			While not OGC-compliant, <varname>ST_MakePoint</varname> is
+			faster and more precise than <xref linkend="ST_GeomFromText" />
+			and <xref linkend="ST_PointFromText" />.
+			It is also easier to use for numeric coordinate values.</para>
+
+			<note><para>For geodetic coordinates, <varname>X</varname> is longitude and <varname>Y</varname> is latitude</para></note>
+
+			<para>&Z_support;</para>
+		</refsection>
+
+		<refsection>
+		<title>Examples</title>
+		 <programlisting>--Return point with unknown SRID
+SELECT ST_MakePoint(-71.1043443253471, 42.3150676015829);
+
+--Return point marked as WGS 84 long lat
+SELECT ST_SetSRID(ST_MakePoint(-71.1043443253471, 42.3150676015829),4326);
+
+--Return a 3D point (e.g. has altitude)
+SELECT ST_MakePoint(1, 2,1.5);
+
+--Get z of point
+SELECT ST_Z(ST_MakePoint(1, 2,1.5));
+result
+-------
+1.5</programlisting>
+		</refsection>
+		<refsection>
+			<title>See Also</title>
+			<para><xref linkend="ST_GeomFromText" />, <xref linkend="ST_PointFromText" />, <xref linkend="ST_SetSRID" />, <xref linkend="ST_MakePointM" /></para>
+		</refsection>
+	</refentry>
+
+	<refentry id="ST_MakePointM">
+		<refnamediv>
+		<refname>ST_MakePointM</refname>
+
+		<refpurpose>Creates a Point from X, Y and M values.</refpurpose>
+		</refnamediv>
+
+		<refsynopsisdiv>
+			<funcsynopsis>
+			  <funcprototype>
+				<funcdef>geometry <function>ST_MakePointM</function></funcdef>
+				<paramdef><type>float</type> <parameter>x</parameter></paramdef>
+				<paramdef><type>float</type> <parameter>y</parameter></paramdef>
+				<paramdef><type>float</type> <parameter>m</parameter></paramdef>
+			  </funcprototype>
+			</funcsynopsis>
+		</refsynopsisdiv>
+
+		<refsection>
+			<title>Description</title>
+
+			<para>Creates a point with X, Y and M (measure) coordinates. </para>
+
+			<para>Use <xref linkend="ST_MakePoint" /> to make points with XY, XYZ, or XYZM coordinates.</para>
+
+			<note><para>For geodetic coordinates, <varname>X</varname> is longitude and <varname>Y</varname> is latitude</para></note>
+
+		</refsection>
+
+		<refsection>
+		<title>Examples</title>
+			<note><para><xref linkend="ST_AsEWKT" /> is used for text output
+			because <xref linkend="ST_AsText" /> does not support M values.</para></note>
+
+			<para>Create point with unknown SRID.</para>
+		 <programlisting>
+SELECT ST_AsEWKT(  ST_MakePointM(-71.1043443253471, 42.3150676015829, 10)  );
+
+				   st_asewkt
+-----------------------------------------------
+ POINTM(-71.1043443253471 42.3150676015829 10)
+</programlisting>
+
+<para>Create point with a measure in the WGS 84 geodetic coordinate system.</para>
+<programlisting>
+SELECT ST_AsEWKT( ST_SetSRID(  ST_MakePointM(-71.104, 42.315, 10),  4326));
+
+						st_asewkt
+---------------------------------------------------------
+SRID=4326;POINTM(-71.104 42.315 10)
+</programlisting>
+
+<para>Get measure of created point.</para>
+<programlisting>
+SELECT ST_M(  ST_MakePointM(-71.104, 42.315, 10)  );
+
+result
+-------
+10
+</programlisting>
+		</refsection>
+		<refsection>
+			<title>See Also</title>
+			<para><xref linkend="ST_AsEWKT" />, <xref linkend="ST_MakePoint" />, <xref linkend="ST_SetSRID" /></para>
+		</refsection>
+	</refentry>
+
+	<refentry id="ST_MakePolygon">
+		<refnamediv>
+		<refname>ST_MakePolygon</refname>
+
+		<refpurpose>Creates a Polygon from a shell and optional list of holes.</refpurpose>
+		</refnamediv>
+
+		<refsynopsisdiv>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_MakePolygon</function></funcdef>
+			<paramdef><type>geometry</type> <parameter>linestring</parameter></paramdef>
+		  </funcprototype>
+		</funcsynopsis>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_MakePolygon</function></funcdef>
+			<paramdef><type>geometry</type> <parameter>outerlinestring</parameter></paramdef>
+			<paramdef><type>geometry[]</type> <parameter>interiorlinestrings</parameter></paramdef>
+		  </funcprototype>
+		</funcsynopsis>
+		</refsynopsisdiv>
+
+		<refsection>
+			<title>Description</title>
+
+			<para>Creates a Polygon formed by the given shell and optional array of holes.
+			Input	geometries must be closed LineStrings (rings).</para>
+
+			<para><emphasis role="bold">Variant 1:</emphasis>  Accepts one shell LineString.</para>
+			<para><emphasis role="bold">Variant 2:</emphasis>  Accepts a shell LineString and an array of
+			inner (hole) LineStrings. A geometry array can be constructed using the PostgreSQL array_agg(), ARRAY[] or
+			ARRAY() constructs.</para>
+
+			<note><para>This function does not accept MultiLineStrings.
+			Use <xref linkend="ST_LineMerge" /> to generate a LineString, or <xref linkend="ST_Dump" /> to extract LineStrings.</para>
+			</note>
+
+			<para>&Z_support;</para>
+		</refsection>
+
+		<refsection>
+		<title>Examples: Single input variant</title>
+		<para>Create a Polygon from a 2D LineString.</para>
+		 <programlisting>
+SELECT ST_MakePolygon( ST_GeomFromText('LINESTRING(75 29,77 29,77 29, 75 29)'));
+</programlisting>
+
+<para>Create a Polygon from an open LineString,
+using <xref linkend="ST_StartPoint" /> and <xref linkend="ST_AddPoint" /> to close it.</para>
+<programlisting>
+SELECT ST_MakePolygon( ST_AddPoint(foo.open_line, ST_StartPoint(foo.open_line)) )
+FROM (
+  SELECT ST_GeomFromText('LINESTRING(75 29,77 29,77 29, 75 29)') As open_line) As foo;
+</programlisting>
+
+<para>Create a Polygon from a 3D LineString</para>
+<programlisting>
+SELECT ST_AsEWKT( ST_MakePolygon( 'LINESTRING(75.15 29.53 1,77 29 1,77.6 29.5 1, 75.15 29.53 1)'));
+
+st_asewkt
+-----------
+POLYGON((75.15 29.53 1,77 29 1,77.6 29.5 1,75.15 29.53 1))
+</programlisting>
+<para>Create a Polygon from a LineString with measures</para>
+<programlisting>
+SELECT ST_AsEWKT( ST_MakePolygon( 'LINESTRINGM(75.15 29.53 1,77 29 1,77.6 29.5 2, 75.15 29.53 2)' ));
+
+st_asewkt
+----------
+POLYGONM((75.15 29.53 1,77 29 1,77.6 29.5 2,75.15 29.53 2))
+</programlisting>
+		</refsection>
+		<refsection>
+			<title>Examples: Outer shell with inner holes variant</title>
+
+			<para>Create a donut Polygon with an extra hole</para>
+		   <programlisting>
+SELECT ST_MakePolygon( ST_ExteriorRing( ST_Buffer(ring.line,10)),
+	ARRAY[  ST_Translate(ring.line, 1, 1),
+		ST_ExteriorRing(ST_Buffer(ST_MakePoint(20,20),1)) ]
+	)
+FROM (SELECT ST_ExteriorRing(
+	ST_Buffer(ST_MakePoint(10,10),10,10)) AS line ) AS ring;
+</programlisting>
+		<para>Create a set of province boundaries with holes
+		representing lakes.  The input is a table of
+		province Polygons/MultiPolygons and a table of water linestrings.
+		Using a LEFT JOIN ensures all provinces are included even if they have no lakes.
+		</para>
+
+		<note><para>The CASE construct is used because passing a null array into
+		ST_MakePolygon results in a NULL return value.</para></note>
+
+		<programlisting>
+	SELECT p.gid, p.province_name,
+		CASE WHEN array_agg(w.the_geom) IS NULL
+		THEN p.the_geom
+		ELSE  ST_MakePolygon( ST_LineMerge(ST_Boundary(p.the_geom)), array_agg(w.the_geom)) END
+	FROM
+		provinces p LEFT JOIN waterlines w
+			ON (ST_Within(w.the_geom, p.the_geom) AND ST_IsClosed(w.the_geom))
+	GROUP BY p.gid, p.province_name, p.the_geom;
+</programlisting>
+
+	<para>Another technique is to utilize a correlated subquery
+	and the ARRAY() constructor that converts a row set to an array.</para>
+<programlisting>
+	SELECT p.gid,  p.province_name,
+		CASE WHEN EXISTS( SELECT w.the_geom
+			FROM waterlines w
+			WHERE ST_Within(w.the_geom, p.the_geom)
+			AND ST_IsClosed(w.the_geom))
+		THEN ST_MakePolygon(
+			ST_LineMerge(ST_Boundary(p.the_geom)),
+			ARRAY( SELECT w.the_geom
+				FROM waterlines w
+				WHERE ST_Within(w.the_geom, p.the_geom)
+				AND ST_IsClosed(w.the_geom)))
+		ELSE p.the_geom
+		END AS the_geom
+	FROM provinces p;
+</programlisting>
+		</refsection>
+		<refsection>
+			<title>See Also</title>
+			<para>
+				<xref linkend="ST_Boundary" />,
+				<xref linkend="ST_AddPoint" />,
+				<xref linkend="ST_IsClosed" />,
+				<xref linkend="ST_LineMerge" />,
+				<xref linkend="ST_StartPoint" />,
+				<xref linkend="ST_BuildArea" />
+			</para>
+		</refsection>
+	</refentry>
+
+	<refentry id="ST_Point">
+	  <refnamediv>
+		<refname>ST_Point</refname>
+
+		<refpurpose>Creates a Point with the given coordinate values. Alias for ST_MakePoint.</refpurpose>
+	  </refnamediv>
+
+	  <refsynopsisdiv>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_Point</function></funcdef>
+			<paramdef><type>float</type> <parameter>x</parameter></paramdef>
+			<paramdef><type>float</type> <parameter>y</parameter></paramdef>
+		  </funcprototype>
+		</funcsynopsis>
+	  </refsynopsisdiv>
+
+	  <refsection>
+		<title>Description</title>
+
+		<para>Returns an Point with the given X and Y coordinate values. This is the SQL-MM alias for <xref linkend="ST_MakePoint" /> that takes just X and Y.</para>
+
+		<note><para>For geodetic coordinates, <varname>X</varname> is longitude and <varname>Y</varname> is latitude</para></note>
+
+		<para>&sqlmm_compliant; SQL-MM 3: 6.1.2</para>
+
+	  </refsection>
+
+
+	  <refsection>
+		<title>Examples: Geometry</title>
+
+		<programlisting>SELECT ST_SetSRID( ST_Point( -71.104, 42.315), 4326)</programlisting>
+	  </refsection>
+
+	  <refsection>
+		<title>Examples: Geography</title>
+
+		<programlisting>SELECT CAST(ST_SetSRID( ST_Point( -71.104, 42.315), 4326) AS geography);</programlisting>
+
+		<para>PostgreSQL also provides the <varname>::</varname> short-hand for casting</para>
+		<programlisting>
+SELECT ST_SetSRID( ST_Point( -71.104, 42.315), 4326)::geography;</programlisting>
+
+<para>If the point coordinates are not in a geodetic coordinate system (such as WGS84),
+then they must be reprojected before casting to a geography.
+In this example a point in Pennsylvania State Plane feet (SRID 2273)
+is projected to WGS84 (SRID 4326).</para>
+<programlisting>
+SELECT ST_Transform(ST_SetSRID( ST_Point( 3637510, 3014852 ), 2273), 4326)::geography;</programlisting>
+	  </refsection>
+
+	  <!-- Optionally add a "See Also" section -->
+	  <refsection>
+		<title>See Also</title>
+
+		<para><xref linkend="Geography_Basics" />, <xref linkend="ST_MakePoint" />, <xref linkend="ST_SetSRID" />, <xref linkend="ST_Transform" /></para>
+	  </refsection>
+	</refentry>
+
+	<refentry id="ST_Polygon">
+	  <refnamediv>
+		<refname>ST_Polygon</refname>
+
+		<refpurpose>Creates a Polygon from a LineString with a specified SRID.</refpurpose>
+	  </refnamediv>
+
+	  <refsynopsisdiv>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_Polygon</function></funcdef>
+			<paramdef><type>geometry </type> <parameter>lineString</parameter></paramdef>
+			<paramdef><type>integer </type> <parameter>srid</parameter></paramdef>
+		  </funcprototype>
+		</funcsynopsis>
+	  </refsynopsisdiv>
+
+	  <refsection>
+		<title>Description</title>
+
+		<para>Returns a polygon built from the given LineString
+		and sets the spatial reference system from the <varname>srid</varname>.</para>
+
+		<para>ST_Polygon is similar to <xref linkend="ST_MakePolygon" /> Variant 1
+		with the addition of setting the SRID.</para>
+		<para>To create polygons with holes
+		use <xref linkend="ST_MakePolygon" /> Variant 2 and then <xref linkend="ST_SetSRID" />.
+		</para>
+
+		<note><para>This function does not accept MultiLineStrings.
+		Use <xref linkend="ST_LineMerge" /> to generate a LineString, or <xref linkend="ST_Dump" /> to extract LineStrings.</para>
+		</note>
+
+		<para>&sfs_compliant;</para>
+		<para>&sqlmm_compliant; SQL-MM 3: 8.3.2</para>
+		<para>&Z_support;</para>
+
+	  </refsection>
+
+	  <refsection>
+		<title>Examples</title>
+
+<para>Create a 2D polygon.</para>
+		<programlisting>
+SELECT ST_AsText( ST_Polygon('LINESTRING(75 29, 77 29, 77 29, 75 29)'::geometry, 4326) );
+
+-- result --
+POLYGON((75 29, 77 29, 77 29, 75 29))
+</programlisting>
+<para>Create a 3D polygon.</para>
+<programlisting>
+SELECT ST_AsEWKT( ST_Polygon( ST_GeomFromEWKT('LINESTRING(75 29 1, 77 29 2, 77 29 3, 75 29 1)'), 4326) );
+
+-- result --
+SRID=4326;POLYGON((75 29 1, 77 29 2, 77 29 3, 75 29 1))
+</programlisting>
+	  </refsection>
+
+	  <!-- Optionally add a "See Also" section -->
+	  <refsection>
+		<title>See Also</title>
+
+		<para> <xref linkend="ST_AsEWKT" />, <xref linkend="ST_AsText" />, <xref linkend="ST_GeomFromEWKT" />, <xref linkend="ST_GeomFromText" />, <xref linkend="ST_LineMerge" />, <xref linkend="ST_MakePolygon" /></para>
+	  </refsection>
+	</refentry>
+
+
+	<refentry id="ST_TileEnvelope">
+		<refnamediv>
+		<refname>ST_TileEnvelope</refname>
+		<refpurpose>Creates a rectangular Polygon in <ulink url="https://en.wikipedia.org/wiki/Web_Mercator_projection">Web Mercator</ulink> (SRID:3857) using the <ulink url="https://en.wikipedia.org/wiki/Tiled_web_map">XYZ tile system</ulink>.</refpurpose>
+		</refnamediv>
+
+		<refsynopsisdiv>
+		<funcsynopsis>
+		  <funcprototype>
+			<funcdef>geometry <function>ST_TileEnvelope</function></funcdef>
+			<paramdef><type>integer</type> <parameter>tileZoom</parameter></paramdef>
+			<paramdef><type>integer</type> <parameter>tileX</parameter></paramdef>
+			<paramdef><type>integer</type> <parameter>tileY</parameter></paramdef>
+			<paramdef choice="opt"><type>geometry</type> <parameter>bounds=SRID=3857;LINESTRING(-20037508.342789 -20037508.342789,20037508.342789 20037508.342789)</parameter></paramdef>
+		  </funcprototype>
+		 </funcsynopsis>
+		</refsynopsisdiv>
+
+		<refsection>
+			<title>Description</title>
+
+			<para>Creates a rectangular Polygon in <ulink url="https://en.wikipedia.org/wiki/Web_Mercator_projection">Web Mercator</ulink> (SRID:3857) using the <ulink url="https://en.wikipedia.org/wiki/Tiled_web_map">XYZ tile system</ulink>. By default, the bounds are the in EPSG:3857 using the standard range of the Web Mercator system (-20037508.342789, 20037508.342789). The optional bounds parameter can be used to generate envelopes for any tiling scheme: provide a geometry that has the SRID and extent of the initial "zoom level zero" square within which the tile system is to be inscribed.</para>
+
+			<para>Availability: 3.0</para>
+
+		</refsection>
+
+		<refsection>
+		<title>Example: Building a tile envelope</title>
+		 <programlisting>SELECT ST_AsText( ST_TileEnvelope(2, 1, 1) );
+
+ st_astext
+------------------------------
+ POLYGON((-10018754.1713945 0,-10018754.1713945 10018754.1713945,0 10018754.1713945,0 0,-10018754.1713945 0))
+
+SELECT ST_AsText( ST_TileEnvelope(3, 1, 1, ST_MakeEnvelope(-180, -90, 180, 90, 4326) ) );
+
+                      st_astext                       
+------------------------------------------------------
+ POLYGON((-135 45,-135 67.5,-90 67.5,-90 45,-135 45))
+</programlisting>
+		</refsection>
+		<refsection>
+			<title>See Also</title>
+			<para><xref linkend="ST_MakeEnvelope" /></para>
+		</refsection>
+	</refentry>
+
+  </sect1>

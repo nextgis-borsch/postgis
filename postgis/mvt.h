@@ -38,7 +38,6 @@
 #include "access/htup.h"
 #include "../postgis_config.h"
 #include "liblwgeom.h"
-#include "liblwgeom_internal.h"
 #include "lwgeom_pg.h"
 #include "lwgeom_log.h"
 
@@ -46,14 +45,27 @@
 
 #include "vector_tile.pb-c.h"
 
-struct mvt_agg_context {
+typedef struct mvt_column_cache
+{
+    uint32_t *column_keys_index;
+    uint32_t *column_oid;
+    Datum *values;
+    bool *nulls;
+    TupleDesc tupdesc;
+} mvt_column_cache;
+
+typedef struct mvt_agg_context
+{
 	char *name;
 	uint32_t extent;
+	char *id_name;
+	uint32_t id_index;
 	char *geom_name;
 	uint32_t geom_index;
 	HeapTupleHeader row;
 	VectorTile__Tile__Feature *feature;
 	VectorTile__Tile__Layer *layer;
+	VectorTile__Tile *tile;
 	size_t features_capacity;
 	struct mvt_kv_key *keys_hash;
 	struct mvt_kv_string_value *string_values_hash;
@@ -64,14 +76,19 @@ struct mvt_agg_context {
 	struct mvt_kv_bool_value *bool_values_hash;
 	uint32_t values_hash_i;
 	uint32_t keys_hash_i;
-	uint32_t c;
-};
+	uint32_t row_columns;
+	mvt_column_cache column_cache;
+} mvt_agg_context;
 
-LWGEOM *mvt_geom(const LWGEOM *geom, const GBOX *bounds, uint32_t extent, uint32_t buffer,
-	bool clip_geom);
-void mvt_agg_init_context(struct mvt_agg_context *ctx);
-void mvt_agg_transfn(struct mvt_agg_context *ctx);
-uint8_t *mvt_agg_finalfn(struct mvt_agg_context *ctx);
+/* Prototypes */
+LWGEOM *mvt_geom(LWGEOM *geom, const GBOX *bounds, uint32_t extent, uint32_t buffer, bool clip_geom);
+void mvt_agg_init_context(mvt_agg_context *ctx);
+void mvt_agg_transfn(mvt_agg_context *ctx);
+bytea *mvt_agg_finalfn(mvt_agg_context *ctx);
+bytea *mvt_ctx_serialize(mvt_agg_context *ctx);
+mvt_agg_context * mvt_ctx_deserialize(const bytea *ba);
+mvt_agg_context * mvt_ctx_combine(mvt_agg_context *ctx1, mvt_agg_context *ctx2);
+
 
 #endif  /* HAVE_LIBPROTOBUF */
 

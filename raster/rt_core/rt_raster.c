@@ -368,7 +368,7 @@ rt_raster_set_srid(rt_raster raster, int32_t srid) {
 	_rt_raster_geotransform_warn_offline_band(raster);
 }
 
-int
+uint16_t
 rt_raster_get_num_bands(rt_raster raster) {
 
 
@@ -767,10 +767,8 @@ rt_raster_cell_to_geopoint(
 		memcpy(_gt, gt, sizeof(double) * 6);
 
 	/* scale of matrix is not set */
-	if (
-		FLT_EQ(_gt[1], 0) ||
-		FLT_EQ(_gt[5], 0)
-	) {
+	if (FLT_EQ(_gt[1], 0.0) || FLT_EQ(_gt[5], 0.0))
+	{
 		rt_raster_get_geotransform_matrix(raster, _gt);
 	}
 
@@ -1006,7 +1004,8 @@ rt_raster_compute_skewed_raster(
 	if (scale == NULL)
 		return NULL;
 	for (i = 0; i < 2; i++) {
-		if (FLT_EQ(scale[i], 0)) {
+		if (FLT_EQ(scale[i], 0.0))
+		{
 			rterror("rt_raster_compute_skewed_raster: Scale cannot be zero");
 			return 0;
 		}
@@ -1020,12 +1019,8 @@ rt_raster_compute_skewed_raster(
 	_gt[5] *= -1;
 
 	/* skew not provided or skew is zero, return raster of correct dim and spatial attributes */
-	if (
-		(skew == NULL) || (
-			FLT_EQ(skew[0], 0) &&
-			FLT_EQ(skew[1], 0)
-		)
-	) {
+	if ((skew == NULL) || (FLT_EQ(skew[0], 0.0) && FLT_EQ(skew[1], 0.0)))
+	{
 		int _dim[2] = {
 			(int) fmax((fabs(extent.MaxX - extent.MinX) + (fabs(scale[0]) / 2.)) / fabs(scale[0]), 1),
 			(int) fmax((fabs(extent.MaxY - extent.MinY) + (fabs(scale[1]) / 2.)) / fabs(scale[1]), 1)
@@ -1262,11 +1257,11 @@ rt_raster_compute_skewed_raster(
 			return NULL;
 		}
 
-		if (covers)
-			break;
-
-		raster->width++;
-		raster->height++;
+		if (!covers)
+		{
+			raster->width++;
+			raster->height++;
+		}
 	}
 	while (!covers);
 
@@ -1309,17 +1304,13 @@ rt_raster_compute_skewed_raster(
 				rt_raster_destroy(raster);
 				return NULL;
 			}
+		} while (covers);
 
-			if (!covers) {
-				if (i < 1)
-					raster->width++;
-				else
-					raster->height++;
+		if (i < 1)
+			raster->width++;
+		else
+			raster->height++;
 
-				break;
-			}
-		}
-		while (covers);
 	}
 
 	GEOSGeom_destroy(ngeom);
@@ -1336,7 +1327,7 @@ rt_raster_compute_skewed_raster(
  */
 int
 rt_raster_is_empty(rt_raster raster) {
-	return (NULL == raster || raster->height <= 0 || raster->width <= 0);
+	return (!raster || raster->height == 0 || raster->width == 0);
 }
 
 /**
@@ -1603,6 +1594,9 @@ rt_raster_to_gdal(
 	rt_raster raster, const char *srs,
 	char *format, char **options, uint64_t *gdalsize
 ) {
+	const char *cc;
+	const char *vio;
+
 	GDALDriverH src_drv = NULL;
 	int destroy_src_drv = 0;
 	GDALDatasetH src_ds = NULL;
@@ -1642,6 +1636,18 @@ rt_raster_to_gdal(
 		return 0;
 	}
 	RASTER_DEBUG(3, "Output driver loaded");
+
+	/* CreateCopy support */
+	cc = GDALGetMetadataItem(rtn_drv, GDAL_DCAP_CREATECOPY, NULL);
+	/* VirtualIO support */
+	vio = GDALGetMetadataItem(rtn_drv, GDAL_DCAP_VIRTUALIO, NULL);
+
+	if (cc == NULL || vio == NULL) {
+		rterror("rt_raster_to_gdal: Output GDAL driver does not support CreateCopy and/or VirtualIO");
+		GDALClose(src_ds);
+		if (destroy_src_drv) GDALDestroyDriver(src_drv);
+		return 0;
+	}
 
 	/* convert GDAL MEM raster to output format */
 	RASTER_DEBUG(3, "Copying GDAL MEM raster to memory file in output format");
@@ -1696,14 +1702,15 @@ rt_raster_to_gdal(
  * Returns a set of available GDAL drivers
  *
  * @param drv_count : number of GDAL drivers available
- * @param cancc : if non-zero, filter drivers to only those
+ * @param can_write : if non-zero, filter drivers to only those
  *   with support for CreateCopy and VirtualIO
  *
  * @return set of "gdaldriver" values of available GDAL drivers
  */
 rt_gdaldriver
-rt_raster_gdal_drivers(uint32_t *drv_count, uint8_t cancc) {
-	const char *state;
+rt_raster_gdal_drivers(uint32_t *drv_count, uint8_t can_write) {
+	const char *cc;
+	const char *vio;
 	const char *txt;
 	int txt_len;
 	GDALDriverH *drv = NULL;
@@ -1730,19 +1737,28 @@ rt_raster_gdal_drivers(uint32_t *drv_count, uint8_t cancc) {
 #ifdef GDAL_DCAP_RASTER
 		/* Starting with GDAL 2.0, vector drivers can also be returned */
 		/* Only keep raster drivers */
-		state = GDALGetMetadataItem(drv, GDAL_DCAP_RASTER, NULL);
-		if (state == NULL || !EQUAL(state, "YES"))
+		const char *is_raster;
+		is_raster = GDALGetMetadataItem(drv, GDAL_DCAP_RASTER, NULL);
+		if (is_raster == NULL || !EQUAL(is_raster, "YES"))
 			continue;
 #endif
 
-		if (cancc) {
-			/* CreateCopy support */
-			state = GDALGetMetadataItem(drv, GDAL_DCAP_CREATECOPY, NULL);
-			if (state == NULL) continue;
+		/* CreateCopy support */
+		cc = GDALGetMetadataItem(drv, GDAL_DCAP_CREATECOPY, NULL);
 
-			/* VirtualIO support */
-			state = GDALGetMetadataItem(drv, GDAL_DCAP_VIRTUALIO, NULL);
-			if (state == NULL) continue;
+		/* VirtualIO support */
+		vio = GDALGetMetadataItem(drv, GDAL_DCAP_VIRTUALIO, NULL);
+
+		if (can_write && (cc == NULL || vio == NULL))
+			continue;
+
+		/* we can always read what GDAL can load */
+		rtn[j].can_read = 1;
+		/* we require CreateCopy and VirtualIO support to write to GDAL */
+		rtn[j].can_write = (cc != NULL && vio != NULL);
+
+		if (rtn[j].can_write) {
+			RASTER_DEBUGF(3, "driver %s (%d) supports CreateCopy() and VirtualIO()", txt, i);
 		}
 
 		/* index of driver */
@@ -1751,10 +1767,6 @@ rt_raster_gdal_drivers(uint32_t *drv_count, uint8_t cancc) {
 		/* short name */
 		txt = GDALGetDriverShortName(drv);
 		txt_len = strlen(txt);
-
-		if (cancc) {
-			RASTER_DEBUGF(3, "driver %s (%d) supports CreateCopy() and VirtualIO()", txt, i);
-		}
 
 		txt_len = (txt_len + 1) * sizeof(char);
 		rtn[j].short_name = (char *) rtalloc(txt_len);
@@ -1829,7 +1841,7 @@ rt_raster_to_gdal_mem(
 	int allocNodataValues = 0;
 
 	int i;
-	int numBands;
+	uint32_t numBands;
 	uint32_t width = 0;
 	uint32_t height = 0;
 	rt_band rtband = NULL;
@@ -2023,9 +2035,9 @@ rt_raster_to_gdal_mem(
 
 		/* PT_8BSI requires manual setting of pixels */
 		if (pt == PT_8BSI) {
-			int nXBlocks, nYBlocks;
+			uint32_t nXBlocks, nYBlocks;
 			int nXBlockSize, nYBlockSize;
-			int iXBlock, iYBlock;
+			uint32_t iXBlock, iYBlock;
 			int nXValid, nYValid;
 			int iX, iY;
 			int iXMax, iYMax;
@@ -2169,7 +2181,7 @@ rt_raster_from_gdal_dataset(GDALDatasetH ds) {
 	uint32_t width = 0;
 	uint32_t height = 0;
 	uint32_t numBands = 0;
-	int i = 0;
+	uint32_t i = 0;
 	char *authname = NULL;
 	char *authcode = NULL;
 
@@ -2185,11 +2197,11 @@ rt_raster_from_gdal_dataset(GDALDatasetH ds) {
 	int x;
 	int y;
 
-	int nXBlocks, nYBlocks;
+	uint32_t nXBlocks, nYBlocks;
 	int nXBlockSize, nYBlockSize;
-	int iXBlock, iYBlock;
-	int nXValid, nYValid;
-	int iY;
+	uint32_t iXBlock, iYBlock;
+	uint32_t nXValid, nYValid;
+	uint32_t iY;
 
 	uint8_t *values = NULL;
 	uint32_t valueslen = 0;
@@ -2503,7 +2515,7 @@ rt_raster_gdal_rasterize(
 	char **options
 ) {
 	rt_raster rast = NULL;
-	int i = 0;
+	uint32_t i = 0;
 	int err = 0;
 
 	_rti_rasterize_arg arg = NULL;
@@ -2624,12 +2636,8 @@ rt_raster_gdal_rasterize(
 		_scale[1] = fabs(*scale_y);
 	}
 	/* user-defined width/height */
-	else if (
-		(NULL != width) &&
-		(NULL != height) &&
-		(FLT_NEQ(*width, 0.0)) &&
-		(FLT_NEQ(*height, 0.0))
-	) {
+	else if ((NULL != width) && (NULL != height) && (*width != 0) && (*height != 0))
+	{
 		_dim[0] = abs(*width);
 		_dim[1] = abs(*height);
 
@@ -2762,7 +2770,7 @@ rt_raster_gdal_rasterize(
 			/* check alignment flag: grid_xw */
 			if (
 				(NULL == ul_xw && NULL == ul_yw) &&
-				(NULL != grid_xw && NULL != grid_xw) &&
+				(NULL != grid_xw && NULL != grid_yw) &&
 				FLT_NEQ(*grid_xw, extent.MinX)
 			) {
 				/* do nothing */
@@ -2777,7 +2785,7 @@ rt_raster_gdal_rasterize(
 			/* check alignment flag: grid_yw */
 			if (
 				(NULL == ul_xw && NULL == ul_yw) &&
-				(NULL != grid_xw && NULL != grid_xw) &&
+				(NULL != grid_xw && NULL != grid_yw) &&
 				FLT_NEQ(*grid_yw, extent.MaxY)
 			) {
 				/* do nothing */
@@ -2794,7 +2802,7 @@ rt_raster_gdal_rasterize(
 			/* check alignment flag: grid_xw */
 			if (
 				(NULL == ul_xw && NULL == ul_yw) &&
-				(NULL != grid_xw && NULL != grid_xw) &&
+				(NULL != grid_xw && NULL != grid_yw) &&
 				FLT_NEQ(*grid_xw, extent.MinX)
 			) {
 				/* do nothing */
@@ -2810,7 +2818,7 @@ rt_raster_gdal_rasterize(
 			/* check alignment flag: grid_yw */
 			if (
 				(NULL == ul_xw && NULL == ul_yw) &&
-				(NULL != grid_xw && NULL != grid_xw) &&
+				(NULL != grid_xw && NULL != grid_yw) &&
 				FLT_NEQ(*grid_yw, extent.MaxY)
 			) {
 				/* do nothing */
@@ -2834,10 +2842,8 @@ rt_raster_gdal_rasterize(
 	}
 
 	/* reprocess extent if skewed */
-	if (
-		FLT_NEQ(_skew[0], 0) ||
-		FLT_NEQ(_skew[1], 0)
-	) {
+	if (FLT_NEQ(_skew[0], 0.0) || FLT_NEQ(_skew[1], 0.0))
+	{
 		rt_raster skewedrast;
 
 		RASTER_DEBUG(3, "Computing skewed extent's envelope");
@@ -3101,7 +3107,7 @@ rt_raster_gdal_rasterize(
 			_gt[1] = *scale_x;
 
 			/* check for skew */
-			if (NULL != skew_x && FLT_NEQ(*skew_x, 0))
+			if (NULL != skew_x && FLT_NEQ(*skew_x, 0.0))
 				_gt[2] = *skew_x;
 		}
 		/* positive scale-y */
@@ -3131,7 +3137,7 @@ rt_raster_gdal_rasterize(
 			_gt[5] = *scale_y;
 
 			/* check for skew */
-			if (NULL != skew_y && FLT_NEQ(*skew_y, 0))
+			if (NULL != skew_y && FLT_NEQ(*skew_y, 0.0))
 				_gt[4] = *skew_y;
 		}
 	}
@@ -3501,6 +3507,7 @@ rt_raster_from_two_rasters(
 			i = 0;
 			_offset[0][0] = 0.;
 			_offset[0][1] = 0.;
+			/* FALLTHROUGH */
 		case ET_LAST:
 		case ET_SECOND:
 			if (i < 0) {

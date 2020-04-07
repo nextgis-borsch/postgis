@@ -34,7 +34,10 @@
 #include "lwgeom_log.h"
 #include "lwgeom_pg.h"
 #include "geos_c.h"
-#include "lwgeom_backend_api.h"
+
+#ifdef HAVE_WAGYU
+#include "lwgeom_wagyu.h"
+#endif
 
 /*
  * This is required for builds against pgsql
@@ -62,50 +65,12 @@ _PG_init(void)
   coreIntHandler = pqsignal(SIGINT, handleInterrupt);
 
 #ifdef WIN32
-#if POSTGIS_GEOS_VERSION >= 34
   GEOS_interruptRegisterCallback(interruptCallback);
-#endif
   lwgeom_register_interrupt_callback(interruptCallback);
-#endif
-
-#if 0
-  /* Define custom GUC variables. */
-  DefineCustomIntVariable(
-    "postgis.debug.level", /* name */
-    "Sets the debugging level of PostGIS.", /* short_desc */
-    "This is an experimental configuration.", /* long_desc */
-    &postgis_debug_level, /* valueAddr */
-    0, 8, /* min-max */
-    0, /* bootValue */
-    PGC_SUSET, /* GucContext context */
-    GUC_UNIT_MS, /* int flags */
-    NULL, /* GucStringCheckHook check_hook */
-    NULL, /* GucStringAssignHook assign_hook */
-    NULL  /* GucShowHook show_hook */
-   );
-#endif
-
-#if 0
-  /* Define custom GUC variables. */
-  DefineCustomStringVariable(
-    "postgis.greeting.string", /* name */
-    "Sets the greeting string used on postgis module load.", /* short_desc */
-    "This is an experimental configuration.", /* long_desc */
-    &greeting, /* valueAddr */
-    "Welcome to PostGIS " POSTGIS_VERSION, /* bootValue */
-    PGC_SUSET, /* GucContext context */
-    GUC_UNIT_MS, /* int flags */
-    NULL, /* GucStringCheckHook check_hook */
-    NULL, /* GucStringAssignHook assign_hook */
-    NULL  /* GucShowHook show_hook */
-   );
 #endif
 
     /* install PostgreSQL handlers */
     pg_install_lwgeom_handlers();
-
-    /* initialize geometry backend */
-    lwgeom_init_backend();
 }
 
 /*
@@ -130,8 +95,10 @@ handleInterrupt(int sig)
    */
   /* printf("Interrupt requested\n"); fflush(stdout); */
 
-#if POSTGIS_GEOS_VERSION >= 34
   GEOS_interruptRequest();
+
+#ifdef HAVE_WAGYU
+  lwgeom_wagyu_interruptRequest();
 #endif
 
   /* request interruption of liblwgeom as well */

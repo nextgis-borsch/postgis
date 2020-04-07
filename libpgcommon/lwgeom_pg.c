@@ -20,6 +20,7 @@
 #include <executor/spi.h>
 #include <utils/guc.h>
 #include <utils/guc_tables.h>
+#include <catalog/namespace.h>
 
 #include "../postgis_config.h"
 #include "liblwgeom.h"
@@ -29,40 +30,121 @@
 #include <stdlib.h>
 #include <stdarg.h>
 
-#define PGC_ERRMSG_MAXLEN 256
+#define PGC_ERRMSG_MAXLEN 2048 //256
 
-/**
-* Utility to convert cstrings to textp pointers
-*/
-text*
-cstring2text(const char *cstring)
+/****************************************************************************************/
+/* Global to hold all the run-time constants */
+
+postgisConstants *POSTGIS_CONSTANTS = NULL;
+
+/* Utility call to lookup type oid given name and nspoid */
+static Oid TypenameNspGetTypid(const char *typname, Oid nsp_oid)
 {
-	text *output;
-	size_t sz;
-
-	/* Guard against null input */
-	if( !cstring )
-		return NULL;
-
-	sz = strlen(cstring);
-	output = palloc(sz + VARHDRSZ);
-	if ( ! output )
-		return NULL;
-	SET_VARSIZE(output, sz + VARHDRSZ);
-	if ( sz )
-		memcpy(VARDATA(output),cstring,sz);
-	return output;
+	return GetSysCacheOid2(TYPENAMENSP,
+#if POSTGIS_PGSQL_VERSION >= 120
+	                       Anum_pg_type_oid,
+#endif
+	                       PointerGetDatum(typname),
+	                       ObjectIdGetDatum(nsp_oid));
 }
 
-char*
-text2cstring(const text *textptr)
+/* Cache type lookups in per-session location */
+static postgisConstants *
+getPostgisConstants(FunctionCallInfo fcinfo)
 {
-	size_t size = VARSIZE(textptr) - VARHDRSZ;
-	char *str = lwalloc(size+1);
-	memcpy(str, VARDATA(textptr), size);
-	str[size]='\0';
-	return str;
+	char *nsp_name;
+	Oid nsp_oid;
+	postgisConstants *constants;
+
+	/* For some reason we have a hobbled fcinfo/flinfo */
+	if (!fcinfo || !fcinfo->flinfo) return NULL;
+
+	/* Allocate in the CacheContext so we don't lose this at the end of the statement */
+	constants = MemoryContextAlloc(CacheMemoryContext, sizeof(postgisConstants));
+
+	/* early exit if we cannot lookup nsp_name, cf #4067 */
+	nsp_oid = get_func_namespace(fcinfo->flinfo->fn_oid);
+	if (!nsp_oid) return NULL;
+	nsp_name = get_namespace_name(nsp_oid);
+	constants->install_nsp_oid = nsp_oid;
+	constants->install_nsp = MemoryContextStrdup(CacheMemoryContext, nsp_name);
+	elog(DEBUG4, "%s located %s in namespace %s", __func__, get_func_name(fcinfo->flinfo->fn_oid), nsp_name);
+
+	/* Lookup all the type names in the context of the install schema */
+	constants->geometry_oid = TypenameNspGetTypid("geometry", nsp_oid);
+	constants->geography_oid = TypenameNspGetTypid("geography", nsp_oid);
+	constants->box2df_oid = TypenameNspGetTypid("box2df", nsp_oid);
+	constants->box3d_oid = TypenameNspGetTypid("box3d", nsp_oid);
+	constants->gidx_oid = TypenameNspGetTypid("gidx", nsp_oid);
+	constants->raster_oid = TypenameNspGetTypid("raster", nsp_oid);
+
+	/* Done */
+	return constants;
 }
+
+Oid
+postgis_oid(postgisType typ)
+{
+	/* Use a schema qualified, cached lookup if we can */
+	postgisConstants *cnsts = POSTGIS_CONSTANTS;
+	if (cnsts)
+	{
+		switch (typ)
+		{
+			case GEOMETRYOID:
+				return cnsts->geometry_oid;
+			case GEOGRAPHYOID:
+				return cnsts->geography_oid;
+			case BOX3DOID:
+				return cnsts->box3d_oid;
+			case BOX2DFOID:
+				return cnsts->box2df_oid;
+			case GIDXOID:
+				return cnsts->gidx_oid;
+			case RASTEROID:
+				return cnsts->raster_oid;
+			case POSTGISNSPOID:
+				return cnsts->install_nsp_oid;
+			default:
+				return InvalidOid;
+		}
+	}
+	/* Fall back to a bare lookup and hope the type in is */
+	/* the search_path */
+	else
+	{
+		switch (typ)
+		{
+			case GEOMETRYOID:
+				return TypenameGetTypid("geometry");
+			case GEOGRAPHYOID:
+				return TypenameGetTypid("geography");
+			case BOX3DOID:
+				return TypenameGetTypid("box3d");
+			case BOX2DFOID:
+				return TypenameGetTypid("box2df");
+			case GIDXOID:
+				return TypenameGetTypid("gidx");
+			case RASTEROID:
+				return TypenameGetTypid("raster");
+			default:
+				return InvalidOid;
+		}
+	}
+}
+
+Oid
+postgis_oid_fcinfo(FunctionCallInfo fcinfo, postgisType oid)
+{
+	/* Cache the info if we don't already have it */
+	if (!POSTGIS_CONSTANTS)
+		POSTGIS_CONSTANTS = getPostgisConstants(fcinfo);;
+
+	if (!POSTGIS_CONSTANTS) return InvalidOid;
+	return postgis_oid(oid);
+}
+
+/****************************************************************************************/
 
 
 /*
@@ -106,7 +188,6 @@ pg_unparser_errhint(LWGEOM_UNPARSER_RESULT *lwg_unparser_result)
 	/* For the unparser simply output the error message without any associated HINT */
 	elog(ERROR, "%s", lwg_unparser_result->message);
 }
-
 
 static void *
 pg_alloc(size_t size)
@@ -203,13 +284,12 @@ pg_install_lwgeom_handlers(void)
 {
 	/* install PostgreSQL handlers */
 	lwgeom_set_handlers(pg_alloc, pg_realloc, pg_free, pg_error, pg_notice);
+	/*
+	If you want to try with malloc:
+	lwgeom_set_handlers(NULL, NULL, NULL, pg_error, pg_notice);
+	*/
 	lwgeom_set_debuglogger(pg_debug);
 }
-
-/**
-* Utility method to call the serialization and then set the
-* PgSQL varsize header appropriately with the serialized size.
-*/
 
 /**
 * Utility method to call the serialization and then set the
@@ -357,3 +437,101 @@ postgis_guc_find_option(const char *name)
 	return 1;
 }
 
+
+#if POSTGIS_PGSQL_VERSION < 100
+Datum
+CallerFInfoFunctionCall1(PGFunction func, FmgrInfo *flinfo, Oid collation, Datum arg1)
+{
+	FunctionCallInfoData fcinfo;
+	Datum		result;
+
+	InitFunctionCallInfoData(fcinfo, flinfo, 1, collation, NULL, NULL);
+
+	fcinfo.arg[0] = arg1;
+	fcinfo.argnull[0] = false;
+
+	result = (*func) (&fcinfo);
+
+	/* Check for null result, since caller is clearly not expecting one */
+	if (fcinfo.isnull)
+		elog(ERROR, "function %p returned NULL", (void *) func);
+
+	return result;
+}
+
+Datum
+CallerFInfoFunctionCall2(PGFunction func, FmgrInfo *flinfo, Oid collation, Datum arg1, Datum arg2)
+{
+	FunctionCallInfoData fcinfo;
+	Datum		result;
+
+	InitFunctionCallInfoData(fcinfo, flinfo, 2, collation, NULL, NULL);
+
+	fcinfo.arg[0] = arg1;
+	fcinfo.arg[1] = arg2;
+	fcinfo.argnull[0] = false;
+	fcinfo.argnull[1] = false;
+
+	result = (*func) (&fcinfo);
+
+	/* Check for null result, since caller is clearly not expecting one */
+	if (fcinfo.isnull)
+		elog(ERROR, "function %p returned NULL", (void *) func);
+
+	return result;
+}
+
+#else
+
+#if POSTGIS_PGSQL_VERSION < 120
+Datum
+CallerFInfoFunctionCall3(PGFunction func, FmgrInfo *flinfo, Oid collation, Datum arg1, Datum arg2, Datum arg3)
+{
+	FunctionCallInfoData fcinfo;
+	Datum		result;
+
+	InitFunctionCallInfoData(fcinfo, flinfo, 3, collation, NULL, NULL);
+
+	fcinfo.arg[0] = arg1;
+	fcinfo.arg[1] = arg2;
+	fcinfo.arg[2] = arg3;
+	fcinfo.argnull[0] = false;
+	fcinfo.argnull[1] = false;
+	fcinfo.argnull[2] = false;
+
+	result = (*func) (&fcinfo);
+
+	/* Check for null result, since caller is clearly not expecting one */
+	if (fcinfo.isnull)
+		elog(ERROR, "function %p returned NULL", (void *) func);
+
+	return result;
+}
+#else
+/* PgSQL 12+ still lacks 3-argument version of these functions */
+Datum
+CallerFInfoFunctionCall3(PGFunction func, FmgrInfo *flinfo, Oid collation, Datum arg1, Datum arg2, Datum arg3)
+{
+    LOCAL_FCINFO(fcinfo, 3);
+    Datum       result;
+
+    InitFunctionCallInfoData(*fcinfo, flinfo, 3, collation, NULL, NULL);
+
+    fcinfo->args[0].value = arg1;
+    fcinfo->args[0].isnull = false;
+    fcinfo->args[1].value = arg2;
+    fcinfo->args[1].isnull = false;
+    fcinfo->args[2].value = arg3;
+    fcinfo->args[2].isnull = false;
+
+    result = (*func) (fcinfo);
+
+    /* Check for null result, since caller is clearly not expecting one */
+    if (fcinfo->isnull)
+        elog(ERROR, "function %p returned NULL", (void *) func);
+
+    return result;
+}
+#endif
+
+#endif

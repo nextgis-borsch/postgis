@@ -17,14 +17,17 @@
 #include "shp2pgsql-core.h"
 #include "../liblwgeom/liblwgeom.h" /* for SRID_UNKNOWN */
 
+#define xstr(s) str(s)
+#define str(s) #s
+
 static void
 usage()
 {
-	printf(_( "RELEASE: %s (r%d)\n" ), POSTGIS_LIB_VERSION, POSTGIS_SVN_REVISION);
+	printf(_( "RELEASE: %s (%s)\n" ), POSTGIS_LIB_VERSION, xstr(POSTGIS_REVISION));
 	printf(_( "USAGE: shp2pgsql [<options>] <shapefile> [[<schema>.]<table>]\n"
 	          "OPTIONS:\n" ));
 	printf(_( "  -s [<from>:]<srid> Set the SRID field. Defaults to %d.\n"
-	          "      Optionally reprojects from given SRID (cannot be used with -D).\n"),
+	          "      Optionally reprojects from given SRID.\n"),
 	          SRID_UNKNOWN);
 	printf(_( " (-d|a|c|p) These are mutually exclusive options:\n"
 	          "     -d  Drops the table, then recreates it and populates\n"
@@ -250,12 +253,6 @@ main (int argc, char **argv)
 		exit(1);
 	}
 
-	if (config->dump_format && config->shp_sr_id != SRID_UNKNOWN)
-	{
-		fprintf(stderr, "Invalid argument combination - cannot use -D with -s FROM_SRID:TO_SRID\n");
-		exit(1);
-	}
-
 	/* Determine the shapefile name from the next argument, if no shape file, exit. */
 	if (pgis_optind < argc)
 	{
@@ -452,6 +449,8 @@ main (int argc, char **argv)
 		free(config->schema);
 	if (config->table)
 		free(config->table);
+	if (config->encoding)
+		free(config->encoding);
 	free(config);
 
 	return 0;

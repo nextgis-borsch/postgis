@@ -65,7 +65,7 @@ Datum RASTER_fromGDALRaster(PG_FUNCTION_ARGS)
 	int data_len = 0;
 	VSILFILE *vsifp = NULL;
 	GDALDatasetH hdsSrc;
-	int srid = -1; /* -1 for NULL */
+	int32_t srid = -1; /* -1 for NULL */
 
 	rt_pgraster *pgraster = NULL;
 	rt_raster raster;
@@ -77,7 +77,7 @@ Datum RASTER_fromGDALRaster(PG_FUNCTION_ARGS)
 	/* get data */
 	bytea_data = (bytea *) PG_GETARG_BYTEA_P(0);
 	data = (uint8_t *) VARDATA(bytea_data);
-	data_len = VARSIZE(bytea_data) - VARHDRSZ;
+	data_len = VARSIZE_ANY_EXHDR(bytea_data);
 
 	/* process srid */
 	/* NULL srid means try to determine SRID from bytea */
@@ -155,7 +155,7 @@ Datum RASTER_asGDALRaster(PG_FUNCTION_ARGS)
 	char **options = NULL;
 	text *optiontext = NULL;
 	char *option = NULL;
-	int srid = SRID_UNKNOWN;
+	int32_t srid = SRID_UNKNOWN;
 	char *srs = NULL;
 
 	ArrayType *array;
@@ -250,7 +250,7 @@ Datum RASTER_asGDALRaster(PG_FUNCTION_ARGS)
 
 				if (strlen(option)) {
 					options[j] = (char *) palloc(sizeof(char) * (strlen(option) + 1));
-					options[j] = option;
+					strcpy(options[j], option);
 					j++;
 				}
 			}
@@ -321,21 +321,16 @@ Datum RASTER_asGDALRaster(PG_FUNCTION_ARGS)
 		PG_RETURN_NULL();
 	}
 	SET_VARSIZE(result, result_size);
-	memcpy(VARDATA(result), gdal, VARSIZE(result) - VARHDRSZ);
-
-	/* for test output
-	FILE *fh = NULL;
-	fh = fopen("/tmp/out.dat", "w");
-	fwrite(gdal, sizeof(uint8_t), gdal_size, fh);
-	fclose(fh);
-	*/
+	memcpy(VARDATA(result), gdal, VARSIZE_ANY_EXHDR(result));
 
 	/* free gdal mem buffer */
-	if (gdal) CPLFree(gdal);
+	CPLFree(gdal);
 
 	POSTGIS_RT_DEBUG(3, "RASTER_asGDALRaster: Returning pointer to GDAL raster");
 	PG_RETURN_POINTER(result);
 }
+
+#define VALUES_LENGTH 6
 
 /**
  * Returns available GDAL drivers
@@ -362,7 +357,7 @@ Datum RASTER_getGDALDrivers(PG_FUNCTION_ARGS)
 		/* switch to memory context appropriate for multiple function calls */
 		oldcontext = MemoryContextSwitchTo(funcctx->multi_call_memory_ctx);
 
-		drv_set = rt_raster_gdal_drivers(&drv_count, 1);
+		drv_set = rt_raster_gdal_drivers(&drv_count, 0);
 		if (NULL == drv_set || !drv_count) {
 			elog(NOTICE, "No GDAL drivers found");
 			MemoryContextSwitchTo(oldcontext);
@@ -403,24 +398,27 @@ Datum RASTER_getGDALDrivers(PG_FUNCTION_ARGS)
 
 	/* do when there is more left to send */
 	if (call_cntr < max_calls) {
-		int values_length = 4;
-		Datum values[values_length];
-		bool nulls[values_length];
+		Datum values[VALUES_LENGTH];
+		bool nulls[VALUES_LENGTH];
 		HeapTuple tuple;
 		Datum result;
 
 		POSTGIS_RT_DEBUGF(3, "Result %d", call_cntr);
 
-		memset(nulls, FALSE, sizeof(bool) * values_length);
+		memset(nulls, FALSE, sizeof(bool) * VALUES_LENGTH);
 
 		values[0] = Int32GetDatum(drv_set2[call_cntr].idx);
 		values[1] = CStringGetTextDatum(drv_set2[call_cntr].short_name);
 		values[2] = CStringGetTextDatum(drv_set2[call_cntr].long_name);
-		values[3] = CStringGetTextDatum(drv_set2[call_cntr].create_options);
+		values[3] = BoolGetDatum(drv_set2[call_cntr].can_read);
+		values[4] = BoolGetDatum(drv_set2[call_cntr].can_write);
+		values[5] = CStringGetTextDatum(drv_set2[call_cntr].create_options);
 
 		POSTGIS_RT_DEBUGF(4, "Result %d, Index %d", call_cntr, drv_set2[call_cntr].idx);
 		POSTGIS_RT_DEBUGF(4, "Result %d, Short Name %s", call_cntr, drv_set2[call_cntr].short_name);
 		POSTGIS_RT_DEBUGF(4, "Result %d, Full Name %s", call_cntr, drv_set2[call_cntr].long_name);
+		POSTGIS_RT_DEBUGF(4, "Result %d, Can Read %u", call_cntr, drv_set2[call_cntr].can_read);
+		POSTGIS_RT_DEBUGF(4, "Result %d, Can Write %u", call_cntr, drv_set2[call_cntr].can_write);
 		POSTGIS_RT_DEBUGF(5, "Result %d, Create Options %s", call_cntr, drv_set2[call_cntr].create_options);
 
 		/* build a tuple */
@@ -544,13 +542,15 @@ Datum RASTER_GDALWarp(PG_FUNCTION_ARGS)
 	/* scale x */
 	if (!PG_ARGISNULL(4)) {
 		scale[0] = PG_GETARG_FLOAT8(4);
-		if (FLT_NEQ(scale[0], 0)) scale_x = &scale[0];
+		if (FLT_NEQ(scale[0], 0.0))
+			scale_x = &scale[0];
 	}
 
 	/* scale y */
 	if (!PG_ARGISNULL(5)) {
 		scale[1] = PG_GETARG_FLOAT8(5);
-		if (FLT_NEQ(scale[1], 0)) scale_y = &scale[1];
+		if (FLT_NEQ(scale[1], 0.0))
+			scale_y = &scale[1];
 	}
 
 	/* grid alignment x */
@@ -568,13 +568,15 @@ Datum RASTER_GDALWarp(PG_FUNCTION_ARGS)
 	/* skew x */
 	if (!PG_ARGISNULL(8)) {
 		skew[0] = PG_GETARG_FLOAT8(8);
-		if (FLT_NEQ(skew[0], 0)) skew_x = &skew[0];
+		if (FLT_NEQ(skew[0], 0.0))
+			skew_x = &skew[0];
 	}
 
 	/* skew y */
 	if (!PG_ARGISNULL(9)) {
 		skew[1] = PG_GETARG_FLOAT8(9);
-		if (FLT_NEQ(skew[1], 0)) skew_y = &skew[1];
+		if (FLT_NEQ(skew[1], 0.0))
+			skew_y = &skew[1];
 	}
 
 	/* width */
@@ -645,7 +647,7 @@ Datum RASTER_GDALWarp(PG_FUNCTION_ARGS)
 
 		dst_srs = rtpg_getSR(dst_srid);
 		if (NULL == dst_srs) {
-			if (!no_srid) pfree(src_srs);
+			pfree(src_srs);
 			rt_raster_destroy(raster);
 			PG_FREE_IF_COPY(pgraster, 0);
 			elog(ERROR, "RASTER_GDALWarp: Target SRID (%d) is unknown", dst_srid);

@@ -1,3 +1,330 @@
+PostGIS 3.0.1
+2020/02/20
+
+* Breaking Changes *
+  - #4637 svn number replaced by git hash in version output
+    (Sandro Santilli, Regina Obe, Bas Couwenberg)
+
+* New Features *
+ - #4617, Add configure switch `--without-phony-revision` (Raúl Marín)
+          Use to prevent postgis_revision.h from rebuilding
+          (when building from tar ball) and building in a gitted folder.
+
+* Bug Fixes and Enhancements *
+  - #4558, Fix oversimplification of polygon inner rings (Raúl Marín)
+  - #4588, Fix update when ST_Union(geometry) doesn't exist (Raúl Marín)
+  - #4590, Fix pg_upgrade issue with ST_LineCrossingDirection (Raúl Marín)
+  - #4599, ST_AddPoint: Accept -1 as a valid position (Raúl Marín)
+  - #4600, Improve precision of ST_TileEnvelope (Raúl Marín)
+  - #4605, Fix postgis_upgrade.pl with PostgreSQL 12 (Matti Linnanvuori)
+  - #4606, Respect user's LDFLAGS in postgis module build (Sandro Santilli)
+  - #4610, Add in logic to install postgis_tiger_geocoder from unpackaged (Regina Obe)
+  - #4581, Installing postgis_raster from unpackaged tries to use wrong schema (Regina Obe)
+  - #4596, The script to generate nation_script_load.sh is missing
+           a trailing quote (Bill Mill)
+  - #4608, PG12: Fix several bugs in the index support function (Raúl Marín)
+  - #4621, Prevent stack overflow when parsing WKB (Raúl Marín)
+  - #4626, Support pkg-config for libxml2 (Bas Couwenberg)
+  - #4632, Allow building with PostgreSQL 13 (Raúl Marín)
+  - #4570, Include raster2pgsql in windows packaging (Regina Obe)
+
+
+PostGIS 3.0.0
+2019/10/20
+
+This version requires PostgreSQL 9.5+-12 and GEOS >= 3.6+
+Additional features enabled if you are running Proj6+, PostgreSQL 12
+and GEOS 3.8.0
+
+* Breaking Changes *
+  - #4267, Bump minimum GEOS version to 3.6 (Regina Obe, Darafei Praliaskouski)
+  - #3888, Raster support now available as a separate extension
+           (Sandro Santilli)
+  - #3807, Extension library files no longer include the minor version.
+           Use New configure switch --with-library-minor-version
+           if you need the old behavior (Regina Obe)
+  - #4230, ND box operators (overlaps, contains, within, equals) now
+           don't look on dimensions that aren't present in both operands.
+           Please REINDEX your ND indexes after upgrade. (Darafei Praliaskouski)
+  - #4229, Dropped support for PostgreSQL < 9.5. (Darafei Praliaskouski)
+  - #4260, liblwgeom headers are not installed anymore.
+           If your project depends on them available, please use
+           librttopo instead. (Darafei Praliaskouski)
+  - #4258, Remove SFCGAL support for ST_Area, ST_Distance, ST_Intersection,
+           ST_Difference, ST_Union, ST_Intersects, ST_3DIntersects, ST_3DDistance
+           and postgis.backend switch (Darafei Praliaskouski)
+  - #4267, Enable Proj 6 deprecated APIs (Darafei Praliaskouski, Raúl Marín)
+  - #4268, Bump minimum SFCGAL version to 1.3.1 (Darafei Praliaskouski)
+  - #4331, ST_3DMakeBox now returns error instead of a miniscule box (Regina Obe)
+  - #4342, Removed "versioned" variants of ST_AsGeoJSON and ST_AsKML (Paul Ramsey)
+  - #4356, ST_Accum removed. Use array_agg instead. (Darafei Praliaskouski)
+  - #4414, Include version number in address_standardizer lib (Raúl Marín)
+  - #4334, Fix upgrade issues related to renamed function parameters (Raúl Marín)
+  - #4442, raster2pgsql now skips NODATA tiles. Use -k option if you still want
+           them in database for some reason. (Darafei Praliaskouski)
+  - #4433, 32-bit hash fix (requires reindexing hash(geometry) indexes) (Raúl Marín)
+  - #3383, Sorting now uses Hilbert curve and Postgres Abbreviated Compare.
+           You need to REINDEX your btree indexes if you had them.
+           (Darafei Praliaskouski)
+
+* New Features *
+  - #2902, postgis_geos_noop (Sandro Santilli)
+  - #4128, ST_AsMVT support for Feature ID (Stepan Kuzmin)
+  - #4230, SP-GiST and GiST support for ND box operators overlaps, contains,
+           within, equals (Esteban Zimányi and Arthur Lesuisse from Université
+           Libre de Bruxelles (ULB), Darafei Praliaskouski)
+  - #4171, ST_3DLineInterpolatePoint (Julien Cabieces, Vincent Mora)
+  - #4311, Introduce WAGYU to validate MVT polygons. This option requires a C++11
+           compiler and will use CXXFLAGS (not CFLAGS). Add `--without-wagyu`
+           to disable this option and keep the behaviour from 2.5 (Raúl Marín)
+  - #1833, ST_AsGeoJSON(row) generates full GeoJSON Features (Joe Conway)
+  - #3687, Casts json(geometry) and jsonb(geometry) for implicit GeoJSON
+           generation (Paul Ramsey)
+  - #4198, Add ST_ConstrainedDelaunayTriangles SFCGAL function (Darafei
+           Praliaskouski)
+
+* Enhancements *
+  - #4341, Using "support function" API in PgSQL 12+ to replace SQL inlining
+           as the mechanism for providing index support under ST_Intersects, et al
+  - #4330, postgis_restore OOM when output piped to an intermediate process
+           (Hugh Ranalli)
+  - #4322, Support for Proj 6+ API, bringing more accurate datum transforms
+           and support for WKT projections
+  - #4153, ST_Segmentize now splits segments proportionally (Darafei
+           Praliaskouski).
+  - #4162, ST_DWithin documentation examples for storing geometry and
+           radius in table (Darafei Praliaskouski, github user Boscop).
+  - #4161 and #4294, ST_AsMVTGeom: Shortcut geometries smaller than the
+           resolution (Raúl Marín)
+  - #4176, ST_Intersects supports GEOMETRYCOLLECTION (Darafei Praliaskouski)
+  - #4181, ST_AsMVTGeom: Avoid type changes due to validation (Raúl Marín)
+  - #4183, ST_AsMVTGeom: Drop invalid geometries after simplification (Raúl Marín)
+  - #4196, Have postgis_extensions_upgrade() package unpackaged extensions
+           (Sandro Santilli)
+  - #4215, Use floating point compare in ST_DumpAsPolygons (Darafei Praliaskouski)
+  - #4155, Support for GEOMETRYCOLLECTION, POLYGON, TIN, TRIANGLE in
+           ST_LocateBetween and ST_LocateBetweenElevations (Darafei Praliaskouski)
+  - #2767, Documentation for AddRasterConstraint optional parameters (Sunveer Singh)
+  - #4244, Avoid unaligned memory access in BOX2D_out (Raúl Marín)
+  - #4139, Make mixed-dimension ND index build tree correctly (Darafei Praliaskouski,
+           Arthur Lesuisse, Andrew Gierth, Raúl Marín)
+  - #4262, Document MULTISURFACE compatibility of ST_LineToCurve (Steven Ottens)
+  - #4276, ST_AsGeoJSON documentation refresh (Darafei Praliaskouski)
+  - #4292, ST_AsMVT: parse JSON numeric values with decimals as doubles (Raúl Marín)
+  - #4300, ST_AsMVTGeom: Always return the simplest geometry (Raúl Marín)
+  - #4301, ST_Subdivide: fix endless loop on coordinates near coincident to bounds
+           (Darafei Praliaskouski)
+  - #4289, ST_AsMVTGeom: Transform coordinates space before clipping (Raúl Marín)
+  - #4272, Improve notice message when unable to compute stats (Raúl Marín)
+  - #4313, #4307, PostgreSQL 12 compatibility (Laurenz Albe, Raúl Marín)
+  - #4299, #4304, ST_GeneratePoints is now VOLATILE. IMMUTABLE version with
+           seed parameter added. (Mike Taves)
+  - #4278, ST_3DDistance and ST_3DIntersects now support Solid TIN and Solid
+           POLYHEDRALSURFACE (Darafei Praliaskouski)
+  - #4348, ST_AsMVTGeom (GEOS): Enforce validation at all times (Raúl Marín)
+  - #4295, Allow GEOMETRYCOLLECTION in ST_Overlaps, ST_Contains, ST_ContainsProperly,
+           ST_Covers, ST_CoveredBy, ST_Crosses, ST_Touches, ST_Disjoint, ST_Relate,
+           ST_Equals (Esteban Zimányi)
+  - #4340, ST_Union aggregate now can handle more than 1 GB of geometries
+           (Darafei Praliaskouski)
+  - #4378, Allow passing TINs as input to GEOS-backed functions (Darafei
+           Praliaskouski)
+  - #4368, Reorder LWGEOM struct members to minimize extra padding (Raúl Marín)
+  - #4141, Use uint64 to handle row counts in the topology extension (Raúl Marín)
+  - #4225, Upgrade tiger to use tiger 2018 census files
+  - #4412, Support ingesting rasters with NODATA=NaN (Darafei Praliaskouski)
+  - #4413, Raster tile size follows GeoTIFF block size on raster2pgsql -t auto
+           (Darafei Praliaskouski)
+  - #4422, Modernize Python 2 code to get ready for Python 3 (Christian Clauss)
+  - #4352, Use CREATE OR REPLACE AGGREGATE for PG12+ (Raúl Marín)
+  - #4394, Allow FULL OUTER JOIN on geometry equality operator (Darafei Praliaskouski)
+  - #4441, Make GiST penalty friendly to multi-column indexes and build single-column
+           ones faster. (Darafei Praliaskouski)
+  - #4403, Support for shp2pgsql ability to reproject with copy mode (-D) (Regina Obe)
+  - #4410, More descriptive error messages about SRID mismatch (Darafei Praliaskouski)
+  - #4399, TIN and Triangle output support in all output functions (Darafei
+           Praliaskouski)
+  - #3719, Impose minimum number of segments per arc during linearization
+           (Dan Baston / City of Helsinki, Raúl Marín)
+  - #4277, ST_GeomFromGeoJSON now marks SRID=4326 by default as per RFC7946,
+           ST_AsGeoJSON sets SRID in JSON output if it differs from 4326.
+           (Darafei Praliaskouski)
+  - #3979, postgis_sfcgal_noop() round trip function (Lucas C. Villa Real)
+  - #4328, ST_3DIntersects for 2D TINs. (Darafei Praliaskouski)
+  - #4509, Update geocoder for tiger 2019 (Regina Obe)
+
+
+PostGIS 2.5.3
+2019/08/11
+
+ * Bug fixes *
+
+  - #4348, ST_AsMVTGeom (GEOS): Enforce validation at all times (Raúl Marín)
+  - #4361, Fix postgis_type_name with (GEOMETRYM,3) (Matt Bretl)
+  - #4326, Fix circular arc distance calculation (Paul Ramsey)
+  - #4380, Simple TIN support to allow viz in QGIS (Paul Ramsey)
+  - #4388, AddRasterConstraints: Ignore NULLs when generating constraints (Raúl Marín)
+  - #4327, Avoid pfree'ing the result of getenv (Raúl Marín)
+  - #4406, Throw on invalid characters when decoding geohash (Raúl Marín)
+  - #4440, Internal type lookups fail over FDW (Paul Ramsey)
+  - #4445, Fix bug in lwgeom_le (Raúl Marín)
+  - #4466, Fix undefined behaviour in _postgis_gserialized_stats (Raúl Marín)
+  - #4209, Handle NULL geometry values in pgsql2shp (Paul Ramsey)
+  - #4419, Use protobuf version to enable/disable mvt/geobuf (Paul Ramsey)
+  - #4437, Handle POINT EMPTY in shape loader/dumper (Paul Ramsey)
+  - #4461, ST_AsTWKB doesn't always remove duplicate points (Nicklas Avén)
+  - #4459, Fix ST_Subdivide crash on intermediate EMPTY (Darafei Praliaskouski)
+  - #4470, ST_GeomFromGeoJSON crash on empty rings (Darafei Praliaskouski)
+  - #4420, update path does not exists for address_standardizer extension (Regina Obe)
+
+
+PostGIS 2.5.2
+2019/03/11
+
+ * Bug fixes *
+
+  - #4231, Support for PostgreSQL 12dev (remove use of pg_constraint.consrc)
+           (Regina Obe, Laurenz Albe)
+  - #4247, Avoid undefined behaviour in next_float functions (Raúl Marín)
+  - #4249, Fix undefined behaviour in raster intersection (Raúl Marín)
+  - #4246, Fix undefined behaviour in ST_3DDistance (Raúl Marín)
+  - #4244, Avoid unaligned memory access in BOX2D_out (Raúl Marín)
+  - #4139, Make mixed-dimension ND index build tree correctly.
+  WARNING: REINDEX your ND index on tables that have records with different M/Z
+           dimensions for &&& operator to work predictably.
+           (Darafei Praliaskouski, Arthur Lesuisse, Andrew Gierth, Raúl Marín)
+  - #4262, Document MULTISURFACE compatibility of ST_LineToCurve (Steven Ottens)
+  - #4267, Enable Proj 6 deprecated APIs (Darafei Praliaskouski, Raúl Marín)
+  - #4276, ST_AsGeoJSON documentation refresh (Darafei Praliaskouski)￼
+  - #4273, Tighter parsing of WKT (Paul Ramsey)
+  - #4292, ST_AsMVT: parse JSON numeric values with decimals as doubles (Raúl Marín)
+  - #4300, ST_AsMVTGeom: Always return the simplest geometry (Raúl Marín)
+  - #4301, ST_Subdivide: fix endless loop on coordinates near coincident to bounds
+           (Darafei Praliaskouski)
+  - #4261, Use AccessShareLock in spatial_index_read_extent (Paul Ramsey)
+  - #4289, ST_AsMVTGeom: Transform coordinates space before clipping (Raúl Marín)
+  - #4275, Avoid passing a NULL pointer to GEOSisEmpty (Raúl Marín)
+  - #4296, Use `server_version_num` instead of parsing `version()` (Raúl Marín)
+  - #4290, More robust geography distance (Paul Ramsey)
+  - #4283, Avoid final point duplicates for circle stroking (Paul Ramsey)
+  - #4314, ST_ClipByBox2D: Do not throw when the geometry is invalid (Raúl Marín)
+  - #4313, #4307, PostgreSQL 12 compatibility (Laurenz Albe, Raúl Marín)
+  - #4290, Schema qualify geometry casts in raster functions (Regina Obe)
+  - #4086, Constraint violation loading tiger_data (zcta5 geometry type) (Regina Obe)
+
+PostGIS 2.5.0
+2018/09/23
+
+WARNING: If compiling with PostgreSQL+JIT, LLVM >= 6 is required
+Supported PostgreSQL versions for this release are:
+PostgreSQL 9.4 - PostgreSQL 12 (in development)
+GEOS >= 3.5
+
+* New Features *
+  - #1847, SP-GiST 2D and 3D support for PostgreSQL 11+ (Esteban Zimányi and
+           Arthur Lesuisse from Université Libre de Bruxelles (ULB), Darafei
+           Praliaskouski)
+  - #4056, ST_FilterByM (Nicklas Avén)
+  - #4050, ST_ChaikinSmoothing (Nicklas Avén)
+  - #3989, ST_Buffer single sided option (Stephen Knox)
+  - #3876, ST_Angle function (Rémi Cura)
+  - #3564, ST_LineInterpolatePoints (Dan Baston)
+  - #3896, PostGIS_Extensions_Upgrade() (Regina Obe)
+  - #3913, Upgrade when creating extension from unpackaged (Sandro Santilli)
+  - #2256, _postgis_index_extent() for extent from index (Paul Ramsey)
+  - #3176, Add ST_OrientedEnvelope (Dan Baston)
+  - #4029, Add ST_QuantizeCoordinates (Dan Baston)
+  - #4063, Optional false origin point for ST_Scale (Paul Ramsey)
+  - #4082, Add ST_BandFileSize and ST_BandFileTimestamp,
+           extend ST_BandMetadata (Even Rouault)
+  - #2597, Add ST_Grayscale (Bborie Park)
+  - #4007, Add ST_SetBandPath (Bborie Park)
+  - #4008, Add ST_SetBandIndex (Bborie Park)
+
+* Breaking Changes *
+  - #4054, ST_SimplifyVW changed from > tolerance to >= tolerance
+  - #3885, version number removed from address_standardize lib file
+           (Regina Obe)
+  - #3893, raster support functions can only be loaded in the same schema
+           with core PostGIS functions. (Sandro Santilli)
+  - #4035, remove dummy pgis_abs type from aggregate/collect routines.
+           (Paul Ramsey)
+  - #4069, drop support for GEOS < 3.5 and PostgreSQL < 9.4 (Regina Obe)
+  - #4082, ST_BandMetaData extended to include filesize, timestamp (Even Rouault)
+
+* Enhancements and Fixes*
+  - Upgrade scripts from multiple old versions are now all symlinks
+    to a single upgrade script (Sandro Santilli)
+  - #3944, Update to EPSG register v9.2 (Even Rouault)
+  - #3927, Parallel implementation of ST_AsMVT
+  - #3925, Simplify geometry using map grid cell size before generating MVT
+  - #3899, BTree sort order is now defined on collections of EMPTY and
+           same-prefix geometries (Darafei Praliaskouski)
+  - #3864, Performance improvement for sorting POINT geometries
+           (Darafei Praliaskouski)
+  - #3900, GCC warnings fixed, make -j is now working (Darafei Praliaskouski)
+  - TopoGeo_addLinestring robustness improvements (Sandro Santilli)
+    #1855, #1946, #3718, #3838
+  - #3234, Do not accept EMPTY points as topology nodes (Sandro Santilli)
+  - #1014, Hashable geometry, allowing direct use in CTE signatures (Paul Ramsey)
+  - #3097, Really allow MULTILINESTRING blades in ST_Split() (Paul Ramsey)
+  - #3942, geojson: Do not include private header for json-c >= 0.13 (Björn Esser)
+  - #3954, ST_GeometricMedian now supports point weights (Darafei Praliaskouski)
+  - #3965, #3971, #3977, #4071 ST_ClusterKMeans rewritten: better initialization,
+           faster convergence, K=2 even faster (Darafei Praliaskouski)
+  - #3982, ST_AsEncodedPolyline supports LINESTRING EMPTY and MULTIPOINT EMPTY
+           (Darafei Praliaskouski)
+  - #3986, ST_AsText now has second argument to limit decimal digits
+           (Marc Ducobu, Darafei Praliaskouski)
+  - #4020, Casting from box3d to geometry now returns correctly connected
+           PolyhedralSurface (Matthias Bay)
+  - #2508, ST_OffsetCurve now works with collections (Darafei Praliaskouski)
+  - #4006, ST_GeomFromGeoJSON support for json and jsonb as input
+           (Paul Ramsey, Regina Obe)
+  - #4038, ST_Subdivide now selects pivot for geometry split that reuses input
+           vertices. (Darafei Praliaskouski)
+  - #4025, #4032 Fixed precision issue in ST_ClosestPointOfApproach,
+           ST_DistanceCPA, and ST_CPAWithin (Paul Ramsey, Darafei Praliaskouski)
+  - #4076, Reduce use of GEOS in topology implementation (Björn Harrtell)
+  - #4080, Add external raster band index to ST_BandMetaData
+  - Add Raster Tips section to Documentation for information about
+    Raster behavior (e.g. Out-DB performance, maximum open files)
+  - #4084: Fixed wrong code-comment regarding front/back of BOX3D (Matthias Bay)
+  - #4060, #4094, PostgreSQL JIT support (Raúl Marín, Laurenz Albe)
+  - #3960, ST_Centroid now uses lwgeom_centroid (Darafei Praliaskouski)
+  - #4027, Remove duplicated code in lwgeom_geos (Darafei Praliaskouski,
+           Daniel Baston)
+  - #4115, Fix a bug that created MVTs with incorrect property values under
+    parallel plans (Raúl Marín).
+  - #4120, ST_AsMVTGeom: Clip using tile coordinates (Raúl Marín).
+  - #4132, ST_Intersection on Raster now works without throwing TopologyException
+          (Vinícius A.B. Schmidt, Darafei Praliaskouski)
+  - #4177, #4180 Support for PostgreSQL 12 dev branch (Laurenz Albe, Raúl Marín)
+  - #4156, ST_ChaikinSmoothing: also smooth start/end point of
+  polygon by default (Darafei Praliaskouski)
+
+PostGIS 2.4.5
+2018/09/12
+
+  * Bug Fixes and Enhancements
+
+  - #4031, Survive to big MaxError tolerances passed to ST_CurveToLine
+           (Sandro Santilli)
+  - #4058, Fix infinite loop in linearization of a big radius small arc
+           (Sandro Santilli)
+  - #4071, ST_ClusterKMeans crash on NULL/EMPTY fixed (Darafei Praliaskouski)
+  - #4079, ensure St_AsMVTGeom outputs CW oriented polygons (Paul Ramsey)
+  - #4070, use standard interruption error code on GEOS interruptions
+           (Paul Ramsey)
+  - #3980, delay freeing input until processing complete (lucasvr)
+  - #4090, PG 11 support (Paul Ramsey, Raúl Marín)
+  - #4077, Serialization failure for particular empty geometry cases (Paul Ramsey)
+  - #3997, fix bug in lwgeom_median and avoid division by zero (Raúl Marín)
+  - #4093, Inconsistent results from qsort callback (yugr)
+  - #4081, Geography DWithin() issues for certain cases (Paul Ramsey)
+  - #4105, Parallel build of tarball (Bas Couwenberg)
+  - #4163, MVT: Fix resource leak when the first geometry is NULL (Raúl Marín)
+
 PostGIS 2.4.4
 2018/04/08
 
@@ -18,6 +345,7 @@ PostGIS 2.4.4
            (Paul Ramsey, Darafei Praliaskouski)
   - #4052, schema qualify several functions in geography (Regina Obe)
   - #4055, ST_ClusterIntersecting drops SRID (Daniel Baston)
+  - #4067, Guard lookup of namespace in internal call case
 
  * Enhancements *
   - #3946, Compile support for PgSQL 11 (Paul Ramsey)
@@ -77,7 +405,6 @@ PostGIS 2.4.1
  * Enhancements *
   - #3815, Tiger 2017 data support and option to load zcta5
 
-
 PostGIS 2.4.0
 2017/09/30
 
@@ -92,7 +419,10 @@ PostGIS 2.4.0
   - #2464, ST_CurveToLine with MaxError tolerance (Sandro Santilli / KKGeo)
   - #3599, Geobuf output support via ST_AsGeobuf (Björn Harrtell)
   - #3661, Mapbox vector tile output support via ST_AsMVT (Björn Harrtell / CartoDB)
-  - #3689, Add orientation checking and forcing functions (Dan Baston)
+  - #3689, Add orientation checking and forcing functions:
+           ST_IsPolygonCW, ST_IsPolygonCCW,
+           ST_ForcePolygonCW, ST_ForcePolygonCCW
+           (Dan Baston)
   - #3753, Gist penalty speed improvements for 2D and ND points
            (Darafei Praliaskouski, Andrey Borodin)
   - #3677, ST_FrechetDistance (Shinichi Sugiyama)
@@ -127,37 +457,6 @@ PostGIS 2.4.0
   - #3844, Make = operator a strict equality test, and < > to rough "spatial sorting"
   - #3855, ST_AsTWKB memory and speed improvements
 
-
-* Breaking Changes *
-  - Dropped support for PostgreSQL 9.2.
-  - #3810, GEOS 3.4.0 or above minimum required to compile
-  - Most aggregates now marked as parallel safe,
-    which means most aggs have to be dropped / recreated.
-    If you have views that utilize PostGIS aggs,
-    you'll need to drop before upgrade and recreate after upgrade
-  - #3578, ST_NumInteriorRings(POLYGON EMPTY) now returns 0 instead of NULL
-  - _ST_DumpPoints removed, was no longer needed after PostGIS 2.1.0
-    when ST_DumpPoints got reimplemented in C
-  - B-Tree index operators < = > changed to provide better spatial locality on sorting
-    and have expected behavior on GROUP BY.
-    If you have btree index for geometry or geography, you need to REINDEX it, or review
-    if it was created by accident and needs to be replaced with GiST index.
-    If your code relies on old left-to-right box compare ordering,
-    update it to use << >> operators
-
-PostGIS 2.4.0rc3
-2017/09/27
-* Fixes and Enhancements since PostGIS 2.4.0rc2 *
-  - #3781 st_contains cannot handle curvepolygon / compoundcurve
-    consisting of only straight lines
-  - #3866 server crashing from large values in ST_AsTWKB
-  - #3818 Allow triangles unclosed in M to be WKT parsed
-  - several packaging changes regarding checking trailing blanks
-
-
-See PostGIS 2.4.0 section for details of
-new features and enhancements in this release.
-
 PostGIS 2.4.0rc2
 2017/09/24
 * Fixes and Enhancements since PostGIS 2.4.0rc1 *
@@ -185,7 +484,6 @@ Note possible breaking changes since 2.4.0 beta1 release are:
     when ST_DumpPoints got reimplemented in C
 
 See PostGIS 2.4.0 section for details of new features and fixes in this release
-
 
 PostGIS 2.4.0beta1
 2017/09/02
@@ -1195,6 +1493,8 @@ PostGIS 2.0.0
   - 3D analysis functions are now named with "3D" as a prefix
     instead of a suffix (eg ST_Length3D has become ST_3DLength)
   - Operator && does not check for SRID mismatch anymore
+  - Cast function from raster to bytea now called `bytea` instead
+    of `st_bytea` (#1003)
 
 * New Features *
 
@@ -1341,8 +1641,7 @@ PostGIS 1.5.2
      (Mark Cave-Ayland)
    - #504 shp2pgsql should rename xmin/xmax fields (Sandro Santilli)
    - #458 postgis_comments being installed in contrib instead of
-     version folder (Mark Cave-Ayland)
-   - #474 Analyzing a table with geography column crashes server
+     version fozing a table with geography column crashes server
      (Paul Ramsey)
    - #581 LWGEOM-expand produces inconsistent results
      (Mark Cave-Ayland)

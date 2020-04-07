@@ -54,9 +54,9 @@ Datum geography_lt(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(g1, 0);
 	PG_FREE_IF_COPY(g2, 1);
 	if (cmp < 0)
-		PG_RETURN_BOOL(TRUE);
+		PG_RETURN_BOOL(true);
 	else
-		PG_RETURN_BOOL(FALSE);
+		PG_RETURN_BOOL(false);
 }
 
 /*
@@ -72,9 +72,9 @@ Datum geography_le(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(g1, 0);
 	PG_FREE_IF_COPY(g2, 1);
 	if (cmp <= 0)
-		PG_RETURN_BOOL(TRUE);
+		PG_RETURN_BOOL(true);
 	else
-		PG_RETURN_BOOL(FALSE);
+		PG_RETURN_BOOL(false);
 }
 
 /*
@@ -90,9 +90,9 @@ Datum geography_gt(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(g1, 0);
 	PG_FREE_IF_COPY(g2, 1);
 	if (cmp > 0)
-		PG_RETURN_BOOL(TRUE);
+		PG_RETURN_BOOL(true);
 	else
-		PG_RETURN_BOOL(FALSE);
+		PG_RETURN_BOOL(false);
 }
 
 /*
@@ -108,9 +108,9 @@ Datum geography_ge(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(g1, 0);
 	PG_FREE_IF_COPY(g2, 1);
 	if (cmp >= 0)
-		PG_RETURN_BOOL(TRUE);
+		PG_RETURN_BOOL(true);
 	else
-		PG_RETURN_BOOL(FALSE);
+		PG_RETURN_BOOL(false);
 }
 
 /*
@@ -126,9 +126,9 @@ Datum geography_eq(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(g1, 0);
 	PG_FREE_IF_COPY(g2, 1);
 	if (cmp == 0)
-		PG_RETURN_BOOL(TRUE);
+		PG_RETURN_BOOL(true);
 	else
-		PG_RETURN_BOOL(FALSE);
+		PG_RETURN_BOOL(false);
 }
 
 /*

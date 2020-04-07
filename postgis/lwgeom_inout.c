@@ -30,7 +30,6 @@
 #include <float.h>
 #include <string.h>
 #include <stdio.h>
-#include <errno.h>
 #include <assert.h>
 
 #include "access/gist.h"
@@ -39,8 +38,9 @@
 #include "fmgr.h"
 #include "utils/elog.h"
 #include "mb/pg_wchar.h"
-# include "lib/stringinfo.h" /* for binary input */
+#include "lib/stringinfo.h" /* for binary input */
 #include "utils/array.h"
+#include "utils/builtins.h"
 #include "utils/lsyscache.h"
 #include "funcapi.h"
 
@@ -89,7 +89,7 @@ Datum LWGEOM_in(PG_FUNCTION_ARGS)
 	LWGEOM_PARSER_RESULT lwg_parser_result;
 	LWGEOM *lwgeom;
 	GSERIALIZED *ret;
-	int srid = 0;
+	int32_t srid = 0;
 
 	if ( (PG_NARGS()>2) && (!PG_ARGISNULL(2)) ) {
 		geom_typmod = PG_GETARG_INT32(2);
@@ -136,7 +136,7 @@ Datum LWGEOM_in(PG_FUNCTION_ARGS)
 		if ( srid ) lwgeom_set_srid(lwgeom, srid);
 		/* Add a bbox if necessary */
 		if ( lwgeom_needs_bbox(lwgeom) ) lwgeom_add_bbox(lwgeom);
-		pfree(wkb);
+		lwfree(wkb);
 		ret = geometry_serialize(lwgeom);
 		lwgeom_free(lwgeom);
 	}
@@ -222,7 +222,7 @@ Datum LWGEOM_to_latlon(PG_FUNCTION_ARGS)
     PG_RETURN_NULL();
   }
 
-	format_str = text2cstring(format_text);
+	format_str = text_to_cstring(format_text);
   assert(format_str != NULL);
 
   /* The input string supposedly will be in the database encoding,
@@ -251,7 +251,7 @@ Datum LWGEOM_to_latlon(PG_FUNCTION_ARGS)
   }
 
 	/* Convert to the postgres output string type. */
-	formatted_text = cstring2text(formatted_str);
+	formatted_text = cstring_to_text(formatted_str);
   pfree(formatted_str);
 
 	PG_RETURN_POINTER(formatted_text);
@@ -322,7 +322,7 @@ Datum LWGEOM_asHEXEWKB(PG_FUNCTION_ARGS)
 	SET_VARSIZE(result, text_size);
 
 	/* Clean up and return */
-	pfree(hexwkb);
+	lwfree(hexwkb);
 	PG_FREE_IF_COPY(geom, 0);
 	PG_RETURN_TEXT_P(result);
 }
@@ -350,8 +350,8 @@ Datum LWGEOM_to_text(PG_FUNCTION_ARGS)
 	lwgeom_free(lwgeom);
 
 	/* Copy into text obect */
-	result = cstring2text(hexwkb);
-	pfree(hexwkb);
+	result = cstring_to_text(hexwkb);
+	lwfree(hexwkb);
 
 	/* Clean up and return */
 	PG_FREE_IF_COPY(geom, 0);
@@ -368,17 +368,16 @@ Datum LWGEOM_to_text(PG_FUNCTION_ARGS)
 PG_FUNCTION_INFO_V1(LWGEOMFromEWKB);
 Datum LWGEOMFromEWKB(PG_FUNCTION_ARGS)
 {
-	bytea *bytea_wkb = (bytea*)PG_GETARG_BYTEA_P(0);
-	int32 srid = 0;
+	bytea *bytea_wkb = PG_GETARG_BYTEA_P(0);
 	GSERIALIZED *geom;
 	LWGEOM *lwgeom;
 	uint8_t *wkb = (uint8_t*)VARDATA(bytea_wkb);
 
-	lwgeom = lwgeom_from_wkb(wkb, VARSIZE(bytea_wkb)-VARHDRSZ, LW_PARSER_CHECK_ALL);
+	lwgeom = lwgeom_from_wkb(wkb, VARSIZE_ANY_EXHDR(bytea_wkb), LW_PARSER_CHECK_ALL);
 
-	if (  ( PG_NARGS()>1) && ( ! PG_ARGISNULL(1) ))
+	if ((PG_NARGS() > 1) && (!PG_ARGISNULL(1)))
 	{
-		srid = PG_GETARG_INT32(1);
+		int32 srid = PG_GETARG_INT32(1);
 		lwgeom_set_srid(lwgeom, srid);
 	}
 
@@ -398,14 +397,14 @@ Datum LWGEOMFromEWKB(PG_FUNCTION_ARGS)
 PG_FUNCTION_INFO_V1(LWGEOMFromTWKB);
 Datum LWGEOMFromTWKB(PG_FUNCTION_ARGS)
 {
-	bytea *bytea_twkb = (bytea*)PG_GETARG_BYTEA_P(0);
+	bytea *bytea_twkb = PG_GETARG_BYTEA_P(0);
 	GSERIALIZED *geom;
 	LWGEOM *lwgeom;
 	uint8_t *twkb = (uint8_t*)VARDATA(bytea_twkb);
 
-	lwgeom = lwgeom_from_twkb(twkb, VARSIZE(bytea_twkb)-VARHDRSZ, LW_PARSER_CHECK_ALL);
+	lwgeom = lwgeom_from_twkb(twkb, VARSIZE_ANY_EXHDR(bytea_twkb), LW_PARSER_CHECK_ALL);
 
-	if ( lwgeom_needs_bbox(lwgeom) )
+	if (lwgeom_needs_bbox(lwgeom))
 		lwgeom_add_bbox(lwgeom);
 
 	geom = geometry_serialize(lwgeom);
@@ -443,7 +442,7 @@ Datum WKBFromLWGEOM(PG_FUNCTION_ARGS)
 			variant = variant | WKB_NDR;
 		}
 	}
-	wkb_size= VARSIZE(geom) - VARHDRSZ;
+	wkb_size= VARSIZE_ANY_EXHDR(geom);
 	/* Create WKB hex string */
 	lwgeom = lwgeom_from_gserialized(geom);
 
@@ -456,7 +455,7 @@ Datum WKBFromLWGEOM(PG_FUNCTION_ARGS)
 	SET_VARSIZE(result, wkb_size+VARHDRSZ);
 
 	/* Clean up and return */
-	pfree(wkb);
+	lwfree(wkb);
 	PG_FREE_IF_COPY(geom, 0);
 	PG_RETURN_BYTEA_P(result);
 }
@@ -529,7 +528,7 @@ Datum TWKBFromLWGEOMArray(PG_FUNCTION_ARGS)
 	Datum val_geom, val_id;
 
 	int is_homogeneous = true;
-	int subtype = 0;
+	uint32_t subtype = 0;
 	int has_z = 0;
 	int has_m  = 0;
 	LWCOLLECTION *col = NULL;
@@ -560,13 +559,8 @@ Datum TWKBFromLWGEOMArray(PG_FUNCTION_ARGS)
 	/* Loop through array and build a collection of geometry and */
 	/* a simple array of ids. If either side is NULL, skip it */
 
-#if POSTGIS_PGSQL_VERSION >= 95
 	iter_geoms = array_create_iterator(arr_geoms, 0, NULL);
 	iter_ids = array_create_iterator(arr_ids, 0, NULL);
-#else
-	iter_geoms = array_create_iterator(arr_geoms, 0);
-	iter_ids = array_create_iterator(arr_ids, 0);
-#endif
 
 	while( array_iterate(iter_geoms, &val_geom, &null_geom) &&
 	       array_iterate(iter_ids, &val_id, &null_id) )
@@ -594,10 +588,10 @@ Datum TWKBFromLWGEOMArray(PG_FUNCTION_ARGS)
 			idlist = palloc0(num_geoms * sizeof(int64_t));
 
 
-		/*Check if there is differences in dimmenstionality*/
+		/* Check if there is differences in dimensionality*/
 		if( lwgeom_has_z(geom)!=has_z || lwgeom_has_m(geom)!=has_m)
 		{
-			elog(ERROR, "Geometries have differenct dimensionality");
+			elog(ERROR, "Geometries have different dimensionality");
 			PG_FREE_IF_COPY(arr_geoms, 0);
 			PG_FREE_IF_COPY(arr_ids, 1);
 			PG_RETURN_NULL();
@@ -707,7 +701,7 @@ Datum LWGEOM_dropBBOX(PG_FUNCTION_ARGS)
 	if ( ! gserialized_has_bbox(geom) )
 		PG_RETURN_POINTER(geom);
 
-	PG_RETURN_POINTER(gserialized_drop_gidx(geom));
+	PG_RETURN_POINTER(gserialized_drop_gbox(geom));
 }
 
 
@@ -731,7 +725,7 @@ Datum parse_WKT_lwgeom(PG_FUNCTION_ARGS)
 	Datum result;
 
 	/* Unwrap the PgSQL text type into a cstring */
-	wkt = text2cstring(wkt_text);
+	wkt = text_to_cstring(wkt_text);
 
 	/* Now we call over to the geometry_in function */
 	result = DirectFunctionCall1(LWGEOM_in, CStringGetDatum(wkt));

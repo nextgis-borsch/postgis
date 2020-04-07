@@ -386,7 +386,7 @@ rt_errorstate rt_pixtype_compare_clamped_values(
  * @return ES_NONE on success, ES_ERROR on error
  */
 rt_errorstate rt_pixel_set_to_array(
-	rt_pixel npixel,int count,
+	rt_pixel npixel,uint32_t count,
 	rt_mask mask,
 	int x, int y,
 	uint16_t distancex, uint16_t distancey,
@@ -451,6 +451,35 @@ rt_band rt_band_new_offline(
 );
 
 /**
+ * Create an out-db rt_band from path
+ *
+ * @param width     : number of pixel columns
+ * @param height    : number of pixel rows
+ * @param hasnodata : indicates if the band has nodata value
+ * @param nodataval : the nodata value, will be appropriately
+ * @param bandNum   : 1-based band number in the external file
+ *                    to associate this band with.
+ * @param path      : NULL-terminated path string pointing to the file
+ *                    containing band data. The string will NOT be
+ *                    copied, ownership is left to caller which is
+ *                    responsible to keep it allocated for the whole
+ *                    lifetime of the returned rt_band.
+ * @param force     : if True, ignore all validation checks
+ *
+ * @return an rt_band, or 0 on failure
+ */
+rt_band
+rt_band_new_offline_from_path(
+	uint16_t width,
+	uint16_t height,
+	int hasnodata,
+	double nodataval,
+	uint8_t bandNum,
+	const char* path,
+	int force
+);
+
+/**
  * Create a new band duplicated from source band.  Memory is allocated
  * for band path (if band is offline) or band data (if band is online).
  * The caller is responsible for freeing the memory when the returned
@@ -482,6 +511,26 @@ int rt_band_is_offline(rt_band band);
  * @return string or NULL if band is not offline
  */
 const char* rt_band_get_ext_path(rt_band band);
+
+/**
+ * Return file size in bytes.
+ *
+ * Only for out-db rasters.
+ *
+ * @param band : the band
+ * @return file size in bytes or 0 in case of error.
+ */
+uint64_t rt_band_get_file_size(rt_band band);
+
+/**
+ * Return file timestamp.
+ *
+ * Only for out-db rasters.
+ *
+ * @param band : the band
+ * @return file timestamp (Unix time) or 0 in case of error.
+ */
+uint64_t rt_band_get_file_timestamp(rt_band band);
 
 /**
  * Return bands' external band number (only valid when
@@ -725,7 +774,7 @@ rt_errorstate rt_band_get_pixel(
  * @return -1 on error, otherwise the number of rt_pixel objects
  * in npixels
  */
-int rt_band_get_nearest_pixel(
+uint32_t rt_band_get_nearest_pixel(
 	rt_band band,
 	int x, int y,
 	uint16_t distancex, uint16_t distancey,
@@ -838,7 +887,7 @@ rt_bandstats rt_band_get_summary_stats(
  */
 rt_histogram rt_band_get_histogram(
 	rt_bandstats stats,
-	int bin_count, double *bin_widths, int bin_widths_count,
+	uint32_t bin_count, double *bin_widths, uint32_t bin_widths_count,
 	int right, double min, double max,
 	uint32_t *rtn_count
 );
@@ -895,7 +944,7 @@ rt_quantile rt_band_get_quantiles_stream(
 	int exclude_nodata_value, double sample,
 	uint64_t cov_count,
 	struct quantile_llist **qlls, uint32_t *qlls_count,
-	double *quantiles, int quantiles_count,
+	double *quantiles, uint32_t quantiles_count,
 	uint32_t *rtn_count
 );
 
@@ -1012,7 +1061,7 @@ char *rt_raster_to_hexwkb(rt_raster raster, int outasin, uint32_t *hexwkbsize);
 void rt_raster_destroy(rt_raster raster);
 
 /* Get number of bands */
-int rt_raster_get_num_bands(rt_raster raster);
+uint16_t rt_raster_get_num_bands(rt_raster raster);
 
 /**
  * Return Nth band, or NULL if unavailable
@@ -2179,12 +2228,13 @@ rt_util_hsv_to_rgb(
 );
 
 /*
-	helper macros for consistent floating point equality checks
+	helper macros for consistent floating point equality checks.
+	NaN equals NaN for NODATA support.
 */
-#define FLT_NEQ(x, y) (fabs(x - y) > FLT_EPSILON)
-#define FLT_EQ(x, y) (!FLT_NEQ(x, y))
-#define DBL_NEQ(x, y) (fabs(x - y) > DBL_EPSILON)
-#define DBL_EQ(x, y) (!DBL_NEQ(x, y))
+#define FLT_NEQ(x, y) ((x != y) && !(isnan(x) && isnan(y)) && (fabs(x - y) > FLT_EPSILON))
+#define FLT_EQ(x, y) ((x == y) || (isnan(x) && isnan(y)) || (fabs(x - y) <= FLT_EPSILON))
+#define DBL_NEQ(x, y) ((x != y) && !(isnan(x) && isnan(y)) && (fabs(x - y) > DBL_EPSILON))
+#define DBL_EQ(x, y) ((x == y) || (isnan(x) && isnan(y)) || (fabs(x - y) <= DBL_EPSILON))
 
 /*
 	helper macro for symmetrical rounding
@@ -2424,6 +2474,8 @@ struct rt_gdaldriver_t {
 	char *short_name;
 	char *long_name;
 	char *create_options;
+	uint8_t can_read;
+	uint8_t can_write;
 };
 
 /* raster colormap entry */
